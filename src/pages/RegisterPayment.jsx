@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import axios from "axios";
-import { QrReader } from "react-qr-reader";
 import Layout from "../components/Layout";
 
 const RegisterPayment = () => {
