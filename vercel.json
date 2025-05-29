@@ -1,6 +1,5 @@
-"scripts": {
-  "postinstall": "npm install --legacy-peer-deps",
-  "dev": "vite",
-  "build": "vite build",
-  "preview": "vite preview"
+{
+  "env": {
+    "VITE_API_URL": "https://crediya-backend-production.up.railway.app"
+  }
 }
