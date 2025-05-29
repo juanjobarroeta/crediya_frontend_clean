@@ -1,5 +1,6 @@
-{
-  "env": {
-    "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
-  }
+"scripts": {
+  "postinstall": "npm install --legacy-peer-deps",
+  "dev": "vite",
+  "build": "vite build",
+  "preview": "vite preview"
 }
