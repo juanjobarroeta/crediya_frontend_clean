@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import Layout from "../components/Layout";
+const API_URL = import.meta.env.VITE_API_URL;
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -15,7 +16,7 @@ const Auth = () => {
     e.preventDefault();
     try {
       const endpoint = isLogin ? "/login" : "/register";
-      const res = await axios.post(`http://localhost:5001${endpoint}`, form);
+      const res = await axios.post(`${API_URL}${endpoint}`, form);
       localStorage.setItem("token", res.data.token);
       setMessage(res.data.message);
       window.location.href = "/dashboard";
