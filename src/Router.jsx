@@ -64,7 +64,6 @@ const AppRouter = () => (
       <Route path="/investigation" element={<LoanRequest />} />
       <Route path="/investigation-stepper" element={<InvestigationStepper />} />
       <Route path="/auth" element={<Auth />} />
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
       <Route path="/customer/:id" element={<ProtectedRoute><CustomerProfile /></ProtectedRoute>} />
       <Route path="/financial-products" element={<ProtectedRoute><FinancialProducts /></ProtectedRoute>} />
@@ -82,7 +81,6 @@ const AppRouter = () => (
       <Route path="/admin/balance-sheet" element={<AdminRoute><BalanceSheet /></AdminRoute>} />
       <Route path="/admin/inventory-request" element={<AdminRoute><InventoryRequest /></AdminRoute>} />
       <Route path="/admin/account-balances" element={<AdminRoute><AccountBalances /></AdminRoute>} />
-      <Route path="*" element={<Navigate to="/auth" replace />} />
       <Route path="/admin/inventory" element={<AdminInventoryViewer />} />
       <Route
         path="/admin/aprobaciones"
@@ -124,6 +122,8 @@ const AppRouter = () => (
       <Route path="/admin/generate-contract" element={<AdminRoute><GenerateContract /></AdminRoute>} />
       <Route path="/loan-quotes" element={<ProtectedRoute><LoanQuotes /></ProtectedRoute>} />
       <Route path="/admin/investigations" element={<AdminRoute><InvestigationsDashboard /></AdminRoute>} />
+      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="*" element={<Navigate to="/auth" replace />} />
     </Routes>
   </Router>
 );
