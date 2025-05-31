@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Layout from "../components/Layout";
+import { API_BASE_URL } from "../utils/constants";
 
 const PublicRegister = () => {
   const [form, setForm] = useState({
@@ -22,7 +23,7 @@ const PublicRegister = () => {
   useEffect(() => {
     const fetchPromotions = async () => {
       try {
-        const res = await axios.get("http://localhost:5001/promotions/active");
+        const res = await axios.get(`${API_BASE_URL}/promotions/active`);
         setPromotions(res.data);
       } catch (err) {
         console.error("Error loading promotions:", err);
@@ -53,7 +54,7 @@ const PublicRegister = () => {
     });
 
     try {
-      await axios.post("http://localhost:5001/public/apply", data);
+      await axios.post(`${API_BASE_URL}/public/apply`, data);
       alert("✅ Tu solicitud fue enviada con éxito");
     } catch (err) {
       console.error("❌ Error in public register:", err);

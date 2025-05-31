@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Layout from "../components/Layout";
+import { API_BASE_URL } from "../utils/constants";
 
 const AdminPanel = () => {
   const [users, setUsers] = useState([]);
@@ -14,7 +15,7 @@ const AdminPanel = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/admin/users", { headers });
+      const res = await axios.get(`${API_BASE_URL}/admin/users`, { headers });
       setUsers(res.data);
     } catch (err) {
       console.error("Error fetching users:", err);
@@ -23,7 +24,7 @@ const AdminPanel = () => {
 
   const fetchLoans = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/admin/loans", { headers });
+      const res = await axios.get(`${API_BASE_URL}/admin/loans`, { headers });
       setLoans(res.data);
     } catch (err) {
       console.error("Error fetching loans:", err);
@@ -32,7 +33,7 @@ const AdminPanel = () => {
 
   const deleteUser = async (id) => {
     try {
-      await axios.delete(`http://localhost:5001/admin/users/${id}`, { headers });
+      await axios.delete(`${API_BASE_URL}/admin/users/${id}`, { headers });
       fetchUsers();
     } catch (err) {
       console.error("Error deleting user:", err);
@@ -41,7 +42,7 @@ const AdminPanel = () => {
 
   const deleteLoan = async (id) => {
     try {
-      await axios.delete(`http://localhost:5001/admin/loans/${id}`, { headers });
+      await axios.delete(`${API_BASE_URL}/admin/loans/${id}`, { headers });
       fetchLoans();
     } catch (err) {
       console.error("Error deleting loan:", err);
@@ -51,7 +52,7 @@ const AdminPanel = () => {
   const updateLoanStatus = async (id) => {
     try {
       await axios.put(
-        `http://localhost:5001/admin/loans/${id}`,
+        `${API_BASE_URL}/admin/loans/${id}`,
         { status: statusUpdate[id] || "approved" },
         { headers }
       );

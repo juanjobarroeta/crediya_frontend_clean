@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
 import Layout from '../components/Layout';
+import { API_BASE_URL } from "../utils/constants";
 
 const LoanQuotes = () => {
   const [products, setProducts] = useState([]);
@@ -13,7 +14,7 @@ const LoanQuotes = () => {
 
   useEffect(() => {
     // Fetch financial products
-    axios.get('http://localhost:5001/public/financial-products')
+    axios.get(`${API_BASE_URL}/public/financial-products`)
       .then(res => {
         setProducts(res.data || []);
       })

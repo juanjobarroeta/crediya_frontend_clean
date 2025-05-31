@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../utils/constants";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Layout from "../components/Layout";
@@ -18,7 +19,7 @@ const FinancialProducts = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/financial-products", {
+      const res = await axios.get(`${API_BASE_URL}/financial-products`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setProducts(res.data);
@@ -42,7 +43,7 @@ const FinancialProducts = () => {
         term_weeks: parseInt(form.term_weeks),
       };
 
-      const response = await axios.post("http://localhost:5001/financial-products", payload, {
+      const response = await axios.post(`${API_BASE_URL}/financial-products`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log("Financial product created:", response.data);

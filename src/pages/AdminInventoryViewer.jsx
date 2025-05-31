@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Layout from "../components/Layout";
+import { API_BASE_URL } from "../utils/constants";
 
 const AdminInventoryViewer = () => {
   const [items, setItems] = useState([]);
@@ -13,7 +14,7 @@ const AdminInventoryViewer = () => {
   useEffect(() => {
     const fetchItems = async () => {
       try {
-        const res = await axios.get("http://localhost:5001/inventory-items", {
+        const res = await axios.get(`${API_BASE_URL}/inventory-items`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
@@ -43,14 +44,18 @@ const AdminInventoryViewer = () => {
   const handleTransfer = async () => {
     if (!targetStore || selectedItems.length === 0) return;
     try {
-      await axios.patch("http://localhost:5001/inventory-items/transfer", {
-        item_ids: selectedItems,
-        new_store: targetStore,
-      }, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+      await axios.patch(
+        `${API_BASE_URL}/inventory-items/transfer`,
+        {
+          item_ids: selectedItems,
+          new_store: targetStore,
         },
-      });
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
       window.location.reload();
     } catch (err) {
       console.error("Error transferring items:", err);

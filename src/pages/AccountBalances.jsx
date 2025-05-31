@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../utils/constants";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Layout from "../components/Layout";
@@ -22,7 +23,7 @@ const AccountBalances = () => {
 
     try {
       console.log("📅 Fetching with:", from, to);
-      const res = await axios.get("http://localhost:5001/account-balances", {
+      const res = await axios.get(`${API_BASE_URL}/account-balances`, {
         params: { from, to },
         headers: { Authorization: `Bearer ${token}` }
       });

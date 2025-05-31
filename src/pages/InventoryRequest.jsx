@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "../utils/constants";
 import Layout from "../components/Layout";
 
 
@@ -30,7 +31,7 @@ const InventoryRequest = () => {
         formData.append("quoteFile", form.quoteFile);
       }
 
-      const res = await axios.post("http://localhost:5001/inventory-requests", formData, {
+      const res = await axios.post(`${API_BASE_URL}/inventory-requests`, formData, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
           "Content-Type": "multipart/form-data",
@@ -45,7 +46,7 @@ const InventoryRequest = () => {
         inventoryData.append("inventory_request_id", createdRequest.id);
         inventoryData.append("store", form.store);
 
-        await axios.post("http://localhost:5001/inventory-items/upload", inventoryData, {
+        await axios.post(`${API_BASE_URL}/inventory-items/upload`, inventoryData, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
             "Content-Type": "multipart/form-data",

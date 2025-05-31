@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Layout from "../components/Layout";
+import { API_BASE_URL } from "../utils/constants";
 
 const AssignIMEI = () => {
   const [items, setItems] = useState([]);
@@ -9,7 +10,7 @@ const AssignIMEI = () => {
   const token = localStorage.getItem("token");
 
   useEffect(() => {
-    axios.get("http://localhost:5001/inventory-items", {
+    axios.get(`${API_BASE_URL}/inventory-items`, {
       headers: { Authorization: `Bearer ${token}` },
     }).then(res => {
       const filtered = res.data.filter(item => !item.imei);
@@ -25,7 +26,7 @@ const AssignIMEI = () => {
     const imei = editing[id];
     if (!imei) return;
     try {
-      await axios.put(`http://localhost:5001/inventory-items/${id}/imei`, { imei }, {
+      await axios.put(`${API_BASE_URL}/inventory-items/${id}/imei`, { imei }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setItems(prev => prev.filter(item => item.id !== id));

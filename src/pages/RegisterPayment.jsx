@@ -3,6 +3,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import axios from "axios";
 import Layout from "../components/Layout";
+import { API_BASE_URL } from "../utils/constants";
 
 const RegisterPayment = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -20,7 +21,7 @@ const RegisterPayment = () => {
 
   const fetchLoans = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/dashboard/loans", {
+      const res = await axios.get(`${API_BASE_URL}/dashboard/loans`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setFilteredLoans(res.data);
@@ -36,8 +37,8 @@ const RegisterPayment = () => {
   const fetchLoanDetails = async (loanId) => {
     try {
       const [installmentsRes, paymentsRes] = await Promise.all([
-        axios.get(`http://localhost:5001/loans/${loanId}/installments`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`http://localhost:5001/loans/${loanId}/payments`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API_BASE_URL}/loans/${loanId}/installments`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API_BASE_URL}/loans/${loanId}/payments`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       setInstallments(installmentsRes.data);
       // Ensure paymentsRes.data includes actual payment records with amounts
@@ -64,7 +65,7 @@ const RegisterPayment = () => {
     if (!selectedLoan) return;
 
     try {
-      const res = await axios.post("http://localhost:5001/make-installment-payment", {
+      const res = await axios.post(`${API_BASE_URL}/make-installment-payment`, {
         loan_id: selectedLoan.id,
         amount: parseFloat(amount),
         method,

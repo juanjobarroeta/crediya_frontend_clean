@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Layout from "../components/Layout";
+import { API_BASE_URL } from "../utils/constants";
 
 const Tesoreria = () => {
   const [inventoryOrders, setInventoryOrders] = useState([]);
@@ -11,7 +12,7 @@ const Tesoreria = () => {
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/treasury/payment-orders", {
+      const res = await axios.get(`${API_BASE_URL}/treasury/payment-orders`, {
         headers: {
           Authorization: "Bearer " + localStorage.getItem("token"),
         },
@@ -19,7 +20,7 @@ const Tesoreria = () => {
       setInventoryOrders(res.data.inventory || []);
       setExpenseOrders(res.data.expenses || []);
 
-      const historyRes = await axios.get("http://localhost:5001/treasury/payment-orders/history", {
+      const historyRes = await axios.get(`${API_BASE_URL}/treasury/payment-orders/history`, {
         headers: {
           Authorization: "Bearer " + localStorage.getItem("token"),
         },
@@ -49,7 +50,7 @@ const Tesoreria = () => {
     });
 
     try {
-      await axios.post("http://localhost:5001/treasury/mark-paid", formData, {
+      await axios.post(`${API_BASE_URL}/treasury/mark-paid`, formData, {
         headers: {
           Authorization: "Bearer " + localStorage.getItem("token"),
           "Content-Type": "multipart/form-data",
@@ -101,7 +102,7 @@ const Tesoreria = () => {
               <td>
                 {order.quote_path ? (
                   <a
-                    href={`http://localhost:5001/uploads/${order.quote_path}`}
+                    href={`${API_BASE_URL}/uploads/${order.quote_path}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >

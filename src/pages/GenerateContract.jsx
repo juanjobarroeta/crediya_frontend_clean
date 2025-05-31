@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../utils/constants";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Layout from "../components/Layout";
@@ -10,14 +11,14 @@ const GenerateContract = () => {
   const token = localStorage.getItem("token");
 
   useEffect(() => {
-    axios.get("http://localhost:5001/loans/pending", {
+    axios.get(`${API_BASE_URL}/loans/pending`, {
       headers: { Authorization: `Bearer ${token}` },
     }).then(res => setLoans(res.data)).catch(err => console.error("Error fetching loans", err));
   }, [token]);
 
   useEffect(() => {
     if (!selectedLoanId) return;
-    axios.get(`http://localhost:5001/loans/${selectedLoanId}`, {
+    axios.get(`${API_BASE_URL}/loans/${selectedLoanId}`, {
       headers: { Authorization: `Bearer ${token}` },
     }).then(res => {
       setLoanDetails(res.data.loan);
@@ -44,7 +45,7 @@ const GenerateContract = () => {
   const generateContract = async () => {
     if (!selectedLoanId) return;
     try {
-      const res = await axios.get(`http://localhost:5001/contracts/${selectedLoanId}/generate`, {
+      const res = await axios.get(`${API_BASE_URL}/contracts/${selectedLoanId}/generate`, {
         headers: { Authorization: `Bearer ${token}` },
         responseType: 'blob'
       });

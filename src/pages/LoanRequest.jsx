@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Layout from "../components/Layout";
+import { API_BASE_URL } from "../utils/constants";
 
 const initialFormState = {
   // Referencias Personales
@@ -142,7 +143,7 @@ function LoanRequest() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch("http://localhost:5001/investigations", {
+      const response = await fetch(`${API_BASE_URL}/investigations`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

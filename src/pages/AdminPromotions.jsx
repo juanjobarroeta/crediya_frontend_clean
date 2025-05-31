@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Layout from "../components/Layout";
+import { API_BASE_URL } from "../utils/constants";
 
 const AdminPromotions = () => {
   const token = localStorage.getItem("token");
@@ -17,7 +18,7 @@ const AdminPromotions = () => {
 
   const fetchPromotions = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/promotions", {
+      const res = await axios.get(`${API_BASE_URL}/promotions`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setPromotions(res.data);
@@ -28,7 +29,7 @@ const AdminPromotions = () => {
 
   const fetchFinancialProducts = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/financial-products", {
+      const res = await axios.get(`${API_BASE_URL}/financial-products`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setFinancialProducts(res.data);
@@ -44,7 +45,7 @@ const AdminPromotions = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:5001/promotions", form, {
+      await axios.post(`${API_BASE_URL}/promotions`, form, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setForm({

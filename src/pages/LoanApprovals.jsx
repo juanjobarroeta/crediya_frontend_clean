@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import UploadContract from "../components/UploadContract";
 import Layout from "../components/Layout";
+import { API_BASE_URL } from "../utils/constants";
 
 const LoanApprovals = () => {
   const [loans, setLoans] = useState([]);
@@ -9,7 +10,7 @@ const LoanApprovals = () => {
 
   const fetchLoans = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/admin/loan-applications", {
+      const res = await axios.get(`${API_BASE_URL}/admin/loan-applications`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setLoans(res.data);
@@ -20,7 +21,7 @@ const LoanApprovals = () => {
 
   const updateLoanStatus = async (id, action) => {
     try {
-      await axios.put(`http://localhost:5001/admin/loans/${id}/${action}`, {}, {
+      await axios.put(`${API_BASE_URL}/admin/loans/${id}/${action}`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -41,7 +42,7 @@ const LoanApprovals = () => {
         }
 
         for (const entry of entries) {
-          await axios.post("http://localhost:5001/accounting", {
+          await axios.post(`${API_BASE_URL}/accounting`, {
             loan_id: id,
             ...entry,
           }, {
@@ -80,7 +81,7 @@ const LoanApprovals = () => {
 
                 {loan.contract_path && (
                   <a
-                    href={`http://localhost:5001/uploads/${loan.contract_path}`}
+                    href={`${API_BASE_URL}/uploads/${loan.contract_path}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded text-sm font-medium hover:bg-blue-200 mb-2"

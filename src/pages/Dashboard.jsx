@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom"; // Import Link from react-router-dom
 import Layout from "../components/Layout";
+import { API_BASE_URL } from "../utils/constants";
 
 const Dashboard = () => {
   const [loans, setLoans] = useState([]);
@@ -12,7 +13,7 @@ const Dashboard = () => {
 
   const fetchLoans = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/dashboard/loans", {
+      const res = await axios.get(`${API_BASE_URL}/dashboard/loans`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log("LOANS FROM BACKEND:", res.data); // 👈 Add this line
@@ -24,7 +25,7 @@ const Dashboard = () => {
 
   const fetchCustomers = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/customers", {
+      const res = await axios.get(`${API_BASE_URL}/customers`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCustomers(res.data);
@@ -36,7 +37,7 @@ const Dashboard = () => {
   const fetchPayments = async (loanId) => {
     try {
       const res = await axios.get(
-        `http://localhost:5001/dashboard/payments/${loanId}`,
+        `${API_BASE_URL}/dashboard/payments/${loanId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setPayments((prev) => ({ ...prev, [loanId]: res.data }));
@@ -52,7 +53,7 @@ const Dashboard = () => {
   const submitPayment = async (loanId) => {
     try {
       await axios.post(
-        "http://localhost:5001/make-payment",
+        `${API_BASE_URL}/make-payment`,
         { loan_id: loanId, amount: paymentAmount[loanId] },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -120,7 +121,7 @@ const Dashboard = () => {
                 onClick={async () => {
                   try {
                     const res = await axios.post(
-                      "http://localhost:5001/apply-loan",
+                      `${API_BASE_URL}/apply-loan`,
                       {
                         amount: paymentAmount.newAmount,
                         term: paymentAmount.newTerm,
@@ -183,7 +184,7 @@ const Dashboard = () => {
               onClick={async () => {
                 try {
                   const res = await axios.post(
-                    "http://localhost:5001/customers",
+                    `${API_BASE_URL}/customers`,
                     {
                       name: paymentAmount.newCustomerName,
                       phone: paymentAmount.newCustomerPhone,

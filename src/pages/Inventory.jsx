@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "../utils/constants";
 import Layout from "../components/Layout";
 
 const Inventory = () => {
@@ -22,7 +23,7 @@ const Inventory = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/products", {
+      const res = await axios.get(`${API_BASE_URL}/products`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`
         }
@@ -41,7 +42,7 @@ const Inventory = () => {
     e.preventDefault();
     if (Object.values(newProduct).some((val) => val === "")) return alert("Todos los campos son requeridos.");
     try {
-      await axios.post("http://localhost:5001/products", newProduct, {
+      await axios.post(`${API_BASE_URL}/products`, newProduct, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`
         }

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "../utils/constants";
 import Layout from "../components/Layout";
 
 const AdminManualEntry = () => {
@@ -19,7 +20,7 @@ const AdminManualEntry = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("http://localhost:5001/manual-entry", {
+      const res = await axios.post(`${API_BASE_URL}/manual-entry`, {
         ...form,
         method: form.source === '1102' ? 'transferencia' : 'efectivo'
       }, {

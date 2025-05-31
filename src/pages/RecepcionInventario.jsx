@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Layout from "../components/Layout";
+import { API_BASE_URL } from "../utils/constants";
 
 const RecepcionInventario = () => {
   const token = localStorage.getItem("token");
@@ -14,7 +15,7 @@ const RecepcionInventario = () => {
 
   const fetchRequests = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/warehouse/pending-inventory", {
+      const res = await axios.get(`${API_BASE_URL}/warehouse/pending-inventory`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log("📦 Requests from backend:", res.data);
@@ -26,7 +27,7 @@ const RecepcionInventario = () => {
 
   const fetchDeliveries = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/warehouse/pending-customer-deliveries", {
+      const res = await axios.get(`${API_BASE_URL}/warehouse/pending-customer-deliveries`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log("📦 Deliveries from backend:", res.data);
@@ -41,7 +42,7 @@ const RecepcionInventario = () => {
     if (!confirm) return;
 
     try {
-        await axios.put(`http://localhost:5001/inventory-requests/${id}/receive`, {}, {
+        await axios.put(`${API_BASE_URL}/inventory-requests/${id}/receive`, {}, {
             headers: { Authorization: `Bearer ${token}` }
           });
           alert("Inventario marcado como recibido");
@@ -58,7 +59,7 @@ const RecepcionInventario = () => {
     if (!confirm) return;
 
     try {
-      await axios.post(`http://localhost:5001/loans/${loanId}/deliver`, {}, {
+      await axios.post(`${API_BASE_URL}/loans/${loanId}/deliver`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       alert("Teléfono entregado correctamente.");
@@ -97,7 +98,7 @@ const RecepcionInventario = () => {
                   <td>{req.notes || "N/A"}</td>
                   <td>
                     {req.quote_path ? (
-                      <a href={`http://localhost:5001/uploads/${req.quote_path}`} target="_blank" rel="noreferrer" className="text-lime-400 hover:underline">
+                      <a href={`${API_BASE_URL}/uploads/${req.quote_path}`} target="_blank" rel="noreferrer" className="text-lime-400 hover:underline">
                         Ver cotización
                       </a>
                     ) : (

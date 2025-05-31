@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import Layout from "../components/Layout";
+import { API_BASE_URL } from "../utils/constants";
 
 const LoanStatement = () => {
   const { id } = useParams();
@@ -20,10 +21,10 @@ const LoanStatement = () => {
     const fetchLoanData = async () => {
       try {
         // Fetch the current loan first
-        const loanRes = await axios.get(`http://localhost:5001/loans/${selectedLoanId}`, {
+        const loanRes = await axios.get(`${API_BASE_URL}/loans/${selectedLoanId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const instRes = await axios.get(`http://localhost:5001/loans/${selectedLoanId}/installments`, {
+        const instRes = await axios.get(`${API_BASE_URL}/loans/${selectedLoanId}/installments`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setLoan({ ...loanRes.data.loan, installments: instRes.data });
@@ -32,7 +33,7 @@ const LoanStatement = () => {
 
         // Fetch all loans by this customer (if available)
         if (loanRes.data.loan.customer_id || customerId) {
-          const customerLoansRes = await axios.get(`http://localhost:5001/customers/${loanRes.data.loan.customer_id}/loans`, {
+          const customerLoansRes = await axios.get(`${API_BASE_URL}/customers/${loanRes.data.loan.customer_id}/loans`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           setAllLoans(customerLoansRes.data);
@@ -48,7 +49,7 @@ const LoanStatement = () => {
 
   useEffect(() => {
     if (!customerId) return;
-    axios.get(`http://localhost:5001/customers/${customerId}/loans`, {
+    axios.get(`${API_BASE_URL}/customers/${customerId}/loans`, {
       headers: { Authorization: `Bearer ${token}` },
     })
     .then(res => setAllLoans(res.data))
@@ -149,7 +150,7 @@ const LoanStatement = () => {
               const notes = prompt("Notas adicionales (opcional):");
 
               try {
-                await axios.post(`http://localhost:5001/inventory-items/${loan.inventory_item_id}/repossess`, {
+                await axios.post(`${API_BASE_URL}/inventory-items/${loan.inventory_item_id}/repossess`, {
                   estimated_value,
                   notes,
                 }, {

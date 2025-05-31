@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Layout from "../components/Layout";
 import { useSearchParams } from "react-router-dom";
+import { API_BASE_URL } from "../utils/constants";
 
 const BalanceSheet = () => {
   const [searchParams] = useSearchParams();
@@ -66,7 +67,7 @@ const BalanceSheet = () => {
     const fetchData = async () => {
       console.log("Fetching weekly balance sheet from backend with:", { month, year });
       try {
-        const res = await axios.get(`http://localhost:5001/balance-sheet-weekly`, {
+        const res = await axios.get(`${API_BASE_URL}/balance-sheet-weekly`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           }

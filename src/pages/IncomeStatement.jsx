@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import { API_BASE_URL } from "../utils/constants";
 import Layout from "../components/Layout";
 
 const IncomeStatement = () => {
@@ -14,7 +14,7 @@ const IncomeStatement = () => {
         const month = today.getMonth() + 1;
         const year = today.getFullYear();
 
-        const res = await axios.get(`http://localhost:5001/income-statement?month=${month}&year=${year}&details=true`, {
+        const res = await axios.get(`${API_BASE_URL}/income-statement?month=${month}&year=${year}&details=true`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setStatement(res.data);

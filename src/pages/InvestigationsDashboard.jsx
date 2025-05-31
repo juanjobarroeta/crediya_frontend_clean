@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Layout from "../components/Layout";
+import { API_BASE_URL } from "../utils/constants";
 
 const InvestigationsDashboard = () => {
   const [investigations, setInvestigations] = useState([]);
@@ -18,7 +19,7 @@ const InvestigationsDashboard = () => {
       setLoading(true);
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch("http://localhost:5001/investigations", {
+        const response = await fetch(`${API_BASE_URL}/investigations`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -38,7 +39,7 @@ const InvestigationsDashboard = () => {
     const fetchLoanRequests = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch("http://localhost:5001/loan-requests", {
+        const response = await fetch(`${API_BASE_URL}/loan-requests`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await response.json();
@@ -51,7 +52,7 @@ const InvestigationsDashboard = () => {
     const fetchGarantias = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch("http://localhost:5001/garantias", {
+        const response = await fetch(`${API_BASE_URL}/garantias`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await response.json();
@@ -64,7 +65,7 @@ const InvestigationsDashboard = () => {
     const fetchEntregas = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch("http://localhost:5001/entregas", {
+        const response = await fetch(`${API_BASE_URL}/entregas`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await response.json();

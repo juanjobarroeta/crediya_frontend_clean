@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Layout from "../components/Layout";
+import { API_BASE_URL } from "../utils/constants";
 
 const AccountingEntries = () => {
   const [entries, setEntries] = useState([]);
@@ -8,7 +9,7 @@ const AccountingEntries = () => {
 
   const fetchEntries = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/accounting", {
+      const res = await axios.get(`${API_BASE_URL}/accounting`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setEntries(res.data);

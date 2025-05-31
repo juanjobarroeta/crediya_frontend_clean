@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Layout from "../components/Layout";
+import { API_BASE_URL } from "../utils/constants";
 
 const CreateCustomer = () => {
   const [form, setForm] = useState({
@@ -43,7 +44,7 @@ const CreateCustomer = () => {
     if (bureauFile) formData.append("bureau", bureauFile);
 
     try {
-      const res = await fetch("http://localhost:5001/customers/upload", {
+      const res = await fetch(`${API_BASE_URL}/customers/upload`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

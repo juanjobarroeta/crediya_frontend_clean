@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../utils/constants";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Layout from "../components/Layout";
@@ -20,7 +21,7 @@ const AdminApprovals = () => {
   useEffect(() => {
     const fetchRequests = async () => {
       try {
-        const res = await axios.get("http://localhost:5001/inventory-requests", {
+        const res = await axios.get(`${API_BASE_URL}/inventory-requests`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
@@ -40,7 +41,7 @@ const AdminApprovals = () => {
   useEffect(() => {
     const fetchExpenses = async () => {
       try {
-        const res = await axios.get("http://localhost:5001/expenses", {
+        const res = await axios.get(`${API_BASE_URL}/expenses`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
@@ -58,12 +59,12 @@ const AdminApprovals = () => {
     if (type === "expense") {
       const endpoint = action === "approve" ? "approve" : "cancel";
       try {
-        await axios.put(`http://localhost:5001/expenses/${id}/${endpoint}`, {}, {
+      await axios.put(`${API_BASE_URL}/expenses/${id}/${endpoint}`, {}, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         });
-        const res = await axios.get("http://localhost:5001/expenses", {
+      const res = await axios.get(`${API_BASE_URL}/expenses`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
@@ -83,13 +84,13 @@ const AdminApprovals = () => {
     };
 
     try {
-      await axios.put(`http://localhost:5001/inventory-requests/${id}/${endpoints[action]}`, {}, {
+      await axios.put(`${API_BASE_URL}/inventory-requests/${id}/${endpoints[action]}`, {}, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
       // Refresh data
-      const res = await axios.get("http://localhost:5001/inventory-requests", {
+      const res = await axios.get(`${API_BASE_URL}/inventory-requests`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
@@ -124,7 +125,7 @@ const AdminApprovals = () => {
                   <p>
                     <strong>Cotización: </strong>
                     <a
-                      href={`http://localhost:5001/uploads/${req.quote_path}`}
+                      href={`${API_BASE_URL}/uploads/${req.quote_path}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-400 hover:underline"
@@ -175,7 +176,7 @@ const AdminApprovals = () => {
                   <p>
                     <strong>Cotización:</strong>{" "}
                     <a
-                      href={`http://localhost:5001/uploads/${e.quote_path}`}
+                      href={`${API_BASE_URL}/uploads/${e.quote_path}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-400 hover:underline"

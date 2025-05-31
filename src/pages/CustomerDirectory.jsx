@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import Layout from "../components/Layout";
+import { API_BASE_URL } from "../utils/constants";
 
 const CustomerDirectory = () => {
   const [customers, setCustomers] = useState([]);
@@ -11,7 +12,7 @@ const CustomerDirectory = () => {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const res = await axios.get("http://localhost:5001/customers", {
+        const res = await axios.get(`${API_BASE_URL}/customers`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setCustomers(res.data);

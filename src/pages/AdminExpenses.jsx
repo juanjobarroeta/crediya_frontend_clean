@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../utils/constants";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Layout from "../components/Layout";
@@ -16,7 +17,7 @@ const AdminExpenses = () => {
 
   const fetchExpenses = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/expenses", {
+      const res = await axios.get(`${API_BASE_URL}/expenses`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setExpenses(res.data);
@@ -46,8 +47,7 @@ const AdminExpenses = () => {
       if (quoteFile) {
         formData.append("quote", quoteFile);
       }
-
-      await axios.post("http://localhost:5001/expenses", formData, {
+      await axios.post(`${API_BASE_URL}/expenses`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",

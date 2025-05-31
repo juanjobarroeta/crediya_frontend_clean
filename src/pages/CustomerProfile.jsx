@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import Layout from "../components/Layout";
 import axios from "axios";
+import { API_BASE_URL } from "../utils/constants";
 
 const CustomerProfile = () => {
   const { id } = useParams();
@@ -13,7 +14,7 @@ const CustomerProfile = () => {
   useEffect(() => {
     const fetchCustomer = async () => {
       try {
-        const res = await axios.get(`http://localhost:5001/customers/${id}/profile`, {
+        const res = await axios.get(`${API_BASE_URL}/customers/${id}/profile`, {
           headers: { Authorization: "Bearer " + localStorage.getItem("token") },
         });
         setCustomer(res.data);
@@ -28,7 +29,7 @@ const CustomerProfile = () => {
 
     const fetchLoans = async () => {
       try {
-        const res = await axios.get(`http://localhost:5001/customers/${id}/loans`, {
+        const res = await axios.get(`${API_BASE_URL}/customers/${id}/loans`, {
           headers: { Authorization: "Bearer " + localStorage.getItem("token") },
         });
         setLoans(res.data);

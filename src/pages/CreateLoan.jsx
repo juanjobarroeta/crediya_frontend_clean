@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../utils/constants";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Layout from "../components/Layout";
@@ -17,13 +18,13 @@ const CreateLoan = () => {
   const fetchData = async () => {
     try {
       const [cRes, pRes, fRes] = await Promise.all([
-        axios.get("http://localhost:5001/customers", {
+        axios.get(`${API_BASE_URL}/customers`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        axios.get("http://localhost:5001/inventory-items", {
+        axios.get(`${API_BASE_URL}/inventory-items`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        axios.get("http://localhost:5001/financial-products", {
+        axios.get(`${API_BASE_URL}/financial-products`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -137,7 +138,7 @@ const CreateLoan = () => {
               className="mt-4 bg-lime-500 hover:bg-lime-600 text-black font-bold px-6 py-2 rounded transition"
               onClick={async () => {
                 try {
-                  const res = await axios.post("http://localhost:5001/apply-loan", {
+                  const res = await axios.post(`${API_BASE_URL}/apply-loan`, {
                     customer_id: selectedCustomer,
                     inventory_item_id: selectedProduct,
                     amount: principal,

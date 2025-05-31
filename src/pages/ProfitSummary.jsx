@@ -10,6 +10,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import { API_BASE_URL } from "../utils/constants";
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
@@ -35,7 +36,7 @@ const ProfitSummary = () => {
     const y = parseInt(year);
     if (!m || !y || m < 1 || m > 12) return;
     try {
-      const res = await axios.get(`http://localhost:5001/income-statement?month=${month}&year=${year}`, {
+      const res = await axios.get(`${API_BASE_URL}/income-statement?month=${month}&year=${year}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setSummary(res.data);
@@ -49,7 +50,7 @@ const ProfitSummary = () => {
     const y = parseInt(compareYear);
     if (!m || !y || m < 1 || m > 12) return;
     try {
-      const res = await axios.get(`http://localhost:5001/income-statement?month=${compareMonth}&year=${compareYear}`, {
+      const res = await axios.get(`${API_BASE_URL}/income-statement?month=${compareMonth}&year=${compareYear}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCompareSummary(res.data);
