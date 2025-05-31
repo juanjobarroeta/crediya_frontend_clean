@@ -114,19 +114,6 @@ const RegisterPayment = () => {
         onChange={handleSearch}
       />
 
-      <div className="mb-4">
-        <h5>Scan Customer QR Code</h5>
-        <QrReader
-          delay={300}
-          onError={(err) => console.error("QR Scan Error:", err)}
-          onScan={(data) => {
-            if (data) {
-              setSearchTerm(data);
-            }
-          }}
-          style={{ width: "100%" }}
-        />
-      </div>
 
       {matchingLoans.length > 0 && (
         <div className="max-h-64 overflow-y-auto border border-crediyaGreen rounded-lg mb-4">
