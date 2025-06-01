@@ -18,6 +18,7 @@ const Auth = () => {
       const endpoint = isLogin ? "/login" : "/register";
       const res = await axios.post(`${API_BASE_URL}${endpoint}`, form);
       localStorage.setItem("token", res.data.token);
+      console.log("Token received:", res.data.token);
       setMessage(res.data.message);
       window.location.href = "/dashboard";
     } catch (error) {
