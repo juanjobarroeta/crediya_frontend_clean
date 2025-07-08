@@ -23,6 +23,7 @@ import AdminApprovals from "./pages/AdminApprovals";
 import AdminInventoryViewer from "./pages/AdminInventoryViewer";
 import AdminManualEntry from "./pages/AdminManualEntry";
 import Tesoreria from "./pages/Tesorería";
+import ReclassifyPayment from "./pages/ReclassifyPayment";
 import IncomeStatement from "./pages/IncomeStatement";
 import RecepcionInventario from "./pages/RecepcionInventario";
 import AssignIMEI from "./pages/AssignIMEI";
@@ -32,6 +33,13 @@ import AccountBalances from "./pages/AccountBalances";
 import LoanRequest from "./pages/LoanRequest";
 import InvestigationsDashboard from "./pages/InvestigationsDashboard";
 import InvestigationStepper from "./pages/InvestigationStepper";
+import OverdueLoans from "./pages/OverdueLoans";
+import AccountingAdmin from "./pages/AccountingAdmin";
+import LoanDetails from "./pages/LoanDetails";
+import LoanApplicationDetails from "./components/LoanApplicationDetails";
+import CollectionsDashboard from "./pages/CollectionsDashboard";
+import ProductProfile from "./pages/ProductProfile";
+import CreateUser from "./pages/CreateUser";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -70,9 +78,19 @@ const AppRouter = () => (
       <Route path="/create-loan" element={<ProtectedRoute><CreateLoan /></ProtectedRoute>} />
       <Route path="/create-customer" element={<ProtectedRoute><CreateCustomer /></ProtectedRoute>} />
       <Route path="/admin/loans" element={<AdminRoute><LoanApprovals /></AdminRoute>} />
+      <Route
+        path="/admin/loan-applications/:id"
+        element={
+          <AdminRoute>
+            <LoanApplicationDetails />
+          </AdminRoute>
+        }
+      />
       <Route path="/accounting" element={<AdminRoute><AccountingEntries /></AdminRoute>} />
+      <Route path="/admin/accounting" element={<AdminRoute><AccountingAdmin /></AdminRoute>} />
       <Route path="/register-payment" element={<ProtectedRoute><RegisterPayment /></ProtectedRoute>} />
-      <Route path="/loan/:id/statement" element={<ProtectedRoute><LoanStatement /></ProtectedRoute>} />
+      <Route path="/loans/:id/statement" element={<ProtectedRoute><LoanStatement /></ProtectedRoute>} />
+      <Route path="/loans/:loan_id/details" element={<ProtectedRoute><LoanDetails /></ProtectedRoute>} />
       <Route path="/crm" element={<ProtectedRoute><CustomerDirectory /></ProtectedRoute>} />
       <Route path="/registro" element={<PublicRegister />} />
       <Route path="/admin/promotions" element={<AdminRoute><AdminPromotions /></AdminRoute>} />
@@ -98,7 +116,7 @@ const AppRouter = () => (
           </ProtectedRoute>
         }
       />
-
+      <Route path="/inventory/:id" element={<ProtectedRoute><ProductProfile /></ProtectedRoute>} />
       <Route
         path="/balance-sheet"
         element={
@@ -122,7 +140,18 @@ const AppRouter = () => (
       <Route path="/admin/generate-contract" element={<AdminRoute><GenerateContract /></AdminRoute>} />
       <Route path="/loan-quotes" element={<ProtectedRoute><LoanQuotes /></ProtectedRoute>} />
       <Route path="/admin/investigations" element={<AdminRoute><InvestigationsDashboard /></AdminRoute>} />
+      <Route path="/admin/overdue-loans" element={<AdminRoute><OverdueLoans /></AdminRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/admin/reclassify-payment" element={<AdminRoute><ReclassifyPayment /></AdminRoute>} />
+      <Route
+        path="/admin/collections"
+        element={
+          <AdminRoute>
+            <CollectionsDashboard />
+          </AdminRoute>
+        }
+      />
+      <Route path="/admin/create-user" element={<AdminRoute><CreateUser /></AdminRoute>} />
       <Route path="*" element={<Navigate to="/auth" replace />} />
     </Routes>
   </Router>

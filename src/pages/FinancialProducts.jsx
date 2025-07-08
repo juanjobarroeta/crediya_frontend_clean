@@ -75,26 +75,80 @@ const FinancialProducts = () => {
 
       <form className="mb-5" onSubmit={handleSubmit}>
         <div className="row g-3">
-          {[
-            ["title", "Nombre del producto"],
-            ["interest_rate", "Tasa de interés (%)"],
-            ["term_weeks", "Plazo (semanas)"],
-            ["payment_frequency", "Frecuencia de pago"],
-            ["penalty_fee", "Penalización ($)"],
-            ["down_payment", "Enganche ($)"],
-            ["notes", "Notas"],
-          ].map(([name, label]) => (
-            <div className="col-md-4" key={name}>
-              <input
-                type="text"
-                className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900"
-                name={name}
-                value={form[name]}
-                placeholder={label}
-                onChange={handleChange}
-              />
-            </div>
-          ))}
+          <div className="col-md-4">
+            <input
+              type="text"
+              className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900"
+              name="title"
+              value={form.title}
+              placeholder="Nombre del producto"
+              onChange={handleChange}
+            />
+          </div>
+          <div className="col-md-4">
+            <input
+              type="text"
+              className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900"
+              name="interest_rate"
+              value={form.interest_rate}
+              placeholder="Tasa de interés (%)"
+              onChange={handleChange}
+            />
+          </div>
+          <div className="col-md-4">
+            <input
+              type="text"
+              className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900"
+              name="term_weeks"
+              value={form.term_weeks}
+              placeholder="Plazo (semanas)"
+              onChange={handleChange}
+            />
+          </div>
+          <div className="col-md-4">
+            <select
+              className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900"
+              name="payment_frequency"
+              value={form.payment_frequency}
+              onChange={handleChange}
+            >
+              <option value="">Frecuencia de pago</option>
+              <option value="diario">Diario</option>
+              <option value="semanal">Semanal</option>
+              <option value="quincenal">Quincenal</option>
+              <option value="mensual">Mensual</option>
+            </select>
+          </div>
+          <div className="col-md-4">
+            <input
+              type="text"
+              className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900"
+              name="penalty_fee"
+              value={form.penalty_fee}
+              placeholder="Penalización ($)"
+              onChange={handleChange}
+            />
+          </div>
+          <div className="col-md-4">
+            <input
+              type="text"
+              className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900"
+              name="down_payment"
+              value={form.down_payment}
+              placeholder="Enganche ($)"
+              onChange={handleChange}
+            />
+          </div>
+          <div className="col-md-4">
+            <input
+              type="text"
+              className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900"
+              name="notes"
+              value={form.notes}
+              placeholder="Notas"
+              onChange={handleChange}
+            />
+          </div>
         </div>
         <button type="submit" className="mt-4 bg-lime-500 hover:bg-lime-600 text-black font-medium py-2 px-4 rounded">
           Agregar producto financiero

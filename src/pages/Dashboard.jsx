@@ -3,12 +3,35 @@ import axios from "axios";
 import { Link } from "react-router-dom"; // Import Link from react-router-dom
 import Layout from "../components/Layout";
 import { API_BASE_URL } from "../utils/constants";
+import { Line } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 const Dashboard = () => {
   const [loans, setLoans] = useState([]);
   const [payments, setPayments] = useState({});
   const [paymentAmount, setPaymentAmount] = useState({});
   const [customers, setCustomers] = useState([]);
+  const [metrics, setMetrics] = useState({
+    customers: 0,
+    loansIssued: 0,
+    capitalLoaned: 0,
+    interestToCollect: 0,
+    overdueAmount: 0,
+    customersOverdue: 0,
+  });
+  const [overdueTrends, setOverdueTrends] = useState([]);
+  const [cashflowPeriod, setCashflowPeriod] = useState("week");
   const token = localStorage.getItem("token");
 
   const fetchLoans = async () => {
@@ -75,208 +98,228 @@ const Dashboard = () => {
     fetchCustomers();
   }, []);
 
+  useEffect(() => {
+    const fetchDashboardMetrics = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/dashboard-metrics`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        console.log("📊 METRICS FROM BACKEND:", res.data);
+        // Map backend keys to frontend keys
+        const mapped = {
+          customers: res.data.customers,
+          loansIssued: res.data.loansIssued,
+          capitalLoaned: res.data.capitalLoaned,
+          interestToCollect: res.data.interestToCollect,
+          overdueAmount: res.data.overdueAmount,
+          customersOverdue: res.data.customersOverdue,
+          overdueCustomersTable: res.data.overdueCustomersTable || [],
+          totalCollectedToday: res.data.totalCollectedToday,
+          totalDisbursedToday: res.data.totalDisbursedToday,
+          netCashFlowToday: res.data.netCashFlowToday,
+          storeComparison: res.data.storeComparison || [],
+        };
+        setMetrics(mapped);
+      } catch (err) {
+        console.error("Error fetching dashboard metrics:", err);
+      }
+    };
+    const fetchTrends = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/dashboard/overdue-trends`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setOverdueTrends(res.data);
+      } catch (err) {
+        console.error("Error fetching overdue trends:", err);
+      }
+    };
+    fetchDashboardMetrics();
+    fetchTrends();
+  }, []);
+
+  useEffect(() => {
+    const fetchCashflow = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/dashboard/cashflow-summary?period=${cashflowPeriod}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setMetrics(prev => ({
+          ...prev,
+          totalCollectedToday: res.data.totalCollected,
+          totalDisbursedToday: res.data.totalDisbursed,
+          netCashFlowToday: res.data.netCashFlow
+        }));
+      } catch (err) {
+        console.error("Error fetching filtered cashflow:", err);
+      }
+    };
+    fetchCashflow();
+  }, [cashflowPeriod]);
+
   return (
     <Layout>
-    <div className="container mt-5">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>Mis Préstamos</h2>
-        <div className="mb-4">
-          <h4>Solicitar nuevo préstamo</h4>
-          <div className="row g-2 align-items-center mb-3">
-            <div className="col-auto">
-              <select
-                className="form-select"
-                value={paymentAmount.newCustomer || ""}
-                onChange={(e) => handlePaymentChange("newCustomer", e.target.value)}
-              >
-                <option value="">Selecciona un cliente</option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.name} ({customer.id}) - {customer.email}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="col-auto">
-              <input
-                type="number"
-                className="form-control"
-                placeholder="Monto ($)"
-                value={paymentAmount.newAmount || ""}
-                onChange={(e) => handlePaymentChange("newAmount", e.target.value)}
-              />
-            </div>
-            <div className="col-auto">
-              <input
-                type="number"
-                className="form-control"
-                placeholder="Término (semanas)"
-                value={paymentAmount.newTerm || ""}
-                onChange={(e) => handlePaymentChange("newTerm", e.target.value)}
-              />
-            </div>
-            <div className="col-auto">
-              <button
-                className="btn btn-primary"
-                onClick={async () => {
-                  try {
-                    const res = await axios.post(
-                      `${API_BASE_URL}/apply-loan`,
-                      {
-                        amount: paymentAmount.newAmount,
-                        term: paymentAmount.newTerm,
-                        customer_id: paymentAmount.newCustomer,
-                      },
-                      {
-                        headers: { Authorization: `Bearer ${token}` },
-                      }
-                    );
-                    alert("Préstamo solicitado con éxito ✅");
-                    fetchLoans();
-                  } catch (error) {
-                    alert("Error al solicitar préstamo ❌");
-                    console.error(error);
-                  }
-                }}
-              >
-                Solicitar
-              </button>
-            </div>
-          </div>
-        </div>
-        <button className="btn btn-danger" onClick={logout}>
-          Cerrar Sesión
-        </button>
-      </div>
-      <div className="mb-5">
-        <h4>Registrar nuevo cliente</h4>
-        <div className="row g-2 align-items-center mb-3">
-          <div className="col-auto">
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Nombre"
-              value={paymentAmount.newCustomerName || ""}
-              onChange={(e) => handlePaymentChange("newCustomerName", e.target.value)}
-            />
-          </div>
-          <div className="col-auto">
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Teléfono"
-              value={paymentAmount.newCustomerPhone || ""}
-              onChange={(e) => handlePaymentChange("newCustomerPhone", e.target.value)}
-            />
-          </div>
-          <div className="col-auto">
-            <input
-              type="email"
-              className="form-control"
-              placeholder="Correo"
-              value={paymentAmount.newCustomerEmail || ""}
-              onChange={(e) => handlePaymentChange("newCustomerEmail", e.target.value)}
-            />
-          </div>
-          <div className="col-auto">
-            <button
-              className="btn btn-outline-success"
-              onClick={async () => {
-                try {
-                  const res = await axios.post(
-                    `${API_BASE_URL}/customers`,
-                    {
-                      name: paymentAmount.newCustomerName,
-                      phone: paymentAmount.newCustomerPhone,
-                      email: paymentAmount.newCustomerEmail,
-                    },
-                    {
-                      headers: { Authorization: `Bearer ${token}` },
-                    }
-                  );
-                  alert("Cliente registrado ✅");
-                  fetchCustomers();
-                } catch (error) {
-                  alert("Error al registrar cliente ❌");
-                  console.error(error);
-                }
-              }}
-            >
-              Registrar Cliente
-            </button>
-          </div>
-        </div>
-      </div>
-      {loans.length === 0 ? (
-        <p>No tienes préstamos registrados.</p>
-      ) : (
-        <div className="accordion" id="loansAccordion">
-          {loans.map((loan) => (
-            <div className="accordion-item" key={loan.id}>
-              <h2 className="accordion-header" id={`heading${loan.id}`}>
-                <button
-                  className="accordion-button collapsed"
-                  type="button"
-                  data-bs-toggle="collapse"
-                  data-bs-target={`#collapse${loan.id}`}
-                  aria-expanded="false"
-                  aria-controls={`collapse${loan.id}`}
-                  onClick={() => fetchPayments(loan.id)}
-                >
-                  Préstamo #{loan.id} - ${loan.amount} ({loan.status}) {loan.customer_name ? <Link to={`/customer/${loan.customer_id}`}>{loan.customer_name}</Link> : ""}
-                </button>
-              </h2>
-              <div
-                id={`collapse${loan.id}`}
-                className="accordion-collapse collapse"
-                aria-labelledby={`heading${loan.id}`}
-                data-bs-parent="#loansAccordion"
-              >
-                <div className="accordion-body">
-                  <p><strong>Término:</strong> {loan.term} semanas</p>
-                  <p><strong>Fecha de Vencimiento:</strong> {new Date(loan.due_date).toLocaleDateString()}</p>
-                  <p><strong>Cargo por Mora:</strong> ${loan.late_fee}</p>
-
-                  <h5 className="mt-4">Pagos Realizados</h5>
-                  {payments[loan.id] && payments[loan.id].length > 0 ? (
-                    <ul className="list-group mb-3">
-                      {payments[loan.id].map((p) => (
-                        <li key={p.id} className="list-group-item">
-                          ${p.amount} - {new Date(p.payment_date).toLocaleDateString()}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p>No se han registrado pagos aún.</p>
-                  )}
-
-                  <div className="input-group">
-                    <input
-                      type="number"
-                      className="form-control"
-                      placeholder="Monto del pago"
-                      value={paymentAmount[loan.id] || ""}
-                      onChange={(e) => handlePaymentChange(loan.id, e.target.value)}
-                    />
-                    <button
-                      className="btn btn-success"
-                      onClick={() => submitPayment(loan.id)}
-                    >
-                      Registrar Pago
-                    </button>
-                  </div>
-                  {loan.customer_id && (
-                    <Link to={`/customer/${loan.customer_id}`} className="btn btn-info mt-3">
-                      Ver perfil del cliente
-                    </Link>
-                  )}
-                </div>
-              </div>
+      <div className="px-6 py-6 max-w-6xl mx-auto">
+        <h2 className="mb-6 text-white text-xl font-bold">Resumen del sistema</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          {[
+            ["Clientes registrados", metrics?.customers ?? 0],
+            ["Préstamos emitidos", metrics?.loansIssued ?? 0],
+            ["Capital prestado", `$${(metrics?.capitalLoaned ?? 0).toLocaleString()}`],
+            ["Intereses por cobrar", `$${(metrics?.interestToCollect ?? 0).toLocaleString()}`],
+            ["Monto vencido", `$${(metrics?.overdueAmount ?? 0).toLocaleString()}`],
+            ["Clientes con pagos vencidos", metrics?.customersOverdue ?? 0],
+          ].map(([label, value]) => (
+            <div key={label} className="bg-black border-l-4 border-lime-500 p-4 rounded shadow">
+              <h3 className="text-white font-semibold">{label}</h3>
+              <p className="text-2xl text-lime-400">{value}</p>
             </div>
           ))}
         </div>
+        <div className="mt-10">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-white text-lg font-bold">Resumen de Flujo de Caja</h3>
+            <select
+              value={cashflowPeriod}
+              onChange={(e) => setCashflowPeriod(e.target.value)}
+              className="bg-black text-lime-400 border border-lime-500 rounded px-2 py-1"
+            >
+              <option value="day">Hoy</option>
+              <option value="week">Esta semana</option>
+              <option value="month">Este mes</option>
+              <option value="ytd">Año en curso</option>
+            </select>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="bg-black border-l-4 border-lime-500 p-4 rounded shadow">
+              <h4 className="text-white font-semibold">Total Cobrado Hoy</h4>
+              <p className="text-2xl text-lime-400">${(metrics.totalCollectedToday ?? 0).toLocaleString()}</p>
+            </div>
+            <div className="bg-black border-l-4 border-lime-500 p-4 rounded shadow">
+              <h4 className="text-white font-semibold">Total Prestado Hoy</h4>
+              <p className="text-2xl text-lime-400">${(metrics.totalDisbursedToday ?? 0).toLocaleString()}</p>
+            </div>
+            <div className={`bg-black border-l-4 p-4 rounded shadow ${metrics.netCashFlowToday >= 0 ? 'border-lime-500' : 'border-red-500'}`}>
+              <h4 className="text-white font-semibold">Flujo Neto de Caja</h4>
+              <p className={`text-2xl ${metrics.netCashFlowToday >= 0 ? 'text-lime-400' : 'text-red-400'}`}>
+                ${Math.abs(metrics.netCashFlowToday ?? 0).toLocaleString()}
+              </p>
+            </div>
+          </div>
+          <div className="mt-2">
+            <Link to="/tesoreria" className="text-lime-400 underline text-sm">Ver flujo completo de caja →</Link>
+          </div>
+        </div>
+      </div>
+      {metrics.storeComparison && metrics.storeComparison.length > 0 && (
+        <div className="mt-10 px-6 max-w-6xl mx-auto">
+          <h3 className="text-white text-lg font-bold mb-4">Comparativa por Sucursal</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm text-white bg-black border border-crediyaGreen">
+              <thead>
+                <tr className="bg-gray-900 text-lime-400">
+                  <th className="px-4 py-2 text-left">Sucursal</th>
+                  <th className="px-4 py-2 text-left">Préstamos Activos</th>
+                  <th className="px-4 py-2 text-left">Préstamos Vencidos</th>
+                  <th className="px-4 py-2 text-left">Capital Prestado</th>
+                  <th className="px-4 py-2 text-left">Préstamo Promedio</th>
+                  <th className="px-4 py-2 text-left">Tasa de Cobranza</th>
+                </tr>
+              </thead>
+              <tbody>
+                {metrics.storeComparison.map((sucursal) => (
+                  <tr key={sucursal.store} className="border-t border-crediyaGreen">
+                    <td className="px-4 py-2">{sucursal.store}</td>
+                    <td className="px-4 py-2">{sucursal.active_loans}</td>
+                    <td className="px-4 py-2">{sucursal.overdue_loans}</td>
+                    <td className="px-4 py-2">${parseFloat(sucursal.capital_lent).toLocaleString()}</td>
+                    <td className="px-4 py-2">${parseFloat(sucursal.avg_loan_size).toLocaleString()}</td>
+                    <td className="px-4 py-2">{parseFloat(sucursal.collection_rate).toFixed(2)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
-    </div>
+      {metrics.overdueCustomersTable && metrics.overdueCustomersTable.length > 0 && (
+        <div className="mt-10 px-6 max-w-6xl mx-auto">
+          <h3 className="text-white text-lg font-bold mb-4">Clientes con pagos vencidos</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm text-white bg-black border border-crediyaGreen">
+              <thead>
+                <tr className="bg-gray-900 text-lime-400">
+                  <th className="px-4 py-2 text-left">Cliente</th>
+                  <th className="px-4 py-2 text-left">Teléfono</th>
+                  <th className="px-4 py-2 text-left">Pagos Vencidos</th>
+                  <th className="px-4 py-2 text-left">Monto Total Vencido</th>
+                </tr>
+              </thead>
+              <tbody>
+                {metrics.overdueCustomersTable.map((c) => (
+                  <tr key={c.customer_id} className="border-t border-crediyaGreen">
+                    <td className="px-4 py-2">{c.first_name} {c.last_name}</td>
+                    <td className="px-4 py-2">{c.phone}</td>
+                    <td className="px-4 py-2">{c.overdue_installments}</td>
+                    <td className="px-4 py-2">${parseFloat(c.total_overdue).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+      {overdueTrends.length > 0 && (
+        <div className="mt-10 px-6 max-w-6xl mx-auto">
+          <h3 className="text-white text-lg font-bold mb-4">Tendencia de Pagos Vencidos</h3>
+          <div className="bg-black p-4 rounded">
+            <Line
+              data={{
+                labels: overdueTrends.map(row => new Date(row.week_start).toLocaleDateString()),
+                datasets: [
+                  {
+                    label: "Monto vencido por semana",
+                    data: overdueTrends.map(row => parseFloat(row.total_due)),
+                    borderColor: "rgb(132, 204, 22)",
+                    backgroundColor: "rgba(132, 204, 22, 0.2)",
+                  },
+                ],
+              }}
+            />
+          </div>
+        </div>
+      )}
+      {metrics.storeComparison && metrics.storeComparison.length > 0 && (
+        <div className="mt-10 px-6 max-w-6xl mx-auto">
+          <h3 className="text-white text-lg font-bold mb-4">Comparativa por Sucursal</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm text-white bg-black border border-crediyaGreen">
+              <thead>
+                <tr className="bg-gray-900 text-lime-400">
+                  <th className="px-4 py-2 text-left">Sucursal</th>
+                  <th className="px-4 py-2 text-left">Préstamos Activos</th>
+                  <th className="px-4 py-2 text-left">Préstamos Vencidos</th>
+                  <th className="px-4 py-2 text-left">Capital Prestado</th>
+                  <th className="px-4 py-2 text-left">Préstamo Promedio</th>
+                  <th className="px-4 py-2 text-left">Tasa de Cobranza</th>
+                </tr>
+              </thead>
+              <tbody>
+                {metrics.storeComparison.map((sucursal) => (
+                  <tr key={sucursal.store} className="border-t border-crediyaGreen">
+                    <td className="px-4 py-2">{sucursal.store}</td>
+                    <td className="px-4 py-2">{sucursal.active_loans}</td>
+                    <td className="px-4 py-2">{sucursal.overdue_loans}</td>
+                    <td className="px-4 py-2">${parseFloat(sucursal.capital_lent).toLocaleString()}</td>
+                    <td className="px-4 py-2">${parseFloat(sucursal.avg_loan_size).toLocaleString()}</td>
+                    <td className="px-4 py-2">{parseFloat(sucursal.collection_rate).toFixed(2)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };

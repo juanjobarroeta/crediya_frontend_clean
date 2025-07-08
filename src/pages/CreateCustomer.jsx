@@ -138,7 +138,7 @@ const CreateCustomer = () => {
               type="text"
               className="w-full max-w-md mb-4 border border-crediyaGreen bg-black text-white p-2 rounded"
               name="curp"
-              placeholder="CURP / RFC"
+              placeholder="RFC"
               value={form.curp}
               onChange={handleChange}
             />

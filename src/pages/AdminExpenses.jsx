@@ -167,11 +167,13 @@ const AdminExpenses = () => {
         <tbody>
           {expenses.map((e) => (
             <tr key={e.id} className="border-t border-crediyaGreen bg-black">
-              <td className="p-2 border border-crediyaGreen">{new Date(e.created_at).toLocaleDateString()}</td>
-              <td className="p-2 border border-crediyaGreen">{e.store_id}</td>
-              <td className="p-2 border border-crediyaGreen">{e.type}</td>
-              <td className="p-2 border border-crediyaGreen">${e.amount}</td>
-              <td className="p-2 border border-crediyaGreen">{e.description}</td>
+              <td className="p-2 border border-crediyaGreen">{e.created_at ? new Date(e.created_at).toLocaleDateString() : "Sin fecha"}</td>
+              <td className="p-2 border border-crediyaGreen">{e.store_name || (e.store_id ? `ID ${e.store_id}` : "Sin sucursal")}</td>
+              <td className="p-2 border border-crediyaGreen">{e.type || "Sin tipo"}</td>
+              <td className="p-2 border border-crediyaGreen text-right">
+                ${e.amount ? parseFloat(e.amount).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "0.00"}
+              </td>
+              <td className="p-2 border border-crediyaGreen">{e.description || "Sin descripción"}</td>
             </tr>
           ))}
         </tbody>

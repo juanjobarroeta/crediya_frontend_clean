@@ -155,9 +155,9 @@ const Tesoreria = () => {
           {expensesDueTodayOrOverdue.map((expense) => (
             <tr key={expense.id}>
               <td>{expense.id}</td>
-              <td>{expense.category}</td>
-              <td>${expense.amount}</td>
-              <td>{expense.notes}</td>
+              <td>{expense.type || "-"}</td>
+              <td>${parseFloat(expense.amount || 0).toLocaleString()}</td>
+              <td>{expense.description || "-"}</td>
               <td>
                 <input
                   type="file"
@@ -201,9 +201,9 @@ const Tesoreria = () => {
           {expensesNotYetDue.map((expense) => (
             <tr key={expense.id}>
               <td>{expense.id}</td>
-              <td>{expense.category}</td>
-              <td>${expense.amount}</td>
-              <td>{expense.notes}</td>
+              <td>{expense.type || "-"}</td>
+              <td>${parseFloat(expense.amount || 0).toLocaleString()}</td>
+              <td>{expense.description || "-"}</td>
               <td>
                 <input
                   type="file"

@@ -1,121 +1,151 @@
 import React, { useEffect, useState } from "react";
 import { API_BASE_URL } from "../utils/constants";
 import Layout from "../components/Layout";
+import axios from "axios";
 
 const IncomeStatement = () => {
   const [statement, setStatement] = useState(null);
-  const [expandedTypes, setExpandedTypes] = useState({});
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [store, setStore] = useState("");
   const token = localStorage.getItem("token");
 
   useEffect(() => {
-    const fetchStatement = async () => {
-      try {
-        const today = new Date();
-        const month = today.getMonth() + 1;
-        const year = today.getFullYear();
-
-        const res = await axios.get(`${API_BASE_URL}/income-statement?month=${month}&year=${year}&details=true`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setStatement(res.data);
-        console.log("📦 Full Income Statement Response:", JSON.stringify(res.data, null, 2));
-        console.log("📊 Income Statement Data:", res.data);
-        console.log("Statement at render:", res.data);
-      } catch (err) {
-        console.error("Error fetching income statement:", err);
-      }
-    };
-
-    fetchStatement();
+    const today = new Date();
+    const defaultStart = "2000-01-01";
+    const defaultEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10);
+    setStartDate(defaultStart);
+    setEndDate(defaultEnd);
   }, []);
+
+  const loadData = async () => {
+    try {
+      const url = `${API_BASE_URL}/accounting/income-statement?start=${startDate}&end=${endDate}${store ? `&store=${store}` : ""}`;
+      const res = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setStatement(res.data);
+    } catch (err) {
+      console.error("Error fetching income statement:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (startDate && endDate) {
+      loadData();
+    }
+  }, [startDate, endDate]);
 
   if (!statement) return <p>Cargando estado de resultados...</p>;
 
-  const totalIncome = (statement.interestPaid || 0) + (statement.penalties || 0) + (statement.productMargin || 0);
-  const totalCOGS = statement.costOfGoods || 0;
-  const grossProfit = totalIncome - totalCOGS;
-  const totalExpenses = statement.expenses || 0;
-  const netIncome = grossProfit - totalExpenses;
-
-  const groupedDetails = Array.isArray(statement.details)
-    ? statement.details.reduce((acc, item) => {
-        if (!acc[item.type]) acc[item.type] = [];
-        acc[item.type].push(item);
-        return acc;
-      }, {})
-    : {};
+  const totalIncome = statement.INGRESO.reduce((sum, i) => sum + i.amount, 0);
+  const totalExpenses = statement.EGRESO.reduce((sum, i) => sum + Math.abs(i.amount), 0);
+  const costOfGoods = statement.EGRESO.filter(i => i.label.toLowerCase().includes("costo") || i.label.toLowerCase().includes("cogs")).reduce((sum, i) => sum + Math.abs(i.amount), 0);
+  const generalExpenses = totalExpenses - costOfGoods;
+  const grossProfit = totalIncome - costOfGoods;
+  const netIncome = grossProfit - generalExpenses;
 
   return (
     <Layout>
-      <div className="bg-[#0a0a0a] p-4 rounded-lg border border-green-400 overflow-x-auto max-w-full">
+      <div className="bg-[#0a0a0a] p-4 rounded-lg border border-green-400 overflow-x-auto w-full">
+        <div className="mb-4 flex flex-wrap items-end gap-4">
+          <div>
+            <label className="block text-white text-sm mb-1">Fecha Inicio</label>
+            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="p-2 bg-black border border-green-400 text-white rounded" />
+          </div>
+          <div>
+            <label className="block text-white text-sm mb-1">Fecha Fin</label>
+            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="p-2 bg-black border border-green-400 text-white rounded" />
+          </div>
+          <div>
+            <label className="block text-white text-sm mb-1">Sucursal</label>
+            <select value={store} onChange={e => setStore(e.target.value)} className="p-2 bg-black border border-green-400 text-white rounded">
+              <option value="">Todas</option>
+              <option value="atlixco">Atlixco</option>
+              <option value="cholula">Cholula</option>
+              <option value="chipilo">Chipilo</option>
+            </select>
+          </div>
+          <button onClick={loadData} className="bg-lime-500 hover:bg-lime-600 text-black px-4 py-2 rounded font-bold">
+            Filtrar
+          </button>
+          <button
+            onClick={() => {
+              const today = new Date();
+              const start = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
+              const end = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10);
+              setStartDate(start);
+              setEndDate(end);
+            }}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded font-bold"
+          >
+            Filtrar por mes actual
+          </button>
+          <button
+            onClick={() => {
+              const today = new Date();
+              const start = new Date(today.getFullYear(), 0, 1).toISOString().slice(0, 10);
+              const end = today.toISOString().slice(0, 10);
+              setStartDate(start);
+              setEndDate(end);
+            }}
+            className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded font-bold"
+          >
+            Filtrar Año en Curso
+          </button>
+          <button
+            onClick={async () => {
+              const confirmClose = window.confirm(`¿Cerrar el periodo del ${startDate} al ${endDate}? Esta acción moverá las utilidades a la cuenta correspondiente.`);
+              if (!confirmClose) return;
+              try {
+                const res = await axios.post(
+                  `${API_BASE_URL}/accounting/close-period`,
+                  { start: startDate, end: endDate },
+                  { headers: { Authorization: `Bearer ${token}` } }
+                );
+                alert(`✅ Periodo cerrado. Utilidad: $${res.data.netResult.toLocaleString()}`);
+                loadData();
+              } catch (err) {
+                console.error("Error closing period:", err);
+                alert("❌ Error al cerrar el periodo");
+              }
+            }}
+            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded font-bold"
+          >
+            Cerrar Periodo
+          </button>
+        </div>
         <h2 className="text-xl font-bold text-center mb-4 text-crediyaGreen">Estado de Resultados</h2>
-
-        <div className="overflow-x-scroll whitespace-nowrap mt-4">
+        <div className="flex flex-col items-center w-full">
           <table className="min-w-max text-sm text-white border border-green-400">
             <thead>
               <tr className="bg-crediyaGreen text-black">
                 <th className="p-2 text-left">Cuenta</th>
-                {statement.weeklyBreakdown.map((week, index) => (
-                  <th key={index} className="p-2 text-center">Semana {index + 1}<br /><span className="text-xs">({week.range})</span></th>
-                ))}
-                <th className="p-2 text-center font-bold">Total</th>
+                <th className="p-2 text-right">Monto</th>
               </tr>
             </thead>
             <tbody>
-              {[
-                { label: "Ingresos", key: "income", compute: w => (w.interestPaid || 0) + (w.penalties || 0) + (w.productMargin || 0) },
-                { label: "Costo de Teléfonos", key: "cogs", compute: w => w.costOfGoods || 0 },
-                { label: "Utilidad Bruta", key: "gross", compute: w => ((w.interestPaid || 0) + (w.penalties || 0) + (w.productMargin || 0)) - (w.costOfGoods || 0) },
-                { label: "Gastos Generales", key: "expenses", compute: w => w.expenses || 0 },
-                { label: "Utilidad Neta", key: "net", compute: w => (((w.interestPaid || 0) + (w.penalties || 0) + (w.productMargin || 0)) - (w.costOfGoods || 0)) - (w.expenses || 0) }
-              ].map((row, idx) => (
-                <tr key={idx} className="border-t border-green-400">
-                  <td className="p-2 font-bold">{row.label}</td>
-                  {statement.weeklyBreakdown.map((week, i) => (
-                    <td key={i} className="p-2 text-right">${row.compute(week).toFixed(2)}</td>
-                  ))}
-                  <td className="p-2 text-right font-bold">
-                    ${statement.weeklyBreakdown.reduce((sum, week) => sum + row.compute(week), 0).toFixed(2)}
-                  </td>
-                </tr>
+              {["INGRESO", "EGRESO"].map(type => (
+                statement?.[type]?.map((item, idx) => (
+                  <tr key={`${type}-${idx}`} className="border-t border-green-400">
+                    <td className="p-2">{item.label}</td>
+                    <td className="p-2 text-right">${item.amount.toLocaleString()}</td>
+                  </tr>
+                ))
               ))}
             </tbody>
           </table>
-        </div>
-
-        {groupedDetails && Object.keys(groupedDetails).length > 0 && (
-          <div className="mt-4">
-            <h5 className="mb-2">🔍 Detalle por Categoría</h5>
-            {Object.entries(groupedDetails).map(([type, entries]) => (
-              <div key={type} className="mt-3">
-                <button
-                  className="btn btn-sm btn-outline-secondary mb-2"
-                  onClick={() => setExpandedTypes(prev => ({ ...prev, [type]: !prev[type] }))}
-                >
-                  {expandedTypes[type] ? "Ocultar" : "Ver Detalle"} — {type}
-                </button>
-                {expandedTypes[type] && (
-                  <table className="w-full border-collapse text-sm text-white border border-green-400 rounded">
-                    <thead>
-                      <tr className="bg-crediyaGreen text-black">
-                        <th className="p-2 text-left">Descripción</th>
-                        <th className="p-2 text-right">Monto</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {entries.map((item, idx) => (
-                        <tr key={idx} className="border-t border-green-400">
-                          <td className="p-2">{item.description || "Sin descripción"}</td>
-                          <td className="p-2 text-right">${parseFloat(item.total).toLocaleString()}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            ))}
+          <div className="mt-6 text-right text-white space-y-2 w-full max-w-md">
+            <p><span className="font-bold text-lime-400">Total Ingresos:</span> ${totalIncome.toLocaleString()}</p>
+            <p><span className="font-bold text-yellow-300">Costo de Venta:</span> ${costOfGoods.toLocaleString()}</p>
+            <p><span className="font-bold text-white">Utilidad Bruta:</span> ${grossProfit.toLocaleString()}</p>
+            <p><span className="font-bold text-blue-300">Gastos Generales:</span> ${generalExpenses.toLocaleString()}</p>
+            <p>
+              <span className={`font-bold ${netIncome >= 0 ? "text-crediyaGreen" : "text-red-400"}`}>Utilidad Neta:</span>
+              ${netIncome.toLocaleString()}
+            </p>
           </div>
-        )}
+        </div>
       </div>
     </Layout>
   );

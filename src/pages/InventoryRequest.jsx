@@ -27,8 +27,9 @@ const InventoryRequest = () => {
       formData.append("category", form.category);
       formData.append("amount", form.amount);
       formData.append("notes", form.notes);
+      formData.append("store_id", form.store); // Add this line before sending formData
       if (form.quoteFile) {
-        formData.append("quoteFile", form.quoteFile);
+        formData.append("quote", form.quoteFile);
       }
 
       const res = await axios.post(`${API_BASE_URL}/inventory-requests`, formData, {
@@ -42,7 +43,7 @@ const InventoryRequest = () => {
 
       if (form.inventoryFile) {
         const inventoryData = new FormData();
-        inventoryData.append("inventoryFile", form.inventoryFile);
+        inventoryData.append("file", form.inventoryFile);
         inventoryData.append("inventory_request_id", createdRequest.id);
         inventoryData.append("store", form.store);
 

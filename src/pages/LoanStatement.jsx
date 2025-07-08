@@ -20,14 +20,15 @@ const LoanStatement = () => {
   useEffect(() => {
     const fetchLoanData = async () => {
       try {
-        // Fetch the current loan first
-        const loanRes = await axios.get(`${API_BASE_URL}/loans/${selectedLoanId}`, {
+        // Fetch the current loan statement
+        const loanRes = await axios.get(`${API_BASE_URL}/loans/${selectedLoanId}/statement`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const instRes = await axios.get(`${API_BASE_URL}/loans/${selectedLoanId}/installments`, {
-          headers: { Authorization: `Bearer ${token}` },
+        setLoan({
+          ...loanRes.data.loan,
+          installments: loanRes.data.installments,
+          customer_name: loanRes.data.customer_name
         });
-        setLoan({ ...loanRes.data.loan, installments: instRes.data });
         setPayments(loanRes.data.payments);
         setCustomerId(loanRes.data.loan.customer_id);
 
@@ -64,7 +65,7 @@ const LoanStatement = () => {
 
   return (
     <Layout>
-    <div className="max-w-5xl mx-auto bg-gray-100 text-black rounded shadow p-6 mt-6 space-y-6 border border-gray-300">
+    <div className="max-w-6xl mx-auto bg-white text-black rounded-xl shadow-lg p-8 mt-8 space-y-8 border border-gray-200">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
         <input
           type="text"
@@ -93,7 +94,7 @@ const LoanStatement = () => {
         <p className="text-sm text-gray-800">Fecha de corte: {new Date().toLocaleDateString()}</p>
       </div>
       <div className="grid grid-cols-2 gap-4 mb-6 text-sm text-gray-800 font-medium">
-        <div><strong>Cliente:</strong> {loan.customer_name}</div>
+        <div><strong>Cliente:</strong> {loan.customer_name || 'No disponible'}</div>
         <div><strong>Estado del préstamo:</strong> {loan.status}</div>
         <div><strong>Monto del Préstamo:</strong> ${loan.amount}</div>
         <div><strong>Plazo:</strong> {loan.term} semanas</div>
@@ -106,7 +107,7 @@ const LoanStatement = () => {
         <h3 className="text-lg font-semibold uppercase text-green-600">Tabla de Amortización</h3>
         {loan.installments && loan.installments.length > 0 ? (
           <div className="overflow-x-auto rounded shadow-sm">
-            <table className="table-auto w-full text-xs border border-gray-300 bg-white">
+            <table className="table-auto w-full text-sm border border-gray-200 bg-white">
               <thead className="bg-gray-200 text-gray-700 font-semibold uppercase">
                 <tr>
                   <th className="px-2 py-2 text-left">Semana</th>
@@ -176,7 +177,7 @@ const LoanStatement = () => {
           <p className="text-sm text-gray-600">No se han registrado pagos.</p>
         ) : (
           <div className="overflow-x-auto rounded shadow-sm">
-            <table className="table-auto w-full text-sm border border-gray-300 bg-white">
+            <table className="table-auto w-full text-sm border border-gray-200 bg-white">
               <thead className="bg-gray-200 text-gray-700 font-semibold uppercase">
                 <tr>
                   <th className="px-2 py-2 text-left">Fecha</th>

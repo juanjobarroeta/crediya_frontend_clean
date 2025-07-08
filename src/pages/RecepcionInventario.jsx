@@ -7,6 +7,10 @@ const RecepcionInventario = () => {
   const token = localStorage.getItem("token");
   const [requests, setRequests] = useState([]);
   const [deliveries, setDeliveries] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [imei, setImei] = useState("");
+  const [serial, setSerial] = useState("");
 
   useEffect(() => {
     fetchRequests();
@@ -19,7 +23,7 @@ const RecepcionInventario = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log("📦 Requests from backend:", res.data);
-      setRequests(res.data.requests || []);
+      setRequests(res.data || []);
     } catch (err) {
       console.error("Error fetching requests:", err);
     }
@@ -83,6 +87,11 @@ const RecepcionInventario = () => {
               <tr>
                 <th>ID</th>
                 <th>Categoría</th>
+                <th>Marca</th>
+                <th>Modelo</th>
+                <th>Color</th>
+                <th>RAM</th>
+                <th>Almacenamiento</th>
                 <th>Monto</th>
                 <th>Notas</th>
                 <th>Cotización</th>
@@ -94,8 +103,13 @@ const RecepcionInventario = () => {
                 <tr key={`request-${req.id}`} className="border-t border-gray-700 hover:bg-gray-800">
                   <td>{req.id}</td>
                   <td>{req.category}</td>
-                  <td>${req.amount}</td>
-                  <td>{req.notes || "N/A"}</td>
+                  <td>{req.brand}</td>
+                  <td>{req.model}</td>
+                  <td>{req.color}</td>
+                  <td>{req.ram}</td>
+                  <td>{req.storage}</td>
+                  <td>${req.purchase_price}</td>
+                  <td>{req.inventory_request_id || "N/A"}</td>
                   <td>
                     {req.quote_path ? (
                       <a href={`${API_BASE_URL}/uploads/${req.quote_path}`} target="_blank" rel="noreferrer" className="text-lime-400 hover:underline">
@@ -106,7 +120,10 @@ const RecepcionInventario = () => {
                     )}
                   </td>
                   <td>
-                    <button className="bg-lime-500 hover:bg-lime-600 text-black font-semibold px-4 py-1 rounded text-sm" onClick={() => markAsReceived(req.id, req.amount)}>
+                    <button className="bg-lime-500 hover:bg-lime-600 text-black font-semibold px-4 py-1 rounded text-sm" onClick={() => {
+                      setSelectedItem(req);
+                      setShowModal(true);
+                    }}>
                       Marcar como Recibido
                     </button>
                   </td>
@@ -121,24 +138,26 @@ const RecepcionInventario = () => {
         <p className="text-gray-400 text-sm">No hay teléfonos pendientes de entrega.</p>
       ) : (
         <div className="bg-black border-t-4 border-lime-500 rounded-md overflow-x-auto mb-10">
-          <table className="min-w-full text-sm text-white">
+          <table className="min-w-full text-sm text-white text-center">
             <thead className="bg-lime-500 text-black">
               <tr>
-                <th>Loan ID</th>
-                <th>Cliente</th>
-                <th>Producto</th>
-                <th>Monto</th>
-                <th>Acción</th>
+                <th className="text-center">Loan ID</th>
+                <th className="text-center">Cliente</th>
+                <th className="text-center">CURP</th>
+                <th className="text-center">Producto</th>
+                <th className="text-center">Monto</th>
+                <th className="text-center">Acción</th>
               </tr>
             </thead>
             <tbody>
               {deliveries.map((item) => (
                 <tr key={`delivery-${item.loan_id || Math.random()}`} className="border-t border-gray-700 hover:bg-gray-800">
-                  <td>{item.loan_id}</td>
-                  <td>{item.customer}</td>
-                  <td>{item.product}</td>
-                  <td>${item.amount}</td>
-                  <td>
+                  <td className="text-center">{item.loan_id}</td>
+                  <td className="text-center">{item.first_name} {item.last_name}</td>
+                  <td className="text-center">{item.curp || "—"}</td>
+                  <td className="text-center">{item.brand} {item.model}</td>
+                  <td className="text-center">${item.sale_price || "—"}</td>
+                  <td className="text-center">
                     <button className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-1 rounded text-sm" onClick={() => deliverPhone(item.loan_id)}>
                       Entregar Teléfono
                     </button>
@@ -150,6 +169,71 @@ const RecepcionInventario = () => {
         </div>
       )}
     </div>
+    {/* Modal for IMEI and Serial assignment */}
+    {showModal && selectedItem && (
+      <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
+        <div className="bg-white rounded-lg p-6 w-full max-w-md text-black">
+          <h3 className="text-lg font-semibold mb-4">Confirmar Recepción</h3>
+          <p className="mb-2"><strong>{selectedItem.brand} {selectedItem.model}</strong> - {selectedItem.color}, {selectedItem.ram} RAM, {selectedItem.storage}</p>
+          <input
+            type="text"
+            placeholder="IMEI"
+            value={imei}
+            onChange={(e) => setImei(e.target.value)}
+            className="w-full border p-2 mb-2"
+          />
+          <input
+            type="text"
+            placeholder="Número de serie"
+            value={serial}
+            onChange={(e) => setSerial(e.target.value)}
+            className="w-full border p-2 mb-4"
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => {
+                setShowModal(false);
+                setImei("");
+                setSerial("");
+                setSelectedItem(null);
+              }}
+              className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={async () => {
+                if (!imei) return alert("IMEI es requerido");
+                const confirm = window.confirm("¿Confirmar recepción y aceptar responsabilidad?");
+                if (!confirm) return;
+
+                try {
+                  await axios.put(`${API_BASE_URL}/inventory-requests/${selectedItem.id}/receive`, {
+                    imei,
+                    serial_number: serial,
+                  }, {
+                    headers: { Authorization: `Bearer ${token}` }
+                  });
+                  alert("Inventario marcado como recibido");
+                  setRequests(prev => prev.filter(req => req.id !== selectedItem.id));
+                  fetchDeliveries();
+                  setShowModal(false);
+                  setImei("");
+                  setSerial("");
+                  setSelectedItem(null);
+                } catch (err) {
+                  console.error("Error marking as received:", err);
+                  alert("Error al marcar como recibido.");
+                }
+              }}
+              className="px-4 py-2 rounded bg-lime-500 hover:bg-lime-600 text-black font-semibold"
+            >
+              Confirmar
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     </Layout>
   );
 };

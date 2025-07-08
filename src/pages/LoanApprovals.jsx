@@ -3,6 +3,7 @@ import axios from 'axios';
 import UploadContract from "../components/UploadContract";
 import Layout from "../components/Layout";
 import { API_BASE_URL } from "../utils/constants";
+import { Link } from "react-router-dom";
 
 const LoanApprovals = () => {
   const [loans, setLoans] = useState([]);
@@ -73,7 +74,7 @@ const LoanApprovals = () => {
           {loans.map((loan) => (
             <div key={loan.id} className="col-md-6 mb-4">
               <div className="bg-black border-t-4 border-lime-500 text-white rounded-md p-4 shadow mb-6">
-                <h5>Cliente: {loan.customer_name}</h5>
+                <h5>Cliente: {loan.first_name} {loan.last_name}</h5>
                 <p><strong>Email:</strong> {loan.email}</p>
                 <p><strong>Monto:</strong> ${loan.amount}</p>
                 <p><strong>Plazo:</strong> {loan.term} semanas</p>
@@ -94,21 +95,12 @@ const LoanApprovals = () => {
                   <UploadContract loanId={loan.id} onSuccess={fetchLoans} />
                 )}
 
-                <div className="flex gap-2 mt-3">
-                  <button
-                    className="bg-lime-500 hover:bg-lime-600 text-black font-semibold px-4 py-1 rounded text-sm disabled:opacity-50"
-                    disabled={!loan.contract_path}
-                    onClick={() => updateLoanStatus(loan.id, "approve")}
-                  >
-                    Aprobar
-                  </button>
-                  <button
-                    className="bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-1 rounded text-sm"
-                    onClick={() => updateLoanStatus(loan.id, "reject")}
-                  >
-                    Rechazar
-                  </button>
-                </div>
+                <Link
+                  to={`/admin/loan-applications/${loan.id}`}
+                  className="inline-block mt-3 bg-lime-600 hover:bg-lime-700 text-white font-semibold px-4 py-1 rounded text-sm"
+                >
+                  Ver solicitud
+                </Link>
 
                 {!loan.contract_path && (
                   <small className="text-gray-400 mt-2 block">*Requiere contrato firmado</small>

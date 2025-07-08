@@ -12,16 +12,36 @@ const storeNames = {
 const AdminApprovals = () => {
   const [requests, setRequests] = useState([]);
   const [expenses, setExpenses] = useState([]);
+  const [paidExpenses, setPaidExpenses] = useState([]);
+  const [allPaidExpenses, setAllPaidExpenses] = useState([]); // keep all for filtering
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(() => {
     const stored = localStorage.getItem("user");
     return stored ? JSON.parse(stored) : {};
   });
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  useEffect(() => {
+    const fetchPaidExpenses = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/treasury/payment-orders/history`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        setPaidExpenses(res.data);
+        setAllPaidExpenses(res.data);
+      } catch (err) {
+        console.error("Error fetching paid expenses:", err);
+      }
+    };
+    fetchPaidExpenses();
+  }, []);
 
   useEffect(() => {
     const fetchRequests = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/inventory-requests`, {
+        const res = await axios.get(`${API_BASE_URL}/admin/inventory-requests`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
@@ -41,13 +61,12 @@ const AdminApprovals = () => {
   useEffect(() => {
     const fetchExpenses = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/expenses`, {
+        const res = await axios.get(`${API_BASE_URL}/expenses?status=pending_approval`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         });
-        const filtered = res.data.filter(e => e.status === 'requested');
-        setExpenses(filtered);
+        setExpenses(res.data);
       } catch (err) {
         console.error("Error fetching expenses:", err);
       }
@@ -64,13 +83,12 @@ const AdminApprovals = () => {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         });
-      const res = await axios.get(`${API_BASE_URL}/expenses`, {
+      const res = await axios.get(`${API_BASE_URL}/expenses?status=pending_approval`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         });
-        const filtered = res.data.filter(e => e.status === 'requested');
-        setExpenses(filtered);
+        setExpenses(res.data);
       } catch (err) {
         console.error(`Error processing ${action}:`, err);
       }
@@ -84,7 +102,7 @@ const AdminApprovals = () => {
     };
 
     try {
-      await axios.put(`${API_BASE_URL}/inventory-requests/${id}/${endpoints[action]}`, {}, {
+      await axios.put(`${API_BASE_URL}/admin/inventory-requests/${id}/${endpoints[action]}`, {}, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
@@ -117,9 +135,11 @@ const AdminApprovals = () => {
           {requests.map((req) => (
             <div key={req.id} className="col-md-6 mb-4">
               <div className="bg-black border-t-4 border-lime-500 text-white rounded-md p-4 shadow mb-6">
-                <h5>{req.category}</h5>
-                <p><strong>Monto:</strong> ${req.amount}</p>
+                <h5 className="text-lg font-semibold">{req.category}</h5>
+                <p><strong>Monto:</strong> ${parseFloat(req.amount).toLocaleString()}</p>
                 <p><strong>Notas:</strong> {req.notes || "N/A"}</p>
+                <p><strong>Sucursal:</strong> {storeNames[req.store_id] || "N/A"}</p>
+                <p><strong>Fecha de Solicitud:</strong> {req.created_at ? new Date(req.created_at).toLocaleDateString() : "N/A"}</p>
                 <p><strong>Estado:</strong> {req.status}</p>
                 {req.quote_path && (
                   <p>
@@ -134,8 +154,11 @@ const AdminApprovals = () => {
                     </a>
                   </p>
                 )}
-                {req.status === "pending_admin_approval" && (
-                  <button className="bg-lime-500 hover:bg-lime-600 text-black font-semibold px-4 py-1 rounded text-sm me-2" onClick={() => handleAction(req.id, "approve")}>
+                {["pending_admin_approval", "awaiting_admin", "created"].includes(req.status) && (
+                  <button
+                    className="bg-lime-500 hover:bg-lime-600 text-black font-semibold px-4 py-1 rounded text-sm me-2"
+                    onClick={() => handleAction(req.id, "approve")}
+                  >
                     Aprobar
                   </button>
                 )}
@@ -149,7 +172,6 @@ const AdminApprovals = () => {
                     Marcar como Recibido
                   </button>
                 )}
-                {/* Future: Approve / Reject buttons */}
               </div>
             </div>
           ))}
@@ -198,6 +220,110 @@ const AdminApprovals = () => {
           ))}
         </div>
       )}
+    <h2 className="text-xl font-semibold mb-6 text-white mt-5">Historial de Gastos Pagados</h2>
+    {/* Filter and export bar */}
+    <div className="flex gap-4 mb-4 text-white">
+      <div>
+        <label className="block text-sm">Desde</label>
+        <input
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          className="bg-black border border-gray-600 rounded p-1 text-white"
+        />
+      </div>
+      <div>
+        <label className="block text-sm">Hasta</label>
+        <input
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          className="bg-black border border-gray-600 rounded p-1 text-white"
+        />
+      </div>
+      <button
+        onClick={() => {
+          // Filter from allPaidExpenses, not from already filtered
+          const filtered = allPaidExpenses.filter((e) => {
+            const d = new Date(e.updated_at);
+            return (
+              (!startDate || new Date(startDate) <= d) &&
+              (!endDate || new Date(endDate) >= d)
+            );
+          });
+          setPaidExpenses(filtered);
+        }}
+        className="bg-lime-500 hover:bg-lime-600 text-black font-semibold px-4 py-1 rounded text-sm self-end"
+      >
+        Filtrar
+      </button>
+      <button
+        onClick={() => {
+          const headers = [
+            "ID",
+            "Tipo",
+            "Monto",
+            "Descripción",
+            "Fecha de Pago",
+          ];
+          const rows = paidExpenses.map((e) => [
+            e.id,
+            e.type,
+            e.amount,
+            e.description,
+            e.updated_at ? new Date(e.updated_at).toLocaleDateString() : "N/A",
+          ]);
+          const csv = [headers, ...rows]
+            .map((r) =>
+              r
+                .map((cell) =>
+                  typeof cell === "string" && cell.includes(",")
+                    ? `"${cell}"`
+                    : cell
+                )
+                .join(",")
+            )
+            .join("\n");
+          const blob = new Blob([csv], { type: "text/csv" });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "gastos_pagados.csv";
+          a.click();
+        }}
+        className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-1 rounded text-sm self-end"
+      >
+        Exportar a Excel
+      </button>
+    </div>
+    {paidExpenses.length === 0 ? (
+      <p className="text-gray-400 text-sm">No hay gastos pagados.</p>
+    ) : (
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm text-white border border-crediyaGreen mb-8">
+          <thead>
+            <tr className="bg-gray-900 text-lime-400">
+              <th className="p-2 text-left">ID</th>
+              <th className="p-2 text-left">Tipo</th>
+              <th className="p-2 text-left">Monto</th>
+              <th className="p-2 text-left">Descripción</th>
+              <th className="p-2 text-left">Fecha de Pago</th>
+            </tr>
+          </thead>
+          <tbody>
+            {paidExpenses.map((e) => (
+              <tr key={e.id} className="border-t border-crediyaGreen">
+                <td className="p-2">{e.id}</td>
+                <td className="p-2">{e.type || "N/A"}</td>
+                <td className="p-2">${parseFloat(e.amount).toLocaleString()}</td>
+                <td className="p-2">{e.description || "Sin descripción"}</td>
+                <td className="p-2">{e.updated_at ? new Date(e.updated_at).toLocaleDateString() : "N/A"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
     </div>
     </Layout>
   );

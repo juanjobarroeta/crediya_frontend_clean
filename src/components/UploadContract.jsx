@@ -13,7 +13,7 @@ const UploadContract = ({ loanId, onSuccess }) => {
     if (!file) return;
 
     const formData = new FormData();
-    formData.append("contract", file);
+    formData.append("file", file);
 
     try {
       await axios.post(`http://localhost:5001/loans/${loanId}/upload-contract`, formData, {

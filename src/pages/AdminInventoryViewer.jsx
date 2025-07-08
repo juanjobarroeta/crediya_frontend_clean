@@ -84,7 +84,13 @@ const AdminInventoryViewer = () => {
             <option value="in_stock">Disponible</option>
             <option value="reserved">Reservado</option>
             <option value="sold">Vendido</option>
-          <option value="repossessed">Reposeído</option>
+            <option value="repossessed">Reposeído</option>
+            <option value="assigned">Asignado</option>
+            <option value="pending_admin_approval">Por aprobar admin</option>
+            <option value="approved_by_admin">Aprobado por admin</option>
+            <option value="paid_by_treasury">Pagado por tesorería</option>
+            <option value="pending_reception">Pendiente de recepción</option>
+            <option value="delivered">Entregado</option>
           </select>
         </div>
       </div>
@@ -123,15 +129,32 @@ const AdminInventoryViewer = () => {
               <th>Marca</th>
               <th>Modelo</th>
               <th>Color</th>
+              <th>IMEI</th>
               <th>RAM</th>
               <th>Almacenamiento</th>
               <th>Status</th>
               <th>Sucursal</th>
+              <th>Detalles</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((item) => (
-              <tr key={item.id} className="border-t border-gray-700 hover:bg-gray-800">
+              <tr
+                key={item.id}
+                className={`border-t border-gray-700 hover:bg-gray-800 ${
+                  item.status === 'in_stock' ? 'bg-green-900/30' :
+                  item.status === 'reserved' ? 'bg-yellow-900/30' :
+                  item.status === 'sold' ? 'bg-red-900/30' :
+                  item.status === 'repossessed' ? 'bg-purple-900/30' :
+                  item.status === 'assigned' ? 'bg-blue-900/30' :
+                  item.status === 'pending_admin_approval' ? 'bg-orange-900/30' :
+                  item.status === 'approved_by_admin' ? 'bg-orange-800/30' :
+                  item.status === 'paid_by_treasury' ? 'bg-orange-700/30' :
+                  item.status === 'pending_reception' ? 'bg-gray-800/30' :
+                  item.status === 'delivered' ? 'bg-red-800/30' :
+                  ''
+                }`}
+              >
                 <td>
                   <input
                     type="checkbox"
@@ -143,10 +166,19 @@ const AdminInventoryViewer = () => {
                 <td>{item.brand}</td>
                 <td>{item.model}</td>
                 <td>{item.color}</td>
+                <td>{item.imei || "—"}</td>
                 <td>{item.ram}</td>
                 <td>{item.storage}</td>
                 <td>{item.status}</td>
                 <td>{item.store}</td>
+                <td>
+                  <a
+                    href={`/inventory/${item.id}`}
+                    className="text-lime-400 underline hover:text-lime-300"
+                  >
+                    Ver detalles
+                  </a>
+                </td>
               </tr>
             ))}
           </tbody>
