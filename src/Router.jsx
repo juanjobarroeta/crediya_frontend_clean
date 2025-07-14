@@ -40,6 +40,7 @@ import LoanApplicationDetails from "./components/LoanApplicationDetails";
 import CollectionsDashboard from "./pages/CollectionsDashboard";
 import ProductProfile from "./pages/ProductProfile";
 import CreateUser from "./pages/CreateUser";
+import StoreDashboard from "./pages/StoreDashboard";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -142,6 +143,7 @@ const AppRouter = () => (
       <Route path="/admin/investigations" element={<AdminRoute><InvestigationsDashboard /></AdminRoute>} />
       <Route path="/admin/overdue-loans" element={<AdminRoute><OverdueLoans /></AdminRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/dashboard/store-dashboard" element={<AdminRoute><StoreDashboard /></AdminRoute>} />
       <Route path="/admin/reclassify-payment" element={<AdminRoute><ReclassifyPayment /></AdminRoute>} />
       <Route
         path="/admin/collections"

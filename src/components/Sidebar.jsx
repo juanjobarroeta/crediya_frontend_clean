@@ -39,6 +39,14 @@ const sectionList = [
     ],
   },
   {
+    key: "tiendas",
+    icon: "🏬",
+    label: "Tiendas",
+    links: [
+      { href: "/dashboard/store-dashboard", label: "Análisis y Rentabilidad" }
+    ],
+  },
+  {
     key: "clientes",
     icon: "🧍‍♂️",
     label: "Clientes",
