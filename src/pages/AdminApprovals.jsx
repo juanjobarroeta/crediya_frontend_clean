@@ -89,7 +89,7 @@ const AdminApprovals = () => {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         });
-        setExpenses(res.data);
+        setExpenses(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
         console.error(`Error processing ${action}:`, err);
       }
