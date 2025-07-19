@@ -188,7 +188,7 @@ const AdminApprovals = () => {
         <p className="text-gray-400 text-sm">No hay gastos por aprobar.</p>
       ) : (
         <div className="row">
-          {expenses.map((e) => (
+          {Array.isArray(expenses) ? expenses.map((e) => (
             <div key={e.id} className="col-md-6 mb-4">
               <div className="bg-black border-t-4 border-lime-500 text-white rounded-md p-4 shadow mb-6">
                 <h5>{e.type}</h5>
@@ -221,7 +221,7 @@ const AdminApprovals = () => {
                 </div>
               </div>
             </div>
-          ))}
+          )) : null}
         </div>
       )}
     <h2 className="text-xl font-semibold mb-6 text-white mt-5">Historial de Gastos Pagados</h2>
