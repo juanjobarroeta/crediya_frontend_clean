@@ -46,8 +46,9 @@ const AdminApprovals = () => {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         });
-        setRequests(res.data.requests || res.data || []);
-        console.log("📦 Inventory Requests:", res.data.requests || res.data || []);
+        const incoming = res.data.requests || res.data;
+        setRequests(Array.isArray(incoming) ? incoming : []);
+        console.log("📦 Inventory Requests:", Array.isArray(incoming) ? incoming : []);
       } catch (err) {
         console.error("Error fetching inventory requests:", err);
       } finally {
@@ -113,7 +114,10 @@ const AdminApprovals = () => {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
-      setRequests(res.data.requests || res.data || []);
+      {
+        const incoming = res.data.requests || res.data;
+        setRequests(Array.isArray(incoming) ? incoming : []);
+      }
     } catch (err) {
       console.error(`Error processing ${action}:`, err);
     }
