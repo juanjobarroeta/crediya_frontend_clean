@@ -315,7 +315,7 @@ const AdminApprovals = () => {
             </tr>
           </thead>
           <tbody>
-            {paidExpenses.map((e) => (
+            {Array.isArray(paidExpenses) ? paidExpenses.map((e) => (
               <tr key={e.id} className="border-t border-crediyaGreen">
                 <td className="p-2">{e.id}</td>
                 <td className="p-2">{e.type || "N/A"}</td>
@@ -323,7 +323,7 @@ const AdminApprovals = () => {
                 <td className="p-2">{e.description || "Sin descripción"}</td>
                 <td className="p-2">{e.updated_at ? new Date(e.updated_at).toLocaleDateString() : "N/A"}</td>
               </tr>
-            ))}
+            )) : null}
           </tbody>
         </table>
       </div>
