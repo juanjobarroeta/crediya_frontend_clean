@@ -21,6 +21,20 @@ const AdminApprovals = () => {
   });
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+
+  const fetchExpenses = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/expenses?status=pending_approval`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      setExpenses(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Error fetching expenses:", err);
+    }
+  };
+
   useEffect(() => {
     const fetchPaidExpenses = async () => {
       try {
@@ -60,18 +74,6 @@ const AdminApprovals = () => {
   }, []);
 
   useEffect(() => {
-    const fetchExpenses = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/expenses?status=pending_approval`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-        setExpenses(Array.isArray(res.data) ? res.data : []);
-      } catch (err) {
-        console.error("Error fetching expenses:", err);
-      }
-    };
     fetchExpenses();
   }, []);
 
@@ -79,17 +81,12 @@ const AdminApprovals = () => {
     if (type === "expense") {
       const endpoint = action === "approve" ? "approve" : "cancel";
       try {
-      await axios.put(`${API_BASE_URL}/expenses/${id}/${endpoint}`, {}, {
+        await axios.put(`${API_BASE_URL}/expenses/${id}/${endpoint}`, {}, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         });
-      const res = await axios.get(`${API_BASE_URL}/expenses?status=pending_approval`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-        setExpenses(Array.isArray(res.data) ? res.data : []);
+        await fetchExpenses();
       } catch (err) {
         console.error(`Error processing ${action}:`, err);
       }

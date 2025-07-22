@@ -13,7 +13,7 @@ const Tesoreria = () => {
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/treasury/payment-orders`, {
+      const res = await axios.get(`${API_BASE_URL}/treasury/payment-orders?status=approved`, {
         headers: {
           Authorization: "Bearer " + localStorage.getItem("token"),
         },
