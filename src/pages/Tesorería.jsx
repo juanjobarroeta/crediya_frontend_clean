@@ -72,8 +72,12 @@ const Tesoreria = () => {
   }, []);
 
   const today = new Date();
-  const expensesDueTodayOrOverdue = expenseOrders.filter(e => new Date(e.due_date) <= today);
-  const expensesNotYetDue = expenseOrders.filter(e => new Date(e.due_date) > today);
+  const expensesDueTodayOrOverdue = expenseOrders.filter(
+    e => e.status === "approved" && new Date(e.due_date) <= today
+  );
+  const expensesNotYetDue = expenseOrders.filter(
+    e => e.status === "approved" && new Date(e.due_date) > today
+  );
 
   return (
     <Layout>
