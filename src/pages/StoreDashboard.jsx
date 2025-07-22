@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import Layout from "../components/Layout";
 
 const StoreDashboard = () => {
   const [data, setData] = useState([]);
@@ -37,50 +38,63 @@ const StoreDashboard = () => {
   }, []);
 
   return (
-    <div>
-      <h1>🏬 Store Dashboard</h1>
+    <Layout>
+      <div>
+        <h1>🏬 Store Dashboard</h1>
 
-      <div style={{ marginBottom: "1rem" }}>
-        <label>From: </label>
-        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-        <label style={{ marginLeft: "1rem" }}>To: </label>
-        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-        <button onClick={fetchData} style={{ marginLeft: "1rem" }}>
-          🔄 Refresh
-        </button>
-      </div>
+        <div style={{ marginBottom: "1rem" }}>
+          <label>From: </label>
+          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+          <label style={{ marginLeft: "1rem" }}>To: </label>
+          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          <button onClick={fetchData} style={{ marginLeft: "1rem" }}>
+            🔄 Refresh
+          </button>
+        </div>
 
-      {loading ? (
-        <p>Loading store data...</p>
-      ) : (
-        <table border="1" cellPadding="10" style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr>
-              <th>Store</th>
-              <th>Revenue</th>
-              <th>COGS</th>
-              <th>Interest</th>
-              <th>Penalties</th>
-              <th>Expenses</th>
-              <th>Net Profit</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((s) => (
-              <tr key={s.store}>
-                <td>{s.store}</td>
-                <td>${s.revenue.toFixed(2)}</td>
-                <td>${s.cogs.toFixed(2)}</td>
-                <td>${s.interest.toFixed(2)}</td>
-                <td>${s.penalties.toFixed(2)}</td>
-                <td>${s.expenses.toFixed(2)}</td>
-                <td><strong>${s.net_profit.toFixed(2)}</strong></td>
+        {loading ? (
+          <p>Loading store data...</p>
+        ) : (
+          <table
+            border="1"
+            cellPadding="10"
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              backgroundColor: "white",
+              color: "black"
+            }}
+          >
+            <thead>
+              <tr>
+                <th>Store</th>
+                <th style={{ textAlign: "right" }}>Revenue</th>
+                <th style={{ textAlign: "right" }}>COGS</th>
+                <th style={{ textAlign: "right" }}>Interest</th>
+                <th style={{ textAlign: "right" }}>Penalties</th>
+                <th style={{ textAlign: "right" }}>Expenses</th>
+                <th style={{ textAlign: "right" }}>Net Profit</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
+            </thead>
+            <tbody>
+              {data.map((s) => (
+                <tr key={s.store}>
+                  <td>{s.store}</td>
+                  <td style={{ textAlign: "right" }}>${s.revenue.toFixed(2)}</td>
+                  <td style={{ textAlign: "right" }}>${s.cogs.toFixed(2)}</td>
+                  <td style={{ textAlign: "right" }}>${s.interest.toFixed(2)}</td>
+                  <td style={{ textAlign: "right" }}>${s.penalties.toFixed(2)}</td>
+                  <td style={{ textAlign: "right" }}>${s.expenses.toFixed(2)}</td>
+                  <td style={{ textAlign: "right" }}>
+                    <strong>${s.net_profit.toFixed(2)}</strong>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </Layout>
   );
 };
 
