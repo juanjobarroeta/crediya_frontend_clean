@@ -289,37 +289,6 @@ const Dashboard = () => {
           </div>
         </div>
       )}
-      {metrics.storeComparison && metrics.storeComparison.length > 0 && (
-        <div className="mt-10 px-6 max-w-6xl mx-auto">
-          <h3 className="text-white text-lg font-bold mb-4">Comparativa por Sucursal</h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm text-white bg-black border border-crediyaGreen">
-              <thead>
-                <tr className="bg-gray-900 text-lime-400">
-                  <th className="px-4 py-2 text-left">Sucursal</th>
-                  <th className="px-4 py-2 text-left">Préstamos Activos</th>
-                  <th className="px-4 py-2 text-left">Préstamos Vencidos</th>
-                  <th className="px-4 py-2 text-left">Capital Prestado</th>
-                  <th className="px-4 py-2 text-left">Préstamo Promedio</th>
-                  <th className="px-4 py-2 text-left">Tasa de Cobranza</th>
-                </tr>
-              </thead>
-              <tbody>
-                {metrics.storeComparison.map((sucursal) => (
-                  <tr key={sucursal.store} className="border-t border-crediyaGreen">
-                    <td className="px-4 py-2">{sucursal.store}</td>
-                    <td className="px-4 py-2">{sucursal.active_loans}</td>
-                    <td className="px-4 py-2">{sucursal.overdue_loans}</td>
-                    <td className="px-4 py-2">${parseFloat(sucursal.capital_lent).toLocaleString()}</td>
-                    <td className="px-4 py-2">${parseFloat(sucursal.avg_loan_size).toLocaleString()}</td>
-                    <td className="px-4 py-2">{parseFloat(sucursal.collection_rate).toFixed(2)}%</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
     </Layout>
   );
 };

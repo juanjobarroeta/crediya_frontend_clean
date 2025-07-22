@@ -20,7 +20,7 @@ const IncomeStatement = () => {
 
   const loadData = async () => {
     try {
-      const url = `${API_BASE_URL}/accounting/income-statement?start=${startDate}&end=${endDate}${store ? `&store=${store}` : ""}`;
+      const url = `${API_BASE_URL}/income-statement?start=${startDate}&end=${endDate}${store ? `&store=${store}` : ""}`;
       const res = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
