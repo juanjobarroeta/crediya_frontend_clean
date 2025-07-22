@@ -9,6 +9,7 @@ const Tesoreria = () => {
   const [proofFiles, setProofFiles] = useState({});
   const [paymentMethods, setPaymentMethods] = useState({});
   const [paidInventoryOrders, setPaidInventoryOrders] = useState([]);
+  const [paidExpenseOrders, setPaidExpenseOrders] = useState([]);
 
   const fetchOrders = async () => {
     try {
@@ -26,6 +27,7 @@ const Tesoreria = () => {
         },
       });
       setPaidInventoryOrders(historyRes.data.inventory || []);
+      setPaidExpenseOrders(historyRes.data.expenses || []);
     } catch (err) {
       console.error("Error fetching payment orders:", err);
     }
@@ -251,6 +253,32 @@ const Tesoreria = () => {
               <td className="text-center">{order.notes}</td>
               <td className="text-center">{new Date(order.updated_at).toLocaleDateString()}</td>
               <td className="text-center">{order.method || "-"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h4 className="mt-10">Historial de Pagos de Gastos Generales</h4>
+      <table className="w-full border border-crediyaGreen text-sm mt-2">
+        <thead>
+          <tr>
+            <th className="bg-crediyaGreen text-black font-bold">ID</th>
+            <th className="bg-crediyaGreen text-black font-bold">Tipo</th>
+            <th className="bg-crediyaGreen text-black font-bold">Monto</th>
+            <th className="bg-crediyaGreen text-black font-bold">Descripción</th>
+            <th className="bg-crediyaGreen text-black font-bold">Fecha de Pago</th>
+            <th className="bg-crediyaGreen text-black font-bold">Método</th>
+          </tr>
+        </thead>
+        <tbody>
+          {paidExpenseOrders.map((expense) => (
+            <tr key={expense.id}>
+              <td className="text-center">{expense.id}</td>
+              <td className="text-center">{expense.type || "-"}</td>
+              <td className="text-center">${parseFloat(expense.amount || 0).toLocaleString()}</td>
+              <td className="text-center">{expense.description || "-"}</td>
+              <td className="text-center">{new Date(expense.updated_at).toLocaleDateString()}</td>
+              <td className="text-center">{expense.method || "-"}</td>
             </tr>
           ))}
         </tbody>
