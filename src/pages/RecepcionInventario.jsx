@@ -102,13 +102,13 @@ const RecepcionInventario = () => {
               {requests.map((req) => (
                 <tr key={`request-${req.id}`} className="border-t border-gray-700 hover:bg-gray-800">
                   <td>{req.id}</td>
-                  <td>{req.category}</td>
-                  <td>{req.brand}</td>
-                  <td>{req.model}</td>
-                  <td>{req.color}</td>
-                  <td>{req.ram}</td>
-                  <td>{req.storage}</td>
-                  <td>${req.purchase_price}</td>
+                  <td>{req.category || "–"}</td>
+                  <td>{req.brand || "–"}</td>
+                  <td>{req.model || "–"}</td>
+                  <td>{req.color || "–"}</td>
+                  <td>{req.ram || "–"}</td>
+                  <td>{req.storage || "–"}</td>
+                  <td>${req.purchase_price || "0"}</td>
                   <td>{req.inventory_request_id || "N/A"}</td>
                   <td>
                     {req.quote_path ? (
@@ -169,71 +169,6 @@ const RecepcionInventario = () => {
         </div>
       )}
     </div>
-    {/* Modal for IMEI and Serial assignment */}
-    {showModal && selectedItem && (
-      <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
-        <div className="bg-white rounded-lg p-6 w-full max-w-md text-black">
-          <h3 className="text-lg font-semibold mb-4">Confirmar Recepción</h3>
-          <p className="mb-2"><strong>{selectedItem.brand} {selectedItem.model}</strong> - {selectedItem.color}, {selectedItem.ram} RAM, {selectedItem.storage}</p>
-          <input
-            type="text"
-            placeholder="IMEI"
-            value={imei}
-            onChange={(e) => setImei(e.target.value)}
-            className="w-full border p-2 mb-2"
-          />
-          <input
-            type="text"
-            placeholder="Número de serie"
-            value={serial}
-            onChange={(e) => setSerial(e.target.value)}
-            className="w-full border p-2 mb-4"
-          />
-          <div className="flex justify-end gap-2">
-            <button
-              onClick={() => {
-                setShowModal(false);
-                setImei("");
-                setSerial("");
-                setSelectedItem(null);
-              }}
-              className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={async () => {
-                if (!imei) return alert("IMEI es requerido");
-                const confirm = window.confirm("¿Confirmar recepción y aceptar responsabilidad?");
-                if (!confirm) return;
-
-                try {
-                  await axios.put(`${API_BASE_URL}/inventory-requests/${selectedItem.id}/receive`, {
-                    imei,
-                    serial_number: serial,
-                  }, {
-                    headers: { Authorization: `Bearer ${token}` }
-                  });
-                  alert("Inventario marcado como recibido");
-                  setRequests(prev => prev.filter(req => req.id !== selectedItem.id));
-                  fetchDeliveries();
-                  setShowModal(false);
-                  setImei("");
-                  setSerial("");
-                  setSelectedItem(null);
-                } catch (err) {
-                  console.error("Error marking as received:", err);
-                  alert("Error al marcar como recibido.");
-                }
-              }}
-              className="px-4 py-2 rounded bg-lime-500 hover:bg-lime-600 text-black font-semibold"
-            >
-              Confirmar
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
     </Layout>
   );
 };
