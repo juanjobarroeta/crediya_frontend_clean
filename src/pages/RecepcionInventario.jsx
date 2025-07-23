@@ -120,10 +120,10 @@ const RecepcionInventario = () => {
                     )}
                   </td>
                   <td>
-                    <button className="bg-lime-500 hover:bg-lime-600 text-black font-semibold px-4 py-1 rounded text-sm" onClick={() => {
-                      setSelectedItem(req);
-                      setShowModal(true);
-                    }}>
+                    <button
+                      className="bg-lime-500 hover:bg-lime-600 text-black font-semibold px-4 py-1 rounded text-sm"
+                      onClick={() => markAsReceived(req.id)}
+                    >
                       Marcar como Recibido
                     </button>
                   </td>
