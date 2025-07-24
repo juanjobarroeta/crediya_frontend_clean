@@ -16,7 +16,7 @@ const UploadContract = ({ loanId, onSuccess }) => {
     formData.append("file", file);
 
     try {
-      await axios.post(`http://localhost:5001/loans/${loanId}/upload-contract`, formData, {
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/loans/${loanId}/upload-contract`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
