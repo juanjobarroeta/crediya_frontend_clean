@@ -402,14 +402,14 @@ const RegisterPayment = () => {
                                 </td>
                                 <td className="px-2 py-1 text-right">
                                   {inst.penalty_paid > 0 && inst.penalty_paid < inst.penalty_applied
-                                    ? `$${inst.penalty_paid.toFixed(2)} (de $${inst.penalty_applied.toFixed(2)})`
-                                    : `$${inst.penalty_applied.toFixed(2)}`}
+                                    ? `$${inst.penalty_paid.toFixed(2)} (de $${Number(inst.penalty_applied || 0).toFixed(2)})`
+                                    : `$${Number(inst.penalty_applied || 0).toFixed(2)}`}
                                 </td>
                                 <td className="px-2 py-1 text-right">
                                   ${(
                                     parseFloat(inst.capital_portion || 0) +
                                     parseFloat(inst.interest_portion || 0) +
-                                    parseFloat(inst.penalty_applied || 0)
+                                    Number(inst.penalty_applied || 0)
                                   ).toFixed(2)}
                                 </td>
                                 <td className="px-2 py-1 text-right">
