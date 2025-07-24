@@ -122,7 +122,7 @@ const RecepcionInventario = () => {
                   <td>
                     <button
                       className="bg-lime-500 hover:bg-lime-600 text-black font-semibold px-4 py-1 rounded text-sm"
-                      onClick={() => markAsReceived(req.inventory_request_id)}
+                      onClick={() => markAsReceived(req.inventory_request_id || req.id)}
                     >
                       Marcar como Recibido
                     </button>
