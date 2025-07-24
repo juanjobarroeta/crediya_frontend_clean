@@ -87,11 +87,7 @@ const RecepcionInventario = () => {
               <tr>
                 <th>ID</th>
                 <th>Categoría</th>
-                <th>Marca</th>
-                <th>Modelo</th>
-                <th>Color</th>
-                <th>RAM</th>
-                <th>Almacenamiento</th>
+                <th colSpan="6" className="text-center">Resumen</th>
                 <th>Monto</th>
                 <th>Notas</th>
                 <th>Cotización</th>
