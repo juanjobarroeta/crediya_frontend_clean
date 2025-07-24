@@ -102,14 +102,10 @@ const RecepcionInventario = () => {
               {requests.map((req) => (
                 <tr key={`request-${req.id}`} className="border-t border-gray-700 hover:bg-gray-800">
                   <td>{req.id}</td>
-                  <td>{req.category || "–"}</td>
-                  <td>{req.brand || "–"}</td>
-                  <td>{req.model || "–"}</td>
-                  <td>{req.color || "–"}</td>
-                  <td>{req.ram || "–"}</td>
-                  <td>{req.storage || "–"}</td>
-                  <td>${req.purchase_price || "0"}</td>
-                  <td>{req.inventory_request_id || "N/A"}</td>
+                  <td>{req.category}</td>
+                  <td colSpan="6" className="text-center text-gray-400">Ver detalle al recibir</td>
+                  <td>${req.amount || 0}</td>
+                  <td>{req.notes || "—"}</td>
                   <td>
                     {req.quote_path ? (
                       <a href={`${API_BASE_URL}/uploads/${req.quote_path}`} target="_blank" rel="noreferrer" className="text-lime-400 hover:underline">
