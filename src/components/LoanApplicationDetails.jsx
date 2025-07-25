@@ -20,6 +20,7 @@ const LoanApplicationDetails = () => {
         setData(res.data);
       } catch (err) {
         console.error("Error fetching loan application details:", err);
+        setData(null);
       } finally {
         setLoading(false);
       }
@@ -28,7 +29,7 @@ const LoanApplicationDetails = () => {
   }, [id, token]);
 
   if (loading) return <Layout><div className="p-6 text-white">Cargando...</div></Layout>;
-  if (!data) return <Layout><div className="p-6 text-red-500">No se pudo cargar la información.</div></Layout>;
+  if (!data || !data.loan) return <Layout><div className="p-6 text-red-500">No se pudo cargar la información del préstamo.</div></Layout>;
 
   const { loan, customer, avals, investigation, documents } = data;
 
