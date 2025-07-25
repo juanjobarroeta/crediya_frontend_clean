@@ -29,7 +29,7 @@ const LoanDetails = () => {
   }, [loan_id, token]);
 
   if (loading) return <div>Loading...</div>;
-  if (!loanData) return <div>No data found</div>;
+  if (!loanData || !loanData.loan) return <div>No data found</div>;
 
   const { loan, payments, penalties, journal_entries } = loanData;
 
