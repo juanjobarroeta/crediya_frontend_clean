@@ -28,7 +28,6 @@ const LoanApplicationDetails = () => {
     };
     fetchDetails();
   }, [id, token]);
-s
 
   if (loading) return <Layout><div className="p-6 text-white">Cargando...</div></Layout>;
   if (!data || !data.loan) return <Layout><div className="p-6 text-red-500">No se pudo cargar la información del préstamo.</div></Layout>;
