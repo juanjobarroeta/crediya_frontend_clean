@@ -11,7 +11,7 @@ const LoanApprovals = () => {
 
   const fetchLoans = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/admin/loan-applications`, {
+      const res = await axios.get(`${API_BASE_URL}/loan-requests`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setLoans(res.data);
