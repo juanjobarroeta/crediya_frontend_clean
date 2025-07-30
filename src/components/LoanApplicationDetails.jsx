@@ -170,10 +170,12 @@ const LoanApplicationDetails = () => {
             disabled={!documents.contract_uploaded}
             onClick={async () => {
               try {
-                await axios.post(`${API_BASE_URL}/admin/loans/${loan.id}/approve`, {}, {
+                await axios.patch(`${API_BASE_URL}/admin/loan-applications/${loan.id}/status`, {
+                  status: "approved"
+                }, {
                   headers: { Authorization: `Bearer ${token}` }
                 });
-                alert("✅ Préstamo aprobado. Ahora puedes marcarlo como entregado.");
+                alert("✅ Préstamo aprobado.");
               } catch (err) {
                 console.error("Error approving loan:", err);
                 alert("❌ Error al aprobar el préstamo.");
@@ -187,7 +189,9 @@ const LoanApplicationDetails = () => {
             className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 rounded"
             onClick={async () => {
               try {
-                await axios.post(`${API_BASE_URL}/admin/loans/${loan.id}/reject`, {}, {
+                await axios.patch(`${API_BASE_URL}/admin/loan-applications/${loan.id}/status`, {
+                  status: "rejected"
+                }, {
                   headers: { Authorization: `Bearer ${token}` }
                 });
                 alert("🚫 Préstamo rechazado.");
