@@ -27,9 +27,10 @@ const LoanApplicationDetails = () => {
         console.log("🕵️ Investigation:", res.data.investigation);
         setData(res.data);
       } catch (err) {
-        console.error("Error fetching loan application details:", err);
+        console.error("❌ Error caught in fetchDetails:", err);
         setData(null);
       } finally {
+        console.log("✅ Done fetching, setting loading to false");
         setLoading(false);
       }
     };
