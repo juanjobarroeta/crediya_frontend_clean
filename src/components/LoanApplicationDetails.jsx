@@ -14,6 +14,7 @@ const LoanApplicationDetails = () => {
   useEffect(() => {
     const fetchDetails = async () => {
       try {
+        console.log("🌐 API Base URL:", API_BASE_URL);
         const res = await axios.get(`${API_BASE_URL}/admin/loan-applications/${id}/details`, {
           headers: { Authorization: `Bearer ${token}` }
         });
