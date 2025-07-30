@@ -34,7 +34,10 @@ const LoanApplicationDetails = () => {
         setLoading(false);
       }
     };
-    fetchDetails();
+    fetchDetails().catch((err) => {
+      console.error("💥 Uncaught error in useEffect:", err);
+      setLoading(false);
+    });
   }, [id, token]);
 
   if (loading) return <Layout><div className="p-6 text-white">Cargando...</div></Layout>;
