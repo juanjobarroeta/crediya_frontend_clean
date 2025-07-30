@@ -20,6 +20,11 @@ const LoanApplicationDetails = () => {
           headers: { Authorization: `Bearer ${token}` }
         });
         console.log("🚀 API response:", res.data);
+        console.log("🧾 Loan content:", res.data.loan);
+        console.log("👤 Customer:", res.data.customer);
+        console.log("📎 Documents:", res.data.documents);
+        console.log("👥 Avals:", res.data.avals);
+        console.log("🕵️ Investigation:", res.data.investigation);
         setData(res.data);
       } catch (err) {
         console.error("Error fetching loan application details:", err);
