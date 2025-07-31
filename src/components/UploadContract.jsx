@@ -16,7 +16,7 @@ const UploadContract = ({ loanId, onSuccess }) => {
     formData.append("contract", file);
 
     try {
-      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/admin/loans/${loanId}/upload-contract`, formData, {
+      await axios.post(`${import.meta.env.VITE_API_URL}/admin/loans/${loanId}/upload-contract`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data"
