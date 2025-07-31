@@ -92,7 +92,7 @@ const LoanApprovals = () => {
                 )}
 
                 {!loan.contract_path && (
-                  <UploadContract loanId={loan.id} onSuccess={fetchLoans} />
+                  <UploadContract loanId={loan.loan_id || loan.id} onSuccess={fetchLoans} />
                 )}
 
                 <Link
