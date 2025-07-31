@@ -94,20 +94,6 @@ const LoanApprovals = () => {
                 {!loan.contract_path && (
                   <UploadContract loanId={loan.loan_id || loan.id} onSuccess={fetchLoans} />
                 )}
-                {loan.contract_path && (
-                  <button
-                    className="inline-block bg-lime-500 hover:bg-lime-600 text-black px-3 py-1 rounded text-sm font-medium mr-2"
-                    onClick={() => updateLoanStatus(loan.id, "approve")}
-                  >
-                    Aprobar
-                  </button>
-                )}
-                <button
-                  className="inline-block bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium"
-                  onClick={() => updateLoanStatus(loan.id, "reject")}
-                >
-                  Rechazar
-                </button>
 
                 <Link
                   to={`/admin/loan-applications/${loan.id}`}
