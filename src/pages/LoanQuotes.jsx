@@ -32,18 +32,33 @@ const LoanQuotes = () => {
       return;
     }
 
-    const rate = parseFloat(product.interest_rate) / 100;
+    const annualRate = parseFloat(product.interest_rate) / 100;
     const financedAmount = parseFloat(phonePrice);
-    const totalRepay = financedAmount * (1 + rate);
+    
+    // Calculate weekly rate from annual rate
+    const weeklyRate = annualRate / 52; // 52 weeks in a year
+    
+    console.log('🔢 Quote Calculation Debug:');
+    console.log('Annual Rate:', product.interest_rate + '%');
+    console.log('Weekly Rate:', (weeklyRate * 100).toFixed(4) + '%');
+    console.log('Principal:', financedAmount);
+    console.log('Term Weeks:', product.term_weeks);
+    
+    // Calculate total repayment using compound interest
+    const totalRepay = financedAmount * Math.pow(1 + weeklyRate, product.term_weeks);
     const weeklyPayment = totalRepay / product.term_weeks;
+    
+    console.log('Total Repayment:', totalRepay.toFixed(2));
+    console.log('Weekly Payment:', weeklyPayment.toFixed(2));
 
     // Generate amortization schedule
     const amortizationSchedule = [];
-    let balance = totalRepay;
+    let balance = financedAmount; // Start with original principal
     for (let i = 1; i <= product.term_weeks; i++) {
-      const interestPayment = balance * rate / product.term_weeks;
+      const interestPayment = balance * weeklyRate;
       const principalPayment = weeklyPayment - interestPayment;
       balance -= principalPayment;
+      
       amortizationSchedule.push({
         week: i,
         payment: weeklyPayment.toFixed(2),
@@ -58,7 +73,7 @@ const LoanQuotes = () => {
       phoneType,
       phonePrice: financedAmount.toFixed(2),
       term: product.term_weeks,
-      interestRate: rate,
+      interestRate: annualRate * 100, // Show as percentage
       totalRepay: totalRepay.toFixed(2),
       weeklyPayment: weeklyPayment.toFixed(2),
       amortizationSchedule,
