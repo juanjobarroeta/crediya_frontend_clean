@@ -191,15 +191,23 @@ const LoanDetails = () => {
               </tr>
             </thead>
             <tbody>
-              {journal_entries.map((entry, i) => (
-                <tr key={i} className="border-t border-gray-600">
-                  <td className="px-2 py-1">{new Date(entry.date).toLocaleDateString()}</td>
-                  <td className="px-2 py-1">{entry.description}</td>
-                  <td className="px-2 py-1">{entry.account_code}</td>
-                  <td className="px-2 py-1">{entry.debit}</td>
-                  <td className="px-2 py-1">{entry.credit}</td>
+              {loanData.journal_entries && loanData.journal_entries.length > 0 ? (
+                loanData.journal_entries.map((entry, i) => (
+                  <tr key={i} className="border-t border-gray-600">
+                    <td className="px-2 py-1">{new Date(entry.date).toLocaleDateString()}</td>
+                    <td className="px-2 py-1">{entry.description}</td>
+                    <td className="px-2 py-1">{entry.account_code}</td>
+                    <td className="px-2 py-1">{entry.debit}</td>
+                    <td className="px-2 py-1">{entry.credit}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5" className="px-2 py-1 text-center text-gray-400">
+                    No hay asientos contables registrados
+                  </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
