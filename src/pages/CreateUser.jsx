@@ -41,7 +41,7 @@ const CreateUser = () => {
     const fetchUsers = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5001/admin/users", {
+        const res = await axios.get("${API_BASE_URL}/admin/users", {
           headers: { Authorization: `Bearer ${token}` },
         });
         console.log("Users fetched:", res.data);
@@ -59,7 +59,7 @@ const CreateUser = () => {
     const fetchStores = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5001/admin/stores", {
+        const res = await axios.get("${API_BASE_URL}/admin/stores", {
           headers: { Authorization: `Bearer ${token}` },
         });
         console.log("Stores fetched (raw):", res.data);
@@ -92,7 +92,7 @@ const CreateUser = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.patch(
-        `http://localhost:5001/admin/users/${userId}`,
+        `${API_BASE_URL}/admin/users/${userId}`,
         { is_active: false },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -129,7 +129,7 @@ const CreateUser = () => {
     setError("");
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post("http://localhost:5001/admin/create-user", {
+      const res = await axios.post("${API_BASE_URL}/admin/create-user", {
         ...form,
         permissions: JSON.parse(form.permissions || "{}")
       }, {
