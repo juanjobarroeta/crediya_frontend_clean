@@ -44,12 +44,16 @@ const LoanQuotes = () => {
     console.log('Principal:', financedAmount);
     console.log('Term Weeks:', product.term_weeks);
     
-    // Calculate total repayment using compound interest
-    const totalRepay = financedAmount * Math.pow(1 + weeklyRate, product.term_weeks);
-    const weeklyPayment = totalRepay / product.term_weeks;
+    // Calculate weekly payment using proper amortization formula
+    // PMT = P * (r * (1 + r)^n) / ((1 + r)^n - 1)
+    // where P = principal, r = weekly rate, n = number of weeks
+    const weeklyPayment = financedAmount * (weeklyRate * Math.pow(1 + weeklyRate, product.term_weeks)) / 
+                         (Math.pow(1 + weeklyRate, product.term_weeks) - 1);
     
+    const totalRepay = weeklyPayment * product.term_weeks;
+    
+    console.log('Weekly Payment (calculated):', weeklyPayment.toFixed(2));
     console.log('Total Repayment:', totalRepay.toFixed(2));
-    console.log('Weekly Payment:', weeklyPayment.toFixed(2));
 
     // Generate amortization schedule
     const amortizationSchedule = [];
@@ -59,12 +63,15 @@ const LoanQuotes = () => {
       const principalPayment = weeklyPayment - interestPayment;
       balance -= principalPayment;
       
+      // Ensure balance doesn't go below zero
+      if (balance < 0) balance = 0;
+      
       amortizationSchedule.push({
         week: i,
         payment: weeklyPayment.toFixed(2),
         principal: principalPayment.toFixed(2),
         interest: interestPayment.toFixed(2),
-        balance: balance > 0 ? balance.toFixed(2) : '0.00',
+        balance: balance.toFixed(2),
       });
     }
 
