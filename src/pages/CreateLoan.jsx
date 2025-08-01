@@ -18,6 +18,7 @@ const CreateLoan = () => {
   const [storeId, setStoreId] = useState("");
 
   const token = localStorage.getItem("token");
+  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
 
   const fetchData = async () => {
     try {
@@ -159,24 +160,37 @@ const CreateLoan = () => {
 
         const downPayment = parseFloat(selectedFin.down_payment || 0);
         const productPrice = selectedProd ? parseFloat(selectedProd.sale_price) : 0;
-        const principal = loanType === "producto"
+        const financedAmount = loanType === "producto"
           ? productPrice - downPayment
           : parseFloat(cashAmount || 0);
-        // Interest calculation as annual rate, proportional to term in weeks (52 weeks = 1 year)
+        
+        // Use the same calculation logic as the quote system
         const annualRate = parseFloat(selectedFin.interest_rate) / 100;
-        const termFraction = selectedFin.term_weeks / 52;
-        const interest = principal * annualRate * termFraction;
-        const total = principal + interest;
-        const frequencyMap = {
-          diario: 1,
-          semanal: 7,
-          quincenal: 14,
-          mensual: 30
-        };
-        const intervalDays = frequencyMap[selectedFin.payment_frequency] || 7;
-        const totalDays = selectedFin.term_weeks * 7;
-        const numPayments = Math.ceil(totalDays / intervalDays);
-        const installment = total / numPayments;
+        const weeklyRate = annualRate / 52;
+        const totalRepay = financedAmount * Math.pow(1 + weeklyRate, selectedFin.term_weeks);
+        const weeklyPayment = financedAmount * (weeklyRate * Math.pow(1 + weeklyRate, selectedFin.term_weeks)) / 
+                             (Math.pow(1 + weeklyRate, selectedFin.term_weeks) - 1);
+        const totalInterest = totalRepay - financedAmount;
+        
+        // Generate amortization schedule
+        const amortizationSchedule = [];
+        let balance = financedAmount;
+        
+        for (let i = 1; i <= selectedFin.term_weeks; i++) {
+          const interestPayment = balance * weeklyRate;
+          const principalPayment = weeklyPayment - interestPayment;
+          balance = balance - principalPayment;
+          
+          if (balance < 0) balance = 0;
+          
+          amortizationSchedule.push({
+            week: i,
+            payment: weeklyPayment.toFixed(2),
+            principal: principalPayment.toFixed(2),
+            interest: interestPayment.toFixed(2),
+            balance: balance.toFixed(2),
+          });
+        }
 
         return (
           <div className="mt-6 p-6 bg-[#0f0f0f] border border-crediyaGreen rounded-xl shadow-md">
@@ -185,32 +199,45 @@ const CreateLoan = () => {
               <>
                 <p><strong>Precio del producto:</strong> ${selectedProd.sale_price}</p>
                 <p><strong>Enganche:</strong> ${downPayment}</p>
-                <p><strong>Capital a financiar:</strong> ${principal.toFixed(2)}</p>
+                <p><strong>Capital a financiar:</strong> ${financedAmount.toFixed(2)}</p>
               </>
             ) : (
               <>
                 <p><strong>Tipo de préstamo:</strong> Efectivo</p>
-                <p><strong>Capital a financiar:</strong> ${principal.toFixed(2)}</p>
+                <p><strong>Capital a financiar:</strong> ${financedAmount.toFixed(2)}</p>
               </>
             )}
-            <p><strong>Intereses:</strong> ${interest.toFixed(2)}</p>
-            <p><strong>Total a pagar:</strong> ${total.toFixed(2)}</p>
-            <p><strong>Pagos {selectedFin.payment_frequency}:</strong> ${installment.toFixed(2)}</p>
+            <p><strong>Intereses totales:</strong> ${totalInterest.toFixed(2)}</p>
+            <p><strong>Total a pagar:</strong> ${totalRepay.toFixed(2)}</p>
+            <p><strong>Pago semanal:</strong> ${weeklyPayment.toFixed(2)}</p>
 
             <table className="w-full text-sm mt-4 text-white border border-crediyaGreen">
               <thead>
                 <tr>
                   <th>Semana</th>
                   <th>Pago</th>
+                  <th>Principal</th>
+                  <th>Interés</th>
+                  <th>Saldo</th>
                 </tr>
               </thead>
               <tbody>
-                {Array.from({ length: numPayments }).map((_, i) => (
-                  <tr key={i}>
-                    <td>{selectedFin.payment_frequency} {i + 1}</td>
-                    <td>${installment.toFixed(2)}</td>
+                {amortizationSchedule.slice(0, 10).map((row) => (
+                  <tr key={row.week}>
+                    <td>{row.week}</td>
+                    <td>${row.payment}</td>
+                    <td>${row.principal}</td>
+                    <td>${row.interest}</td>
+                    <td>${row.balance}</td>
                   </tr>
                 ))}
+                {amortizationSchedule.length > 10 && (
+                  <tr>
+                    <td colSpan="5" className="text-center text-gray-400">
+                      ... y {amortizationSchedule.length - 10} semanas más
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
 
@@ -225,12 +252,17 @@ const CreateLoan = () => {
                   const res = await axios.post(`${API_BASE_URL}/apply-loan`, {
                     customer_id: selectedCustomer,
                     inventory_item_id: loanType === "producto" ? selectedProduct : null,
-                    amount: principal,
+                    amount: financedAmount,
                     term: selectedFin.term_weeks,
                     loan_type: loanType,
                     financial_product_id: selectedFinance,
                     store_id: storeId,
-                    notes
+                    notes,
+                    created_by: currentUser.id,
+                    weekly_payment: weeklyPayment,
+                    total_repay: totalRepay,
+                    total_interest: totalInterest,
+                    amortization_schedule: amortizationSchedule
                   }, {
                     headers: { Authorization: `Bearer ${token}` },
                   });
