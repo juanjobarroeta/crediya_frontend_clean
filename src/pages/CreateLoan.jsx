@@ -16,6 +16,7 @@ const CreateLoan = () => {
   const [cashAmount, setCashAmount] = useState("");
   const [notes, setNotes] = useState("");
   const [storeId, setStoreId] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
 
   const token = localStorage.getItem("token");
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -242,12 +243,20 @@ const CreateLoan = () => {
             </table>
 
             <button
-              className="mt-4 bg-lime-500 hover:bg-lime-600 text-black font-bold px-6 py-2 rounded transition"
+              className={`mt-4 text-black font-bold px-6 py-2 rounded transition ${
+                isCreating 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-lime-500 hover:bg-lime-600'
+              }`}
               onClick={async () => {
+                if (isCreating) return; // Prevent double clicks
+                
                 if (loanType === "efectivo" && !cashAmount) {
                   alert("Por favor ingresa el monto del préstamo en efectivo.");
                   return;
                 }
+                
+                setIsCreating(true);
                 try {
                   const res = await axios.post(`${API_BASE_URL}/apply-loan`, {
                     customer_id: selectedCustomer,
@@ -279,10 +288,13 @@ const CreateLoan = () => {
                 } catch (err) {
                   console.error("Error creando el préstamo:", err);
                   alert("❌ Error al crear el préstamo");
+                } finally {
+                  setIsCreating(false);
                 }
               }}
+              disabled={isCreating}
             >
-              Crear préstamo
+              {isCreating ? "Creando préstamo..." : "Crear préstamo"}
             </button>
           </div>
         );
