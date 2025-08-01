@@ -119,116 +119,120 @@ const LoanQuotes = () => {
       console.log('Logo not available, continuing without it');
     }
 
-    // Header with CrediYa branding
-    doc.setFillColor(34, 197, 94); // Green color
-    doc.rect(0, 0, 210, 30, 'F');
+    // Header with CrediYa branding using official brand colors
+    doc.setFillColor(60, 91, 193); // Primary Blue: #3C5BC1
+    doc.rect(0, 0, 210, 35, 'F');
     
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(24);
+    doc.setFontSize(26);
     doc.setFont('helvetica', 'bold');
-    doc.text('CrediYa', 20, 20);
+    doc.text('CrediYa', 25, 22);
     
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(18);
+    doc.setTextColor(46, 61, 123); // Dark Blue: #2E3D7B
+    doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
-    doc.text('Cotización de Préstamo', 20, 45);
+    doc.text('Cotización de Préstamo', 25, 50);
     
-    // Quote details in a styled box
-    doc.setFillColor(240, 240, 240);
-    doc.rect(15, 55, 180, 40, 'F');
+    // Quote details in a styled box with brand colors
+    doc.setFillColor(244, 246, 250); // Light Gray Background: #F4F6FA
+    doc.rect(20, 60, 170, 45, 'F');
     
-    doc.setTextColor(0, 0, 0);
+    doc.setTextColor(51, 51, 51); // Dark Gray Text: #333333
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Cliente: ${quote.customerName}`, 20, 65);
-    doc.text(`Teléfono: ${quote.phoneType}`, 20, 75);
-    doc.text(`Precio: $${quote.phonePrice} MXN`, 20, 85);
-    doc.text(`Plazo: ${quote.term} semanas`, 110, 65);
-    doc.text(`Pago semanal: $${quote.weeklyPayment} MXN`, 110, 75);
-    doc.text(`Tasa de interés: ${quote.interestRate.toFixed(2)}% anual`, 110, 85);
+    doc.text(`Cliente: ${quote.customerName}`, 25, 70);
+    doc.text(`Teléfono: ${quote.phoneType}`, 25, 80);
+    doc.text(`Precio: $${quote.phonePrice} MXN`, 25, 90);
+    doc.text(`Plazo: ${quote.term} semanas`, 115, 70);
+    doc.text(`Pago semanal: $${quote.weeklyPayment} MXN`, 115, 80);
+    doc.text(`Tasa de interés: ${quote.interestRate.toFixed(2)}% anual`, 115, 90);
     
-    // Summary box
-    doc.setFillColor(34, 197, 94);
-    doc.rect(15, 105, 180, 25, 'F');
+    // Summary box with accent blue
+    doc.setFillColor(95, 120, 226); // Accent Blue: #5F78E2
+    doc.rect(20, 115, 170, 30, 'F');
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(14);
+    doc.setFontSize(15);
     doc.setFont('helvetica', 'bold');
-    doc.text('Resumen del Préstamo', 20, 115);
+    doc.text('Resumen del Préstamo', 25, 125);
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Total a pagar: $${quote.totalRepay} MXN`, 20, 125);
-    doc.text(`Interés total: $${(parseFloat(quote.totalRepay) - parseFloat(quote.phonePrice)).toFixed(2)} MXN`, 110, 125);
+    doc.text(`Total a pagar: $${quote.totalRepay} MXN`, 25, 135);
+    doc.text(`Interés total: $${(parseFloat(quote.totalRepay) - parseFloat(quote.phonePrice)).toFixed(2)} MXN`, 115, 135);
 
-    // Amortization table header
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(14);
+    // Amortization table header with brand colors
+    doc.setTextColor(46, 61, 123); // Dark Blue: #2E3D7B
+    doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text('Calendario de Amortización', 20, 150);
+    doc.text('Calendario de Amortización', 25, 160);
     
-    // Table styling
-    const startY = 160;
+    // Table styling with brand colors
+    const startY = 170;
     let y = startY;
     
-    // Table header with green background
-    doc.setFillColor(34, 197, 94);
-    doc.rect(15, y - 5, 180, 8, 'F');
+    // Table header with primary blue background
+    doc.setFillColor(60, 91, 193); // Primary Blue: #3C5BC1
+    doc.rect(20, y - 5, 170, 8, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.text('Semana', 20, y);
-    doc.text('Pago (MXN)', 45, y);
-    doc.text('Principal (MXN)', 75, y);
-    doc.text('Interés (MXN)', 110, y);
-    doc.text('Saldo (MXN)', 145, y);
+    doc.text('Semana', 25, y);
+    doc.text('Pago (MXN)', 50, y);
+    doc.text('Principal (MXN)', 80, y);
+    doc.text('Interés (MXN)', 115, y);
+    doc.text('Saldo (MXN)', 150, y);
     
     y += 8;
     
-    // Table rows with alternating colors
+    // Table rows with alternating colors using brand palette
     quote.amortizationSchedule.forEach((row, index) => {
       if (y > 280) {
         doc.addPage();
-        y = 20;
+        y = 25;
         
         // Repeat header on new page
-        doc.setFillColor(34, 197, 94);
-        doc.rect(15, y - 5, 180, 8, 'F');
+        doc.setFillColor(60, 91, 193); // Primary Blue: #3C5BC1
+        doc.rect(20, y - 5, 170, 8, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
-        doc.text('Semana', 20, y);
-        doc.text('Pago (MXN)', 45, y);
-        doc.text('Principal (MXN)', 75, y);
-        doc.text('Interés (MXN)', 110, y);
-        doc.text('Saldo (MXN)', 145, y);
+        doc.text('Semana', 25, y);
+        doc.text('Pago (MXN)', 50, y);
+        doc.text('Principal (MXN)', 80, y);
+        doc.text('Interés (MXN)', 115, y);
+        doc.text('Saldo (MXN)', 150, y);
         y += 8;
       }
       
-      // Alternating row colors
+      // Alternating row colors using brand colors
       if (index % 2 === 0) {
-        doc.setFillColor(248, 250, 252);
-        doc.rect(15, y - 3, 180, 6, 'F');
+        doc.setFillColor(250, 251, 253); // Background for Boxes: #FAFBFD
+        doc.rect(20, y - 3, 170, 6, 'F');
       }
       
-      doc.setTextColor(0, 0, 0);
+      doc.setTextColor(51, 51, 51); // Dark Gray Text: #333333
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
-      doc.text(row.week.toString(), 20, y);
-      doc.text(`$${row.payment}`, 45, y);
-      doc.text(`$${row.principal}`, 75, y);
-      doc.text(`$${row.interest}`, 110, y);
-      doc.text(`$${row.balance}`, 145, y);
+      doc.text(row.week.toString(), 25, y);
+      doc.text(`$${row.payment}`, 50, y);
+      doc.text(`$${row.principal}`, 80, y);
+      doc.text(`$${row.interest}`, 115, y);
+      doc.text(`$${row.balance}`, 150, y);
       y += 6;
     });
     
-    // Footer
+    // Footer with brand colors
     const pageCount = doc.internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
-      doc.setTextColor(128, 128, 128);
+      doc.setTextColor(122, 122, 122); // Medium Gray Text: #7A7A7A
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
-      doc.text(`Página ${i} de ${pageCount}`, 20, 290);
+      doc.text(`Página ${i} de ${pageCount}`, 25, 290);
       doc.text(`Generado el ${new Date().toLocaleDateString('es-MX')}`, 150, 290);
+      
+      // Add subtle brand accent at bottom
+      doc.setFillColor(60, 91, 193); // Primary Blue: #3C5BC1
+      doc.rect(0, 295, 210, 5, 'F');
     }
 
     doc.save(`CotizacionPrestamo_${quote.customerName.replace(/\s+/g, '_')}.pdf`);
