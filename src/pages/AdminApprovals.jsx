@@ -14,6 +14,7 @@ const AdminApprovals = () => {
   const [expenses, setExpenses] = useState([]);
   const [paidExpenses, setPaidExpenses] = useState([]);
   const [allPaidExpenses, setAllPaidExpenses] = useState([]); // keep all for filtering
+  const [pendingLoans, setPendingLoans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(() => {
     const stored = localStorage.getItem("user");
@@ -77,7 +78,56 @@ const AdminApprovals = () => {
     fetchExpenses();
   }, []);
 
+  useEffect(() => {
+    const fetchPendingLoans = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/admin/pending-loan-approvals`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        setPendingLoans(Array.isArray(res.data) ? res.data : []);
+        console.log("💰 Pending Loan Approvals:", Array.isArray(res.data) ? res.data : []);
+      } catch (err) {
+        console.error("Error fetching pending loan approvals:", err);
+      }
+    };
+
+    fetchPendingLoans();
+  }, []);
+
   const handleAction = async (id, action, type = "inventory") => {
+    if (type === "loan") {
+      try {
+        if (action === "approve") {
+          await axios.put(`${API_BASE_URL}/loans/${id}/approve`, {}, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          });
+          alert("✅ Préstamo aprobado exitosamente");
+        } else if (action === "deliver") {
+          await axios.put(`${API_BASE_URL}/loans/${id}/deliver`, {}, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          });
+          alert("✅ Producto entregado y contabilidad actualizada");
+        }
+        // Refresh pending loans
+        const res = await axios.get(`${API_BASE_URL}/admin/pending-loan-approvals`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        setPendingLoans(Array.isArray(res.data) ? res.data : []);
+      } catch (err) {
+        console.error(`Error processing loan ${action}:`, err);
+        alert(`❌ Error: ${err.response?.data?.message || err.message}`);
+      }
+      return;
+    }
+
     if (type === "expense") {
       const endpoint = action === "approve" ? "approve" : "cancel";
       try {
@@ -178,6 +228,51 @@ const AdminApprovals = () => {
           ))}
         </div>
         
+      )}
+
+      <h2 className="text-xl font-semibold mb-6 text-white mt-5">Aprobaciones de Préstamos</h2>
+      {pendingLoans.length === 0 ? (
+        <p className="text-gray-400 text-sm">No hay préstamos por aprobar.</p>
+      ) : (
+        <div className="row">
+          {Array.isArray(pendingLoans) ? pendingLoans.map((loan) => (
+            <div key={loan.loan_id} className="col-md-6 mb-4">
+              <div className="bg-black border-t-4 border-lime-500 text-white rounded-md p-4 shadow mb-6">
+                <h5>Préstamo #{loan.loan_id}</h5>
+                <p><strong>Cliente:</strong> {loan.first_name} {loan.last_name}</p>
+                <p><strong>Teléfono:</strong> {loan.phone}</p>
+                <p><strong>Email:</strong> {loan.email}</p>
+                <p><strong>Monto:</strong> ${Number(loan.amount).toFixed(2)}</p>
+                <p><strong>Plazo:</strong> {loan.term} semanas</p>
+                <p><strong>Pago Semanal:</strong> ${Number(loan.weekly_payment).toFixed(2)}</p>
+                <p><strong>Total a Pagar:</strong> ${Number(loan.total_repay).toFixed(2)}</p>
+                <p><strong>Interés Total:</strong> ${Number(loan.total_interest).toFixed(2)}</p>
+                <p><strong>Tipo:</strong> {loan.loan_type}</p>
+                {loan.product_model && (
+                  <p><strong>Producto:</strong> {loan.product_model} (IMEI: {loan.product_imei})</p>
+                )}
+                <p><strong>Creado por:</strong> {loan.created_by_name}</p>
+                <p><strong>Fecha de Solicitud:</strong> {new Date(loan.created_at).toLocaleDateString()}</p>
+                <div className="d-flex justify-content-start mt-2">
+                  <button 
+                    className="bg-lime-500 hover:bg-lime-600 text-black font-semibold px-4 py-1 rounded text-sm me-2" 
+                    onClick={() => handleAction(loan.loan_id, "approve", "loan")}
+                  >
+                    Aprobar Préstamo
+                  </button>
+                  {loan.loan_type === 'producto' && (
+                    <button 
+                      className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-1 rounded text-sm" 
+                      onClick={() => handleAction(loan.loan_id, "deliver", "loan")}
+                    >
+                      Entregar Producto
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )) : null}
+        </div>
       )}
 
       <h2 className="text-xl font-semibold mb-6 text-white mt-5">Aprobaciones de Gastos</h2>

@@ -81,11 +81,14 @@ const CustomerProfile = () => {
 
     const fetchLoans = async () => {
       try {
+        console.log("🔍 Fetching loans for customer ID:", id);
         const res = await axios.get(`${API_BASE_URL}/customers/${id}/loans`, {
           headers: { Authorization: "Bearer " + localStorage.getItem("token") },
         });
         setLoans(res.data);
         console.log("✅ Loans loaded:", res.data);
+        console.log("📊 Loans count:", res.data.length);
+        console.log("📊 Loans statuses:", res.data.map(l => ({ id: l.id, status: l.status })));
       } catch (err) {
         console.error("Failed to load loans:", err);
         setError("No se pudo cargar los préstamos.");
@@ -198,10 +201,10 @@ const CustomerProfile = () => {
             <strong>Préstamos Atrasados:</strong> {loans.filter((l) => l.status === "atrasado").length}
           </p>
           <p>
-            <strong>Préstamos Activos:</strong> {loans.filter((l) => l.status === "activo").length}
+            <strong>Préstamos Activos:</strong> {loans.filter((l) => l.status === "pending" || l.status === "approved" || l.status === "activo").length}
           </p>
           <p>
-            <strong>Préstamos Finalizados:</strong> {loans.filter((l) => l.status === "liquidado").length}
+            <strong>Préstamos Finalizados:</strong> {loans.filter((l) => l.status === "liquidado" || l.status === "completed").length}
           </p>
         </div>
 
