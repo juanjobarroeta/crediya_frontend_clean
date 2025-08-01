@@ -4,6 +4,25 @@ import jsPDF from 'jspdf';
 import Layout from '../components/Layout';
 import { API_BASE_URL } from "../utils/constants";
 
+// Function to convert image to base64
+const getImageAsBase64 = (imagePath) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      const dataURL = canvas.toDataURL('image/png');
+      resolve(dataURL);
+    };
+    img.onerror = reject;
+    img.src = imagePath;
+  });
+};
+
 const LoanQuotes = () => {
   const [products, setProducts] = useState([]);
   const [selectedProductId, setSelectedProductId] = useState('');
@@ -87,44 +106,130 @@ const LoanQuotes = () => {
     });
   };
 
-  const downloadPDF = () => {
+  const downloadPDF = async () => {
     if (!quote) return;
 
     const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text(`Cotización de préstamo para ${quote.customerName}`, 10, 10);
+    
+    // Add logo
+    try {
+      const logoBase64 = await getImageAsBase64('/logo2.png');
+      doc.addImage(logoBase64, 'PNG', 20, 5, 30, 20);
+    } catch (e) {
+      console.log('Logo not available, continuing without it');
+    }
+
+    // Header with CrediYa branding
+    doc.setFillColor(34, 197, 94); // Green color
+    doc.rect(0, 0, 210, 30, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.text('CrediYa', 20, 20);
+    
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Cotización de Préstamo', 20, 45);
+    
+    // Quote details in a styled box
+    doc.setFillColor(240, 240, 240);
+    doc.rect(15, 55, 180, 40, 'F');
+    
+    doc.setTextColor(0, 0, 0);
     doc.setFontSize(12);
-    doc.text(`Tipo de teléfono: ${quote.phoneType}`, 10, 20);
-    doc.text(`Precio del teléfono: $${quote.phonePrice} MXN`, 10, 30);
-    doc.text(`Plazo: ${quote.term} semanas`, 10, 40);
-    doc.text(`Pago semanal: $${quote.weeklyPayment} MXN`, 10, 50);
-    // Removed total repayable line
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Cliente: ${quote.customerName}`, 20, 65);
+    doc.text(`Teléfono: ${quote.phoneType}`, 20, 75);
+    doc.text(`Precio: $${quote.phonePrice} MXN`, 20, 85);
+    doc.text(`Plazo: ${quote.term} semanas`, 110, 65);
+    doc.text(`Pago semanal: $${quote.weeklyPayment} MXN`, 110, 75);
+    doc.text(`Tasa de interés: ${quote.interestRate.toFixed(2)}% anual`, 110, 85);
+    
+    // Summary box
+    doc.setFillColor(34, 197, 94);
+    doc.rect(15, 105, 180, 25, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Resumen del Préstamo', 20, 115);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Total a pagar: $${quote.totalRepay} MXN`, 20, 125);
+    doc.text(`Interés total: $${(parseFloat(quote.totalRepay) - parseFloat(quote.phonePrice)).toFixed(2)} MXN`, 110, 125);
 
-    const startY = 80;
-    doc.text('Calendario de amortización:', 10, startY);
-    let y = startY + 10;
-
-    // Table Headers
+    // Amortization table header
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Calendario de Amortización', 20, 150);
+    
+    // Table styling
+    const startY = 160;
+    let y = startY;
+    
+    // Table header with green background
+    doc.setFillColor(34, 197, 94);
+    doc.rect(15, y - 5, 180, 8, 'F');
+    doc.setTextColor(255, 255, 255);
     doc.setFontSize(10);
-    doc.text('Semana', 10, y);
-    doc.text('Pago', 30, y);
-    doc.text('Principal', 60, y);
-    doc.text('Interés', 90, y);
-    doc.text('Saldo', 120, y);
-    y += 6;
-
-    quote.amortizationSchedule.forEach(row => {
+    doc.setFont('helvetica', 'bold');
+    doc.text('Semana', 20, y);
+    doc.text('Pago (MXN)', 45, y);
+    doc.text('Principal (MXN)', 75, y);
+    doc.text('Interés (MXN)', 110, y);
+    doc.text('Saldo (MXN)', 145, y);
+    
+    y += 8;
+    
+    // Table rows with alternating colors
+    quote.amortizationSchedule.forEach((row, index) => {
       if (y > 280) {
         doc.addPage();
-        y = 10;
+        y = 20;
+        
+        // Repeat header on new page
+        doc.setFillColor(34, 197, 94);
+        doc.rect(15, y - 5, 180, 8, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Semana', 20, y);
+        doc.text('Pago (MXN)', 45, y);
+        doc.text('Principal (MXN)', 75, y);
+        doc.text('Interés (MXN)', 110, y);
+        doc.text('Saldo (MXN)', 145, y);
+        y += 8;
       }
-      doc.text(row.week.toString(), 10, y);
-      doc.text(`$${row.payment}`, 30, y);
-      doc.text(`$${row.principal}`, 60, y);
-      doc.text(`$${row.interest}`, 90, y);
-      doc.text(`$${row.balance}`, 120, y);
+      
+      // Alternating row colors
+      if (index % 2 === 0) {
+        doc.setFillColor(248, 250, 252);
+        doc.rect(15, y - 3, 180, 6, 'F');
+      }
+      
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(row.week.toString(), 20, y);
+      doc.text(`$${row.payment}`, 45, y);
+      doc.text(`$${row.principal}`, 75, y);
+      doc.text(`$${row.interest}`, 110, y);
+      doc.text(`$${row.balance}`, 145, y);
       y += 6;
     });
+    
+    // Footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setTextColor(128, 128, 128);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Página ${i} de ${pageCount}`, 20, 290);
+      doc.text(`Generado el ${new Date().toLocaleDateString('es-MX')}`, 150, 290);
+    }
 
     doc.save(`CotizacionPrestamo_${quote.customerName.replace(/\s+/g, '_')}.pdf`);
   };
