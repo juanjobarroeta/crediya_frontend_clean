@@ -314,7 +314,7 @@ const CustomerProfile = () => {
             onClick={async () => {
               try {
                 const res = await axios.post(
-                  `${API_BASE_URL}/loans/${loans[0]?.id}/avals`,
+                  `${API_BASE_URL}/customers/${id}/avals`,
                   newAval,
                   { headers: { Authorization: "Bearer " + localStorage.getItem("token") } }
                 );

@@ -29,9 +29,9 @@ const LoanDetails = () => {
   }, [loan_id, token]);
 
   if (loading) return <div>Loading...</div>;
-  if (!loanData || !loanData.loan) return <div>No data found</div>;
+  if (!loanData) return <div>No data found</div>;
 
-  const { loan, payments, penalties, journal_entries } = loanData;
+  const { loan, installments, payments, penalties } = loanData;
 
   return (
     <Layout>
@@ -71,7 +71,51 @@ const LoanDetails = () => {
         </div>
 
         <div>
-          <h2 className="text-lg font-semibold mt-6 mb-2">🧾 Pagos</h2>
+          <h2 className="text-lg font-semibold mt-6 mb-2">📅 Calendario de Pagos</h2>
+          <table className="w-full text-sm border border-gray-600">
+            <thead className="bg-gray-700">
+              <tr>
+                <th className="px-2 py-1">Semana</th>
+                <th className="px-2 py-1">Fecha de Vencimiento</th>
+                <th className="px-2 py-1">Monto</th>
+                <th className="px-2 py-1">Principal</th>
+                <th className="px-2 py-1">Interés</th>
+                <th className="px-2 py-1">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {installments && installments.length > 0 ? (
+                installments.map((inst, i) => (
+                  <tr key={i} className="border-t border-gray-600">
+                    <td className="px-2 py-1">{inst.week_number}</td>
+                    <td className="px-2 py-1">{new Date(inst.due_date).toLocaleDateString()}</td>
+                    <td className="px-2 py-1">${inst.amount_due}</td>
+                    <td className="px-2 py-1">${inst.capital_portion}</td>
+                    <td className="px-2 py-1">${inst.interest_portion}</td>
+                    <td className="px-2 py-1">
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        inst.status === 'paid' ? 'bg-green-600' : 
+                        inst.status === 'overdue' ? 'bg-red-600' : 'bg-yellow-600'
+                      }`}>
+                        {inst.status === 'paid' ? 'Pagado' : 
+                         inst.status === 'overdue' ? 'Vencido' : 'Pendiente'}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className="px-2 py-1 text-center text-gray-400">
+                    No hay cuotas programadas
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div>
+          <h2 className="text-lg font-semibold mt-6 mb-2">🧾 Pagos Realizados</h2>
           <table className="w-full text-sm border border-gray-600">
             <thead className="bg-gray-700">
               <tr>
@@ -83,15 +127,23 @@ const LoanDetails = () => {
               </tr>
             </thead>
             <tbody>
-              {payments.map((p, i) => (
-                <tr key={i} className="border-t border-gray-600">
-                  <td className="px-2 py-1">{new Date(p.payment_date).toLocaleDateString()}</td>
-                  <td className="px-2 py-1">{p.method}</td>
-                  <td className="px-2 py-1">{p.component}</td>
-                  <td className="px-2 py-1">${p.component_amount}</td>
-                  <td className="px-2 py-1">{p.installment_week}</td>
+              {payments && payments.length > 0 ? (
+                payments.map((p, i) => (
+                  <tr key={i} className="border-t border-gray-600">
+                    <td className="px-2 py-1">{new Date(p.payment_date).toLocaleDateString()}</td>
+                    <td className="px-2 py-1">{p.method}</td>
+                    <td className="px-2 py-1">{p.component}</td>
+                    <td className="px-2 py-1">${p.component_amount}</td>
+                    <td className="px-2 py-1">{p.installment_week}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5" className="px-2 py-1 text-center text-gray-400">
+                    No hay pagos registrados
+                  </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
@@ -107,13 +159,21 @@ const LoanDetails = () => {
               </tr>
             </thead>
             <tbody>
-              {penalties.map((penalty, i) => (
-                <tr key={i} className="border-t border-gray-600">
-                  <td className="px-2 py-1">{penalty.week_number}</td>
-                  <td className="px-2 py-1">{new Date(penalty.due_date).toLocaleDateString()}</td>
-                  <td className="px-2 py-1">${penalty.penalty_applied}</td>
+              {penalties && penalties.length > 0 ? (
+                penalties.map((penalty, i) => (
+                  <tr key={i} className="border-t border-gray-600">
+                    <td className="px-2 py-1">{penalty.week_number}</td>
+                    <td className="px-2 py-1">{new Date(penalty.due_date).toLocaleDateString()}</td>
+                    <td className="px-2 py-1">${penalty.penalty_applied}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="3" className="px-2 py-1 text-center text-gray-400">
+                    No hay penalizaciones aplicadas
+                  </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
