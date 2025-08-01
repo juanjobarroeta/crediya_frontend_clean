@@ -119,7 +119,7 @@ const CustomerDirectory = () => {
                   <td className="w-48">{c.email}</td>
                   <td className="w-32">{c.phone}</td>
                   <td className="w-32">{c.loan_count ?? 0}</td>
-                  <td className="w-32">${(c.total_balance ?? 0).toFixed(2)}</td>
+                  <td className="w-32">${parseFloat(c.total_balance || 0).toFixed(2)}</td>
                   <td className="w-28">
                     <Link to={`/customer/${c.id}`} className="text-lime-400 hover:underline text-sm font-medium">
                       Ver Perfil
