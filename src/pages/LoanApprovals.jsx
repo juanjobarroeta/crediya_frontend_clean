@@ -68,7 +68,7 @@ const LoanApprovals = () => {
       <h2 className="text-xl font-semibold mb-6 text-white">Solicitudes de préstamo pendientes</h2>
 
       {loans.length === 0 ? (
-        <p className="text-white">No hay préstamos pendientes por aprobar.</p>
+        <p className="text-white">✅ No hay préstamos pendientes por aprobar. Todos los préstamos han sido procesados.</p>
       ) : (
         <div className="row">
           {loans.map((loan) => (

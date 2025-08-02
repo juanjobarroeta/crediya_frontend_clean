@@ -163,19 +163,23 @@ const LoanApplicationDetails = () => {
         <div className="pt-4 flex gap-4">
           <button
             className={`px-6 py-2 rounded font-semibold ${
-              documents.contract_uploaded
+              loan.status === 'approved' 
+                ? "bg-gray-600 text-gray-300 cursor-not-allowed"
+                : documents.contract_uploaded
                 ? "bg-lime-500 hover:bg-lime-600 text-black"
                 : "bg-gray-600 text-gray-300 cursor-not-allowed"
             }`}
-            disabled={!documents.contract_uploaded}
+            disabled={!documents.contract_uploaded || loan.status === 'approved'}
             onClick={async () => {
               try {
+                console.log(`🔄 Approving loan ${loan.id}...`);
                 await axios.patch(`${API_BASE_URL}/admin/loan-applications/${loan.id}/status`, {
                   status: "approved"
                 }, {
                   headers: { Authorization: `Bearer ${token}` }
                 });
                 alert("✅ Préstamo aprobado.");
+                console.log("✅ Loan approved, refreshing page...");
                 // Refresh the page to show updated status
                 window.location.reload();
               } catch (err) {
@@ -184,7 +188,7 @@ const LoanApplicationDetails = () => {
               }
             }}
           >
-            Aprobar Préstamo
+            {loan.status === 'approved' ? 'Préstamo Aprobado' : 'Aprobar Préstamo'}
           </button>
 
           <button
