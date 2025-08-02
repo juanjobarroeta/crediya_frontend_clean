@@ -310,39 +310,89 @@ const RegisterPayment = () => {
                       <span>{showLoanInfo ? "🔽" : "▶️"}</span>
                     </h4>
                     {showLoanInfo && (
-                      <div className="space-y-1">
-                        <p><strong>Cliente:</strong> {selectedLoan.first_name || ""} {selectedLoan.last_name || ""}</p>
-                        <p><strong>Teléfono:</strong> {selectedLoan.customer_phone || "N/A"}</p>
-                        <p><strong>Dirección:</strong> {selectedLoan.customer_address || "N/A"}</p>
-                        <p><strong>Monto:</strong> ${selectedLoan.amount}</p>
-                        <p><strong>Próximo pago:</strong> {
-                          installments.filter(i => i.status === "pending").length > 0
-                            ? (() => {
-                                const next = installments.find(i => i.status === "pending");
-                                return `${new Date(next.due_date).toLocaleDateString()} — $${next.amount_due}`;
-                              })()
-                            : "✔️ Completado"
-                        }</p>
-                        <p><strong>Último pago:</strong> {
-                          paymentHistory.length > 0 
-                            ? `${new Date(paymentHistory[paymentHistory.length - 1].payment_date).toLocaleDateString()} — $${paymentHistory[paymentHistory.length - 1].amount}` 
-                            : "N/A"
-                        }</p>
-                        <p><strong>Total pagado:</strong> ${paymentHistory && paymentHistory.length > 0 ? paymentHistory.reduce((acc, p) => acc + parseFloat(p.amount || 0), 0).toFixed(2) : "0.00"}</p>
-                        <p><strong>Saldo restante:</strong> ${
-                          (
-                            parseFloat(selectedLoan.amount) -
-                            paymentBreakdowns
-                              .filter(b => b.type === 'capital')
-                              .reduce((acc, b) => acc + parseFloat(b.amount), 0) +
-                            installments.reduce((acc, i) => acc + parseFloat(i.penalty_applied), 0)
-                          ).toFixed(2)
-                        }</p>
-                        <p><strong>Penalidades acumuladas:</strong> ${installments.reduce((acc, i) => acc + parseFloat(i.penalty_applied), 0).toFixed(2)}</p>
-                        {/* Warning if missing store_id or financial_product_id */}
-                        {(!selectedLoan.store_id || !selectedLoan.financial_product_id) && (
-                          <p className="text-red-400 font-bold mt-2">⚠️ Este préstamo no tiene sucursal o producto financiero asignado.</p>
-                        )}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Basic Loan Info */}
+                        <div className="space-y-2">
+                          <h5 className="text-crediyaGreen font-semibold border-b border-crediyaGreen pb-1">📋 Información del Préstamo</h5>
+                          <div className="space-y-1 text-sm">
+                            <p><strong>ID Préstamo:</strong> #{selectedLoan.id}</p>
+                            <p><strong>Estado:</strong> 
+                              <span className={`ml-1 px-2 py-0.5 rounded text-xs ${
+                                selectedLoan.status === 'approved' ? 'bg-blue-600' :
+                                selectedLoan.status === 'delivered' ? 'bg-green-600' :
+                                selectedLoan.status === 'pending' ? 'bg-yellow-600' :
+                                'bg-gray-600'
+                              }`}>
+                                {selectedLoan.status === 'approved' ? 'Aprobado' :
+                                 selectedLoan.status === 'delivered' ? 'Entregado' :
+                                 selectedLoan.status === 'pending' ? 'Pendiente' :
+                                 selectedLoan.status}
+                              </span>
+                            </p>
+                            <p><strong>Monto Original:</strong> ${parseFloat(selectedLoan.amount).toLocaleString()}</p>
+                            <p><strong>Plazo:</strong> {selectedLoan.term || 'N/A'} semanas</p>
+                            <p><strong>Pago Semanal:</strong> ${selectedLoan.weekly_payment ? parseFloat(selectedLoan.weekly_payment).toFixed(2) : 'N/A'}</p>
+                            <p><strong>Total a Pagar:</strong> ${selectedLoan.total_repay ? parseFloat(selectedLoan.total_repay).toFixed(2) : 'N/A'}</p>
+                            <p><strong>Interés Total:</strong> ${selectedLoan.total_interest ? parseFloat(selectedLoan.total_interest).toFixed(2) : 'N/A'}</p>
+                          </div>
+                        </div>
+
+                        {/* Customer Info */}
+                        <div className="space-y-2">
+                          <h5 className="text-crediyaGreen font-semibold border-b border-crediyaGreen pb-1">👤 Información del Cliente</h5>
+                          <div className="space-y-1 text-sm">
+                            <p><strong>Cliente:</strong> {selectedLoan.first_name || ""} {selectedLoan.last_name || ""}</p>
+                            <p><strong>Teléfono:</strong> {selectedLoan.customer_phone || "N/A"}</p>
+                            <p><strong>Dirección:</strong> {selectedLoan.customer_address || "N/A"}</p>
+                            <p><strong>Fecha de Creación:</strong> {selectedLoan.created_at ? new Date(selectedLoan.created_at).toLocaleDateString() : 'N/A'}</p>
+                          </div>
+                        </div>
+
+                        {/* Payment Status */}
+                        <div className="space-y-2">
+                          <h5 className="text-crediyaGreen font-semibold border-b border-crediyaGreen pb-1">💰 Estado de Pagos</h5>
+                          <div className="space-y-1 text-sm">
+                            <p><strong>Próximo pago:</strong> {
+                              installments.filter(i => i.status === "pending").length > 0
+                                ? (() => {
+                                    const next = installments.find(i => i.status === "pending");
+                                    return `${new Date(next.due_date).toLocaleDateString()} — $${next.amount_due}`;
+                                  })()
+                                : "✔️ Completado"
+                            }</p>
+                            <p><strong>Último pago:</strong> {
+                              paymentHistory.length > 0 
+                                ? `${new Date(paymentHistory[paymentHistory.length - 1].payment_date).toLocaleDateString()} — $${paymentHistory[paymentHistory.length - 1].amount}` 
+                                : "N/A"
+                            }</p>
+                            <p><strong>Total pagado:</strong> ${paymentHistory && paymentHistory.length > 0 ? paymentHistory.reduce((acc, p) => acc + parseFloat(p.amount || 0), 0).toFixed(2) : "0.00"}</p>
+                            <p><strong>Saldo restante:</strong> ${
+                              (
+                                parseFloat(selectedLoan.amount) -
+                                paymentBreakdowns
+                                  .filter(b => b.type === 'capital')
+                                  .reduce((acc, b) => acc + parseFloat(b.amount), 0) +
+                                installments.reduce((acc, i) => acc + parseFloat(i.penalty_applied), 0)
+                              ).toFixed(2)
+                            }</p>
+                            <p><strong>Penalidades acumuladas:</strong> ${installments.reduce((acc, i) => acc + parseFloat(i.penalty_applied), 0).toFixed(2)}</p>
+                          </div>
+                        </div>
+
+                        {/* Loan Progress */}
+                        <div className="space-y-2">
+                          <h5 className="text-crediyaGreen font-semibold border-b border-crediyaGreen pb-1">📊 Progreso del Préstamo</h5>
+                          <div className="space-y-1 text-sm">
+                            <p><strong>Cuotas Pagadas:</strong> {installments.filter(i => i.status === 'paid').length} de {installments.length}</p>
+                            <p><strong>Cuotas Pendientes:</strong> {installments.filter(i => i.status === 'pending').length}</p>
+                            <p><strong>Cuotas Vencidas:</strong> {installments.filter(i => {
+                              const dueDate = new Date(i.due_date);
+                              const today = new Date();
+                              return i.status === 'pending' && dueDate < today;
+                            }).length}</p>
+                            <p><strong>Porcentaje Completado:</strong> {installments.length > 0 ? Math.round((installments.filter(i => i.status === 'paid').length / installments.length) * 100) : 0}%</p>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
