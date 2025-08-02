@@ -30,6 +30,8 @@ const RegisterPayment = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [showMovements, setShowMovements] = useState(false);
+  const [receiptData, setReceiptData] = useState(null);
+  const [showReceiptOptions, setShowReceiptOptions] = useState(false);
 
   const fetchLoans = async () => {
     try {
@@ -131,6 +133,18 @@ const RegisterPayment = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log("✅ Payment response:", res.data);
+      
+      // Handle receipt generation
+      if (res.data.receipt_generated) {
+        setReceiptData({
+          receipt_number: res.data.receipt_number,
+          payment_amount: parseFloat(amount),
+          payment_method: method,
+          loan_id: selectedLoan.id
+        });
+        setShowReceiptOptions(true);
+      }
+      
       // Safe fallback for paidInstallments and remaining
       const paidInstallments = res.data.paidInstallments || [];
       alert(`✅ Payment applied: ${paidInstallments.join(", ") || "N/A"}. Remaining: $${res.data.remaining ?? "unknown"}`);
@@ -680,6 +694,56 @@ const RegisterPayment = () => {
           </section>
         </div>
       </div>
+
+      {/* Receipt Options Modal */}
+      {showReceiptOptions && receiptData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-black border border-crediyaGreen rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-bold text-crediyaGreen mb-4">📋 Recibo Generado</h3>
+            <div className="text-white mb-4">
+              <p><strong>Recibo #:</strong> {receiptData.receipt_number}</p>
+              <p><strong>Monto:</strong> ${receiptData.payment_amount.toFixed(2)}</p>
+              <p><strong>Método:</strong> {receiptData.payment_method}</p>
+              <p><strong>Préstamo #:</strong> {receiptData.loan_id}</p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  window.open(`${API_BASE_URL}/receipts/${receiptData.receipt_number}`, '_blank');
+                  setShowReceiptOptions(false);
+                }}
+                className="bg-crediyaGreen hover:bg-white hover:text-crediyaGreen text-black font-bold py-2 px-4 rounded transition duration-200"
+              >
+                📄 Ver Recibo PDF
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const response = await axios.post(
+                      `${API_BASE_URL}/payments/${receiptData.payment_id}/receipt`,
+                      { send_whatsapp: true },
+                      { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    alert("✅ Recibo enviado por WhatsApp!");
+                    setShowReceiptOptions(false);
+                  } catch (err) {
+                    alert("❌ Error enviando por WhatsApp: " + err.message);
+                  }
+                }}
+                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-200"
+              >
+                📱 Enviar por WhatsApp
+              </button>
+              <button
+                onClick={() => setShowReceiptOptions(false)}
+                className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition duration-200"
+              >
+                ❌ Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };
