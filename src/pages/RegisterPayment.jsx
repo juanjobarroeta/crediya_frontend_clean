@@ -364,101 +364,104 @@ const RegisterPayment = () => {
                           <p className="text-sm">Selecciona un préstamo para ver el calendario de pagos</p>
                         </div>
                       ) : (
-                        <table className="min-w-full text-xs border-separate border-spacing-y-1">
-                          <thead>
-                            <tr className="bg-gray-900 text-lime-400">
-                              <th className="px-2 py-1 text-left">Semana</th>
-                              <th className="px-2 py-1 text-left">Fecha</th>
-                              <th className="px-2 py-1 text-right">Capital</th>
-                              <th className="px-2 py-1 text-right">Interés</th>
-                              <th className="px-2 py-1 text-right">Penalidad</th>
-                              <th className="px-2 py-1 text-right">Total</th>
-                              <th className="px-2 py-1 text-right">Pagado</th>
-                              <th className="px-2 py-1 text-right">Saldo</th>
-                              <th className="px-2 py-1 text-center">Estado</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                          {installments.map(inst => {
-                            const dueDate = new Date(inst.due_date);
-                            const today = new Date();
-                            const msInDay = 1000 * 60 * 60 * 24;
-                            const daysOverdue = Math.floor((today - dueDate) / msInDay);
-                            let bgClass = "";
-                            if (inst.status === "pending") {
-                              if (daysOverdue > 7) bgClass = "bg-red-800";
-                              else if (daysOverdue > 0) bgClass = "bg-yellow-600";
-                              else bgClass = "bg-gray-800";
-                            } else if (inst.status === "paid") {
-                              bgClass = "bg-green-800";
-                            } else {
-                              bgClass = "bg-gray-800";
-                            }
-                            return (
-                              <tr key={inst.week_number} className={`${bgClass} border-b border-crediyaGreen`}>
-                                <td className="px-2 py-1 font-bold">{inst.week_number}</td>
-                                <td className="px-2 py-1">{dueDate.toLocaleDateString()}</td>
-                                <td className="px-2 py-1 text-right">
-                                  ${inst.capital_portion}
-                                </td>
-                                <td className="px-2 py-1 text-right">
-                                  {inst.interest_paid > 0 && inst.interest_paid < inst.interest_portion
-                                    ? `$${inst.interest_paid.toFixed(2)} (de $${inst.interest_portion})`
-                                    : `$${inst.interest_portion}`}
-                                </td>
-                                <td className="px-2 py-1 text-right">
-                                  {inst.penalty_paid > 0 && inst.penalty_paid < inst.penalty_applied
-                                    ? `$${inst.penalty_paid.toFixed(2)} (de $${Number(inst.penalty_applied || 0).toFixed(2)})`
-                                    : `$${Number(inst.penalty_applied || 0).toFixed(2)}`}
-                                </td>
-                                <td className="px-2 py-1 text-right">
-                                  ${(
-                                    parseFloat(inst.capital_portion || 0) +
-                                    parseFloat(inst.interest_portion || 0) +
-                                    Number(inst.penalty_applied || 0)
-                                  ).toFixed(2)}
-                                </td>
-                                <td className="px-2 py-1 text-right">
-                                  ${(
-                                    parseFloat(inst.capital_paid || 0) +
-                                    parseFloat(inst.interest_paid || 0) +
-                                    parseFloat(inst.penalty_paid || 0)
-                                  ).toFixed(2)}
-                                </td>
-                                <td className="px-2 py-1 text-right">
-                                  ${(
-                                    (parseFloat(inst.capital_portion || 0) +
-                                     parseFloat(inst.interest_portion || 0) +
-                                     parseFloat(inst.penalty_applied || 0)) -
-                                    (parseFloat(inst.capital_paid || 0) +
-                                     parseFloat(inst.interest_paid || 0) +
-                                     parseFloat(inst.penalty_paid || 0))
-                                  ).toFixed(2)}
-                                </td>
-                                <td className="px-2 py-1 text-center">
-                                  <span className="badge bg-secondary">{inst.status}</span>
-                                </td>
+                        <>
+                          <table className="min-w-full text-xs border-separate border-spacing-y-1">
+                            <thead>
+                              <tr className="bg-gray-900 text-lime-400">
+                                <th className="px-2 py-1 text-left">Semana</th>
+                                <th className="px-2 py-1 text-left">Fecha</th>
+                                <th className="px-2 py-1 text-right">Capital</th>
+                                <th className="px-2 py-1 text-right">Interés</th>
+                                <th className="px-2 py-1 text-right">Penalidad</th>
+                                <th className="px-2 py-1 text-right">Total</th>
+                                <th className="px-2 py-1 text-right">Pagado</th>
+                                <th className="px-2 py-1 text-right">Saldo</th>
+                                <th className="px-2 py-1 text-center">Estado</th>
                               </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                      {/* Color Legend */}
-                      <div className="flex gap-4 text-xs mt-4 text-white">
-                        <div className="flex items-center gap-1">
-                          <div className="w-4 h-4 bg-red-800 rounded-sm"></div> &gt;7 días vencido
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <div className="w-4 h-4 bg-yellow-600 rounded-sm"></div> 1-7 días vencido
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <div className="w-4 h-4 bg-gray-800 rounded-sm"></div> Pendiente
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <div className="w-4 h-4 bg-green-800 rounded-sm"></div> Pagado
-                        </div>
-                      </div>
-                    )}
+                            </thead>
+                            <tbody>
+                              {installments.map(inst => {
+                                const dueDate = new Date(inst.due_date);
+                                const today = new Date();
+                                const msInDay = 1000 * 60 * 60 * 24;
+                                const daysOverdue = Math.floor((today - dueDate) / msInDay);
+                                let bgClass = "";
+                                if (inst.status === "pending") {
+                                  if (daysOverdue > 7) bgClass = "bg-red-800";
+                                  else if (daysOverdue > 0) bgClass = "bg-yellow-600";
+                                  else bgClass = "bg-gray-800";
+                                } else if (inst.status === "paid") {
+                                  bgClass = "bg-green-800";
+                                } else {
+                                  bgClass = "bg-gray-800";
+                                }
+                                return (
+                                  <tr key={inst.week_number} className={`${bgClass} border-b border-crediyaGreen`}>
+                                    <td className="px-2 py-1 font-bold">{inst.week_number}</td>
+                                    <td className="px-2 py-1">{dueDate.toLocaleDateString()}</td>
+                                    <td className="px-2 py-1 text-right">
+                                      ${inst.capital_portion}
+                                    </td>
+                                    <td className="px-2 py-1 text-right">
+                                      {inst.interest_paid > 0 && inst.interest_paid < inst.interest_portion
+                                        ? `$${inst.interest_paid.toFixed(2)} (de $${inst.interest_portion})`
+                                        : `$${inst.interest_portion}`}
+                                    </td>
+                                    <td className="px-2 py-1 text-right">
+                                      {inst.penalty_paid > 0 && inst.penalty_paid < inst.penalty_applied
+                                        ? `$${inst.penalty_paid.toFixed(2)} (de $${Number(inst.penalty_applied || 0).toFixed(2)})`
+                                        : `$${Number(inst.penalty_applied || 0).toFixed(2)}`}
+                                    </td>
+                                    <td className="px-2 py-1 text-right">
+                                      ${(
+                                        parseFloat(inst.capital_portion || 0) +
+                                        parseFloat(inst.interest_portion || 0) +
+                                        Number(inst.penalty_applied || 0)
+                                      ).toFixed(2)}
+                                    </td>
+                                    <td className="px-2 py-1 text-right">
+                                      ${(
+                                        parseFloat(inst.capital_paid || 0) +
+                                        parseFloat(inst.interest_paid || 0) +
+                                        parseFloat(inst.penalty_paid || 0)
+                                      ).toFixed(2)}
+                                    </td>
+                                    <td className="px-2 py-1 text-right">
+                                      ${(
+                                        (parseFloat(inst.capital_portion || 0) +
+                                         parseFloat(inst.interest_portion || 0) +
+                                         parseFloat(inst.penalty_applied || 0)) -
+                                        (parseFloat(inst.capital_paid || 0) +
+                                         parseFloat(inst.interest_paid || 0) +
+                                         parseFloat(inst.penalty_paid || 0))
+                                      ).toFixed(2)}
+                                    </td>
+                                    <td className="px-2 py-1 text-center">
+                                      <span className="badge bg-secondary">{inst.status}</span>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                          {/* Color Legend */}
+                          <div className="flex gap-4 text-xs mt-4 text-white">
+                            <div className="flex items-center gap-1">
+                              <div className="w-4 h-4 bg-red-800 rounded-sm"></div> &gt;7 días vencido
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <div className="w-4 h-4 bg-yellow-600 rounded-sm"></div> 1-7 días vencido
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <div className="w-4 h-4 bg-gray-800 rounded-sm"></div> Pendiente
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <div className="w-4 h-4 bg-green-800 rounded-sm"></div> Pagado
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
