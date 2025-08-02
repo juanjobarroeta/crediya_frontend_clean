@@ -31,7 +31,7 @@ const RecepcionInventario = () => {
 
   const fetchDeliveries = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/warehouse/pending-customer-deliveries`, {
+      const res = await axios.get(`${API_BASE_URL}/warehouse/pending-customers`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log("📦 Deliveries from backend:", res.data);
