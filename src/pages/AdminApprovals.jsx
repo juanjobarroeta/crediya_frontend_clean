@@ -78,21 +78,21 @@ const AdminApprovals = () => {
     fetchExpenses();
   }, []);
 
-  useEffect(() => {
-    const fetchPendingLoans = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/admin/pending-loan-approvals`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-        setPendingLoans(Array.isArray(res.data) ? res.data : []);
-        console.log("💰 Pending Loan Approvals:", Array.isArray(res.data) ? res.data : []);
-      } catch (err) {
-        console.error("Error fetching pending loan approvals:", err);
-      }
-    };
+  const fetchPendingLoans = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/admin/pending-loan-approvals`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      setPendingLoans(Array.isArray(res.data) ? res.data : []);
+      console.log("💰 Pending Loan Approvals:", Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Error fetching pending loan approvals:", err);
+    }
+  };
 
+  useEffect(() => {
     fetchPendingLoans();
   }, []);
 
@@ -114,13 +114,9 @@ const AdminApprovals = () => {
           });
           alert("✅ Producto entregado y contabilidad actualizada");
         }
-        // Refresh pending loans
-        const res = await axios.get(`${API_BASE_URL}/admin/pending-loan-approvals`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-        setPendingLoans(Array.isArray(res.data) ? res.data : []);
+        
+        // Refresh pending loans immediately
+        await fetchPendingLoans();
       } catch (err) {
         console.error(`Error processing loan ${action}:`, err);
         alert(`❌ Error: ${err.response?.data?.message || err.message}`);
