@@ -176,6 +176,8 @@ const LoanApplicationDetails = () => {
                   headers: { Authorization: `Bearer ${token}` }
                 });
                 alert("✅ Préstamo aprobado.");
+                // Refresh the page to show updated status
+                window.location.reload();
               } catch (err) {
                 console.error("Error approving loan:", err);
                 alert("❌ Error al aprobar el préstamo.");
