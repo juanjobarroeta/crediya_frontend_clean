@@ -52,17 +52,17 @@ const RegisterPayment = () => {
     if (!loanId) return console.warn("🚨 No loan ID provided to fetchLoanDetails");
     try {
       const [loanDetailRes, paymentsRes, breakdownsRes, movementsRes] = await Promise.all([
-        axios.get(`${API_BASE_URL}/loans/${loanId}/amortization`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API_BASE_URL}/loans/${loanId}/details`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API_BASE_URL}/loans/${loanId}/payments`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API_BASE_URL}/loans/${loanId}/payment-breakdown`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API_BASE_URL}/loans/${loanId}/financial-movements`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
-      setInstallments(Array.isArray(loanDetailRes.data?.installments)
-        ? loanDetailRes.data.installments
-        : Array.isArray(loanDetailRes.data) ? loanDetailRes.data : []);
-      console.log("💡 Installments received:", Array.isArray(loanDetailRes.data?.installments)
-        ? loanDetailRes.data.installments
-        : Array.isArray(loanDetailRes.data) ? loanDetailRes.data : []);
+      
+      // Extract installments from the details response
+      const installmentsData = loanDetailRes.data?.installments || [];
+      setInstallments(Array.isArray(installmentsData) ? installmentsData : []);
+      console.log("💡 Installments received:", installmentsData);
+      
       // Ensure paymentsRes.data includes actual payment records with amounts
       const paymentsWithAmounts = Array.isArray(paymentsRes.data)
         ? paymentsRes.data.filter(p => typeof p.amount !== "undefined")
@@ -358,21 +358,27 @@ const RegisterPayment = () => {
                   </h4>
                   {showAmortization && (
                     <div className="overflow-x-auto">
-                      <table className="min-w-full text-xs border-separate border-spacing-y-1">
-                        <thead>
-                          <tr className="bg-gray-900 text-lime-400">
-                            <th className="px-2 py-1 text-left">Semana</th>
-                            <th className="px-2 py-1 text-left">Fecha</th>
-                            <th className="px-2 py-1 text-right">Capital</th>
-                            <th className="px-2 py-1 text-right">Interés</th>
-                            <th className="px-2 py-1 text-right">Penalidad</th>
-                            <th className="px-2 py-1 text-right">Total</th>
-                            <th className="px-2 py-1 text-right">Pagado</th>
-                            <th className="px-2 py-1 text-right">Saldo</th>
-                            <th className="px-2 py-1 text-center">Estado</th>
-                          </tr>
-                        </thead>
-                        <tbody>
+                      {installments.length === 0 ? (
+                        <div className="text-center py-8 text-gray-400">
+                          <p>📋 No hay datos de amortización disponibles</p>
+                          <p className="text-sm">Selecciona un préstamo para ver el calendario de pagos</p>
+                        </div>
+                      ) : (
+                        <table className="min-w-full text-xs border-separate border-spacing-y-1">
+                          <thead>
+                            <tr className="bg-gray-900 text-lime-400">
+                              <th className="px-2 py-1 text-left">Semana</th>
+                              <th className="px-2 py-1 text-left">Fecha</th>
+                              <th className="px-2 py-1 text-right">Capital</th>
+                              <th className="px-2 py-1 text-right">Interés</th>
+                              <th className="px-2 py-1 text-right">Penalidad</th>
+                              <th className="px-2 py-1 text-right">Total</th>
+                              <th className="px-2 py-1 text-right">Pagado</th>
+                              <th className="px-2 py-1 text-right">Saldo</th>
+                              <th className="px-2 py-1 text-center">Estado</th>
+                            </tr>
+                          </thead>
+                          <tbody>
                           {installments.map(inst => {
                             const dueDate = new Date(inst.due_date);
                             const today = new Date();
@@ -452,7 +458,7 @@ const RegisterPayment = () => {
                           <div className="w-4 h-4 bg-green-800 rounded-sm"></div> Pagado
                         </div>
                       </div>
-                    </div>
+                    )}
                   )}
                 </div>
               </div>
@@ -473,20 +479,29 @@ const RegisterPayment = () => {
                       <fieldset className="mb-4 border border-crediyaGreen rounded p-4">
                         <legend className="text-crediyaGreen font-semibold mb-2">Detalles del Pago</legend>
                         <div className="mb-3">
-                          <label>Monto a pagar</label>
-                          <input type="number" className="form-control bg-black text-white border border-crediyaGreen rounded" value={amount} onChange={(e) => setAmount(e.target.value)} required />
+                          <label className="block text-sm font-medium mb-1">Monto a pagar</label>
+                          <input 
+                            type="number" 
+                            step="0.01"
+                            className="w-full form-control bg-black text-white border border-crediyaGreen rounded px-3 py-2" 
+                            value={amount} 
+                            onChange={(e) => setAmount(e.target.value)} 
+                            placeholder="0.00"
+                            required 
+                          />
                         </div>
                         <div className="mb-3">
-                          <label>Método de Pago</label>
-                          <select className="form-select bg-black text-white border border-crediyaGreen rounded" value={method} onChange={(e) => setMethod(e.target.value)} required>
+                          <label className="block text-sm font-medium mb-1">Método de Pago</label>
+                          <select className="w-full form-select bg-black text-white border border-crediyaGreen rounded px-3 py-2" value={method} onChange={(e) => setMethod(e.target.value)} required>
                             <option value="efectivo">Efectivo</option>
                             <option value="transferencia">Transferencia</option>
+                            <option value="tarjeta">Tarjeta</option>
                           </select>
                         </div>
                         <div className="mb-3">
-                          <label>Sucursal</label>
+                          <label className="block text-sm font-medium mb-1">Sucursal</label>
                           <select
-                            className={`form-select bg-black text-white border border-crediyaGreen rounded ${!storeId ? "text-gray-400" : ""}`}
+                            className={`w-full form-select bg-black text-white border border-crediyaGreen rounded px-3 py-2 ${!storeId ? "text-gray-400" : ""}`}
                             value={storeId}
                             onChange={(e) => setStoreId(e.target.value)}
                             required
@@ -499,18 +514,18 @@ const RegisterPayment = () => {
                         </div>
                       </fieldset>
                       <div className="mb-3">
-                        <label>Aplicar extra a</label>
-                        <select className="form-select bg-black text-white border border-crediyaGreen rounded" value={applyExtraTo} onChange={(e) => setApplyExtraTo(e.target.value)}>
+                        <label className="block text-sm font-medium mb-1">Aplicar extra a</label>
+                        <select className="w-full form-select bg-black text-white border border-crediyaGreen rounded px-3 py-2" value={applyExtraTo} onChange={(e) => setApplyExtraTo(e.target.value)}>
                           <option value="next">Siguiente semana</option>
                           <option value="capital">Amortizar capital</option>
                         </select>
                       </div>
                       <button
-                        className={`bg-crediyaGreen hover:bg-white hover:text-crediyaGreen text-black font-bold py-2 px-4 rounded transition duration-200 ${!storeId ? "opacity-50 cursor-not-allowed" : ""}`}
+                        className={`w-full bg-crediyaGreen hover:bg-white hover:text-crediyaGreen text-black font-bold py-3 px-4 rounded transition duration-200 ${!storeId ? "opacity-50 cursor-not-allowed" : ""}`}
                         type="submit"
                         disabled={!storeId}
                       >
-                        Registrar Pago
+                        💳 Registrar Pago
                       </button>
                     </form>
                   )}
