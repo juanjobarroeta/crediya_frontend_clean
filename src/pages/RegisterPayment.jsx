@@ -669,13 +669,25 @@ const RegisterPayment = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {paymentBreakdowns?.map((b, idx) => (
-                            <tr key={idx} className="border-t border-crediyaGreen">
-                              <td className="px-2 py-1">{new Date(b.created_at).toLocaleDateString()}</td>
-                              <td className="px-2 py-1">{b.type}</td>
-                              <td className="px-2 py-1">Semana {b.week_number}</td>
-                              <td className="px-2 py-1 text-right">${parseFloat(b.amount).toLocaleString()}</td>
-                            </tr>
+                          {paymentBreakdowns?.map((payment, idx) => (
+                            <React.Fragment key={idx}>
+                              {/* Main payment row */}
+                              <tr className="border-t border-crediyaGreen bg-gray-800">
+                                <td className="px-2 py-1">{new Date(payment.payment_date).toLocaleDateString()}</td>
+                                <td className="px-2 py-1 font-bold">Pago Total</td>
+                                <td className="px-2 py-1">Semana {payment.installment_week}</td>
+                                <td className="px-2 py-1 text-right font-bold">${parseFloat(payment.total_amount || 0).toFixed(2)}</td>
+                              </tr>
+                              {/* Component breakdown rows */}
+                              {payment.components?.map((component, compIdx) => (
+                                <tr key={`${idx}-${compIdx}`} className="border-t border-gray-600 bg-gray-900">
+                                  <td className="px-2 py-1"></td>
+                                  <td className="px-2 py-1 text-sm text-gray-400">└─ {component.type}</td>
+                                  <td className="px-2 py-1"></td>
+                                  <td className="px-2 py-1 text-right text-sm">${parseFloat(component.amount || 0).toFixed(2)}</td>
+                                </tr>
+                              ))}
+                            </React.Fragment>
                           ))}
                         </tbody>
                       </table>
