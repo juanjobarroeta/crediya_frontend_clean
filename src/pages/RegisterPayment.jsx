@@ -62,15 +62,24 @@ const RegisterPayment = () => {
       
       // Extract installments from the details response
       const installmentsData = loanDetailRes.data?.installments || [];
-      setInstallments(Array.isArray(installmentsData) ? installmentsData : []);
       console.log("💡 Installments received:", installmentsData);
+      
+      if (!Array.isArray(installmentsData)) {
+        console.warn("⚠️ Installments data is not an array:", installmentsData);
+        setInstallments([]);
+      } else {
+        setInstallments(installmentsData);
+      }
       
       // Ensure paymentsRes.data includes actual payment records with amounts
       const paymentsWithAmounts = Array.isArray(paymentsRes.data)
         ? paymentsRes.data.filter(p => typeof p.amount !== "undefined")
         : [];
       setPaymentHistory(paymentsWithAmounts);
-      setPaymentBreakdowns(breakdownsRes.data);
+      
+      // Ensure breakdowns data is properly handled
+      const breakdownsData = breakdownsRes.data?.payment_breakdown || [];
+      setPaymentBreakdowns(Array.isArray(breakdownsData) ? breakdownsData : []);
       // Movements are already filtered by loan_id in backend
       setMovements(
         Array.isArray(movementsRes.data)
@@ -172,14 +181,16 @@ const RegisterPayment = () => {
     pdf.save(`recibo_prestamo_${selectedLoan.id}.pdf`);
   };
 
-  const matchingCustomers = filteredCustomers.filter((customer) => {
-    console.log("Evaluating customer match:", customer);
-    return (
-      `${customer.first_name} ${customer.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.id.toString() === searchTerm ||
-      (customer.phone && customer.phone.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-  });
+  const matchingCustomers = Array.isArray(filteredCustomers) 
+    ? filteredCustomers.filter((customer) => {
+        console.log("Evaluating customer match:", customer);
+        return (
+          `${customer.first_name} ${customer.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          customer.id.toString() === searchTerm ||
+          (customer.phone && customer.phone.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+      })
+    : [];
 
   const handleSelectCustomer = async (customer) => {
     try {
@@ -367,7 +378,7 @@ const RegisterPayment = () => {
                           <h5 className="text-crediyaGreen font-semibold border-b border-crediyaGreen pb-1">💰 Estado de Pagos</h5>
                           <div className="space-y-1 text-sm">
                             <p><strong>Próximo pago:</strong> {
-                              installments.filter(i => i.status === "pending").length > 0
+                              Array.isArray(installments) && installments.filter(i => i.status === "pending").length > 0
                                 ? (() => {
                                     const next = installments.find(i => i.status === "pending");
                                     return `${new Date(next.due_date).toLocaleDateString()} — $${next.amount_due}`;
@@ -383,9 +394,9 @@ const RegisterPayment = () => {
                             <p><strong>Saldo restante:</strong> ${
                               (
                                 parseFloat(selectedLoan.amount) -
-                                paymentBreakdowns
+                                (Array.isArray(paymentBreakdowns) ? paymentBreakdowns
                                   .filter(b => b.type === 'capital')
-                                  .reduce((acc, b) => acc + parseFloat(b.amount), 0) +
+                                  .reduce((acc, b) => acc + parseFloat(b.amount), 0) : 0) +
                                 installments.reduce((acc, i) => acc + parseFloat(i.penalty_applied), 0)
                               ).toFixed(2)
                             }</p>
@@ -397,14 +408,14 @@ const RegisterPayment = () => {
                         <div className="space-y-2">
                           <h5 className="text-crediyaGreen font-semibold border-b border-crediyaGreen pb-1">📊 Progreso del Préstamo</h5>
                           <div className="space-y-1 text-sm">
-                            <p><strong>Cuotas Pagadas:</strong> {installments.filter(i => i.status === 'paid').length} de {installments.length}</p>
-                            <p><strong>Cuotas Pendientes:</strong> {installments.filter(i => i.status === 'pending').length}</p>
-                            <p><strong>Cuotas Vencidas:</strong> {installments.filter(i => {
+                            <p><strong>Cuotas Pagadas:</strong> {Array.isArray(installments) ? installments.filter(i => i.status === 'paid').length : 0} de {Array.isArray(installments) ? installments.length : 0}</p>
+                            <p><strong>Cuotas Pendientes:</strong> {Array.isArray(installments) ? installments.filter(i => i.status === 'pending').length : 0}</p>
+                            <p><strong>Cuotas Vencidas:</strong> {Array.isArray(installments) ? installments.filter(i => {
                               const dueDate = new Date(i.due_date);
                               const today = new Date();
                               return i.status === 'pending' && dueDate < today;
-                            }).length}</p>
-                            <p><strong>Porcentaje Completado:</strong> {installments.length > 0 ? Math.round((installments.filter(i => i.status === 'paid').length / installments.length) * 100) : 0}%</p>
+                            }).length : 0}</p>
+                            <p><strong>Porcentaje Completado:</strong> {Array.isArray(installments) && installments.length > 0 ? Math.round((installments.filter(i => i.status === 'paid').length / installments.length) * 100) : 0}%</p>
                           </div>
                         </div>
                       </div>
