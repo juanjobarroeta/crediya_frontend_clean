@@ -60,11 +60,11 @@ const RegisterPayment = () => {
   // Enhanced collapsible section states
   const [expandedSections, setExpandedSections] = useState({
     loanInfo: true,
-    amortization: false,
+    amortization: true, // Show by default
     paymentForm: true,
     lastPayment: false,
-    history: false,
-    breakdown: false,
+    history: true, // Show by default
+    breakdown: true, // Show by default
     movements: false,
   });
 
@@ -1097,7 +1097,7 @@ const RegisterPayment = () => {
                                        ${parseFloat(payment.amount).toLocaleString()}
                                      </td>
                                      <td className="py-2 text-white capitalize">
-                                       {payment.payment_method}
+                                       {payment.payment_method || payment.method || 'Efectivo'}
                                      </td>
                                      <td className="py-2">
                                        <span className="px-2 py-1 rounded text-xs bg-green-600">
@@ -1193,6 +1193,20 @@ const RegisterPayment = () => {
                                        Capital: ${payment.components.find(c => c.type === 'capital')?.amount || 0} | 
                                        Interés: ${payment.components.find(c => c.type === 'interest')?.amount || 0} | 
                                        Penalidad: ${payment.components.find(c => c.type === 'penalty')?.amount || 0}
+                                     </td>
+                                   </tr>
+                                 )}
+                                 
+                                 {/* Debug info - remove this later */}
+                                 {!payment.components || payment.components.length === 0 && (
+                                   <tr className="border-t border-gray-600 bg-gray-900">
+                                     <td className="px-3 py-2"></td>
+                                     <td className="px-3 py-2 text-sm text-gray-400">
+                                       └─ ⚠️ Sin desglose disponible
+                                     </td>
+                                     <td className="px-3 py-2"></td>
+                                     <td className="px-3 py-2 text-right text-sm text-white">
+                                       ${parseFloat(payment.total_amount || payment.amount || 0).toFixed(2)}
                                      </td>
                                    </tr>
                                  )}
