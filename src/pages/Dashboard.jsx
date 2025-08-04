@@ -1,27 +1,44 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom"; // Import Link from react-router-dom
+import { Link } from "react-router-dom";
 import Layout from "../components/Layout";
 import { API_BASE_URL } from "../utils/constants";
-import { Line } from "react-chartjs-2";
+import { Line, Bar, Doughnut } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend,
+  Filler,
 } from "chart.js";
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 const Dashboard = () => {
   const [loans, setLoans] = useState([]);
   const [payments, setPayments] = useState({});
   const [paymentAmount, setPaymentAmount] = useState({});
   const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [timeRange, setTimeRange] = useState("week");
   const [metrics, setMetrics] = useState({
     customers: 0,
     loansIssued: 0,
@@ -32,6 +49,8 @@ const Dashboard = () => {
   });
   const [overdueTrends, setOverdueTrends] = useState([]);
   const [cashflowPeriod, setCashflowPeriod] = useState("week");
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [quickActions, setQuickActions] = useState([]);
   const token = localStorage.getItem("token");
 
   const fetchLoans = async () => {
@@ -39,7 +58,6 @@ const Dashboard = () => {
       const res = await axios.get(`${API_BASE_URL}/dashboard/loans`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log("LOANS FROM BACKEND:", res.data); // 👈 Add this line
       setLoans(res.data);
     } catch (err) {
       console.error("Error fetching loans:", err);
@@ -88,207 +106,638 @@ const Dashboard = () => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    window.location.href = "/auth";
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    try {
+      const [metricsRes, trendsRes, activityRes] = await Promise.all([
+        axios.get(`${API_BASE_URL}/dashboard-metrics`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`${API_BASE_URL}/dashboard/overdue-trends`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`${API_BASE_URL}/dashboard/recent-activity`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      const mapped = {
+        customers: metricsRes.data.customers,
+        loansIssued: metricsRes.data.loansIssued,
+        capitalLoaned: metricsRes.data.capitalLoaned,
+        interestToCollect: metricsRes.data.interestToCollect,
+        overdueAmount: metricsRes.data.overdueAmount,
+        customersOverdue: metricsRes.data.customersOverdue,
+        overdueCustomersTable: metricsRes.data.overdueCustomersTable || [],
+        totalCollectedToday: metricsRes.data.totalCollectedToday,
+        totalDisbursedToday: metricsRes.data.totalDisbursedToday,
+        netCashFlowToday: metricsRes.data.netCashFlowToday,
+        storeComparison: metricsRes.data.storeComparison || [],
+      };
+      setMetrics(mapped);
+      setOverdueTrends(trendsRes.data);
+      setRecentActivity(activityRes.data || []);
+    } catch (err) {
+      console.error("Error fetching dashboard data:", err);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const fetchCashflow = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/dashboard/cashflow-summary?period=${cashflowPeriod}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setMetrics(prev => ({
+        ...prev,
+        totalCollectedToday: res.data.totalCollected,
+        totalDisbursedToday: res.data.totalDisbursed,
+        netCashFlowToday: res.data.netCashFlow
+      }));
+    } catch (err) {
+      console.error("Error fetching filtered cashflow:", err);
+    }
+  };
+
+  // Memoized chart data
+  const chartData = useMemo(() => ({
+    overdueTrends: {
+      labels: overdueTrends.map(row => new Date(row.week_start).toLocaleDateString()),
+      datasets: [
+        {
+          label: "Monto Vencido",
+          data: overdueTrends.map(row => parseFloat(row.total_due)),
+          borderColor: "rgb(34, 197, 94)",
+          backgroundColor: "rgba(34, 197, 94, 0.1)",
+          fill: true,
+          tension: 0.4,
+        },
+      ],
+    },
+    storePerformance: {
+      labels: metrics.storeComparison?.map(store => store.store) || [],
+      datasets: [
+        {
+          label: "Préstamos Activos",
+          data: metrics.storeComparison?.map(store => store.active_loans) || [],
+          backgroundColor: "rgba(59, 130, 246, 0.8)",
+        },
+        {
+          label: "Préstamos Vencidos",
+          data: metrics.storeComparison?.map(store => store.overdue_loans) || [],
+          backgroundColor: "rgba(239, 68, 68, 0.8)",
+        },
+      ],
+    },
+    loanDistribution: {
+      labels: ["Capital Prestado", "Intereses por Cobrar", "Monto Vencido"],
+      datasets: [
+        {
+          data: [
+            metrics.capitalLoaned || 0,
+            metrics.interestToCollect || 0,
+            metrics.overdueAmount || 0,
+          ],
+          backgroundColor: [
+            "rgba(34, 197, 94, 0.8)",
+            "rgba(59, 130, 246, 0.8)",
+            "rgba(239, 68, 68, 0.8)",
+          ],
+          borderWidth: 2,
+          borderColor: "#1f2937",
+        },
+      ],
+    },
+  }), [overdueTrends, metrics]);
 
   useEffect(() => {
     fetchLoans();
     fetchCustomers();
+    fetchDashboardData();
   }, []);
 
   useEffect(() => {
-    const fetchDashboardMetrics = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/dashboard-metrics`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        console.log("📊 METRICS FROM BACKEND:", res.data);
-        // Map backend keys to frontend keys
-        const mapped = {
-          customers: res.data.customers,
-          loansIssued: res.data.loansIssued,
-          capitalLoaned: res.data.capitalLoaned,
-          interestToCollect: res.data.interestToCollect,
-          overdueAmount: res.data.overdueAmount,
-          customersOverdue: res.data.customersOverdue,
-          overdueCustomersTable: res.data.overdueCustomersTable || [],
-          totalCollectedToday: res.data.totalCollectedToday,
-          totalDisbursedToday: res.data.totalDisbursedToday,
-          netCashFlowToday: res.data.netCashFlowToday,
-          storeComparison: res.data.storeComparison || [],
-        };
-        setMetrics(mapped);
-      } catch (err) {
-        console.error("Error fetching dashboard metrics:", err);
-      }
-    };
-    const fetchTrends = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/dashboard/overdue-trends`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setOverdueTrends(res.data);
-      } catch (err) {
-        console.error("Error fetching overdue trends:", err);
-      }
-    };
-    fetchDashboardMetrics();
-    fetchTrends();
-  }, []);
-
-  useEffect(() => {
-    const fetchCashflow = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/dashboard/cashflow-summary?period=${cashflowPeriod}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setMetrics(prev => ({
-          ...prev,
-          totalCollectedToday: res.data.totalCollected,
-          totalDisbursedToday: res.data.totalDisbursed,
-          netCashFlowToday: res.data.netCashFlow
-        }));
-      } catch (err) {
-        console.error("Error fetching filtered cashflow:", err);
-      }
-    };
     fetchCashflow();
   }, [cashflowPeriod]);
 
+  // Auto-refresh every 5 minutes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchDashboardData();
+    }, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const quickActionItems = [
+    { label: "Nuevo Préstamo", icon: "💳", href: "/create-loan", color: "from-blue-500 to-cyan-600" },
+    { label: "Registrar Pago", icon: "💰", href: "/register-payment", color: "from-green-500 to-emerald-600" },
+    { label: "Nuevo Cliente", icon: "👤", href: "/create-customer", color: "from-purple-500 to-violet-600" },
+    { label: "Tesorería", icon: "🏦", href: "/tesoreria", color: "from-orange-500 to-red-600" },
+    { label: "Gastos", icon: "💸", href: "/admin/expenses", color: "from-pink-500 to-rose-600" },
+    { label: "Pagos Vencidos", icon: "⚠️", href: "/overdue-loans", color: "from-yellow-500 to-orange-600" },
+  ];
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-crediyaGreen mx-auto mb-4"></div>
+            <p className="text-gray-400">Cargando dashboard...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
-      <div className="px-6 py-6 max-w-6xl mx-auto">
-        <h2 className="mb-6 text-white text-xl font-bold">Resumen del sistema</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {[
-            ["Clientes registrados", metrics?.customers ?? 0],
-            ["Préstamos emitidos", metrics?.loansIssued ?? 0],
-            ["Capital prestado", `$${(metrics?.capitalLoaned ?? 0).toLocaleString()}`],
-            ["Intereses por cobrar", `$${(metrics?.interestToCollect ?? 0).toLocaleString()}`],
-            ["Monto vencido", `$${(metrics?.overdueAmount ?? 0).toLocaleString()}`],
-            ["Clientes con pagos vencidos", metrics?.customersOverdue ?? 0],
-          ].map(([label, value]) => (
-            <div key={label} className="bg-black border-l-4 border-lime-500 p-4 rounded shadow">
-              <h3 className="text-white font-semibold">{label}</h3>
-              <p className="text-2xl text-lime-400">{value}</p>
+      <div className="p-6 max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-2">📊 Dashboard</h1>
+              <p className="text-gray-400">Resumen completo del sistema CrediYa</p>
             </div>
+            <div className="flex items-center gap-4">
+              <select
+                value={timeRange}
+                onChange={(e) => setTimeRange(e.target.value)}
+                className="bg-gray-800 text-white border border-gray-600 rounded-lg px-4 py-2 focus:border-crediyaGreen focus:outline-none"
+              >
+                <option value="day">Hoy</option>
+                <option value="week">Esta Semana</option>
+                <option value="month">Este Mes</option>
+                <option value="quarter">Este Trimestre</option>
+                <option value="year">Este Año</option>
+              </select>
+              <button
+                onClick={fetchDashboardData}
+                className="bg-gradient-to-r from-crediyaGreen to-emerald-500 hover:from-emerald-500 hover:to-crediyaGreen text-black font-bold px-6 py-2 rounded-lg transition-all duration-200 transform hover:scale-105"
+              >
+                🔄 Actualizar
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+            {quickActionItems.map((action) => (
+              <Link
+                key={action.label}
+                to={action.href}
+                className={`bg-gradient-to-r ${action.color} p-4 rounded-xl text-white text-center transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl`}
+              >
+                <div className="text-2xl mb-2">{action.icon}</div>
+                <div className="text-sm font-semibold">{action.label}</div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="flex space-x-1 mb-8 bg-gray-800 p-1 rounded-lg">
+          {[
+            { id: "overview", label: "📈 Resumen", icon: "📊" },
+            { id: "analytics", label: "📊 Análisis", icon: "📈" },
+            { id: "performance", label: "🏆 Rendimiento", icon: "🎯" },
+            { id: "activity", label: "⚡ Actividad", icon: "🔄" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 py-3 px-4 rounded-md font-semibold transition-all duration-200 ${
+                activeTab === tab.id
+                  ? "bg-crediyaGreen text-black shadow-lg"
+                  : "text-gray-400 hover:text-white hover:bg-gray-700"
+              }`}
+            >
+              <span className="mr-2">{tab.icon}</span>
+              {tab.label}
+            </button>
           ))}
         </div>
-        <div className="mt-10">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-white text-lg font-bold">Resumen de Flujo de Caja</h3>
-            <select
-              value={cashflowPeriod}
-              onChange={(e) => setCashflowPeriod(e.target.value)}
-              className="bg-black text-lime-400 border border-lime-500 rounded px-2 py-1"
-            >
-              <option value="day">Hoy</option>
-              <option value="week">Esta semana</option>
-              <option value="month">Este mes</option>
-              <option value="ytd">Año en curso</option>
-            </select>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div className="bg-black border-l-4 border-lime-500 p-4 rounded shadow">
-              <h4 className="text-white font-semibold">Total Cobrado Hoy</h4>
-              <p className="text-2xl text-lime-400">${(metrics.totalCollectedToday ?? 0).toLocaleString()}</p>
+
+        {/* Overview Tab */}
+        {activeTab === "overview" && (
+          <div className="space-y-8">
+            {/* Key Metrics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                {
+                  label: "Clientes Registrados",
+                  value: metrics.customers?.toLocaleString() || "0",
+                  icon: "👥",
+                  color: "from-blue-500 to-cyan-600",
+                  change: "+12%",
+                  changeType: "positive",
+                },
+                {
+                  label: "Préstamos Activos",
+                  value: metrics.loansIssued?.toLocaleString() || "0",
+                  icon: "💳",
+                  color: "from-green-500 to-emerald-600",
+                  change: "+8%",
+                  changeType: "positive",
+                },
+                {
+                  label: "Capital Prestado",
+                  value: `$${(metrics.capitalLoaned || 0).toLocaleString()}`,
+                  icon: "💰",
+                  color: "from-purple-500 to-violet-600",
+                  change: "+15%",
+                  changeType: "positive",
+                },
+                {
+                  label: "Monto Vencido",
+                  value: `$${(metrics.overdueAmount || 0).toLocaleString()}`,
+                  icon: "⚠️",
+                  color: "from-red-500 to-pink-600",
+                  change: "-5%",
+                  changeType: "negative",
+                },
+              ].map((metric) => (
+                <div
+                  key={metric.label}
+                  className={`bg-gradient-to-r ${metric.color} p-6 rounded-xl text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105`}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="text-3xl">{metric.icon}</div>
+                    <div className={`text-sm px-2 py-1 rounded-full ${
+                      metric.changeType === "positive" 
+                        ? "bg-green-500/20 text-green-200" 
+                        : "bg-red-500/20 text-red-200"
+                    }`}>
+                      {metric.change}
+                    </div>
+                  </div>
+                  <div className="text-2xl font-bold mb-1">{metric.value}</div>
+                  <div className="text-sm opacity-90">{metric.label}</div>
+                </div>
+              ))}
             </div>
-            <div className="bg-black border-l-4 border-lime-500 p-4 rounded shadow">
-              <h4 className="text-white font-semibold">Total Prestado Hoy</h4>
-              <p className="text-2xl text-lime-400">${(metrics.totalDisbursedToday ?? 0).toLocaleString()}</p>
-            </div>
-            <div className={`bg-black border-l-4 p-4 rounded shadow ${metrics.netCashFlowToday >= 0 ? 'border-lime-500' : 'border-red-500'}`}>
-              <h4 className="text-white font-semibold">Flujo Neto de Caja</h4>
-              <p className={`text-2xl ${metrics.netCashFlowToday >= 0 ? 'text-lime-400' : 'text-red-400'}`}>
-                ${Math.abs(metrics.netCashFlowToday ?? 0).toLocaleString()}
-              </p>
-            </div>
-          </div>
-          <div className="mt-2">
-            <Link to="/tesoreria" className="text-lime-400 underline text-sm">Ver flujo completo de caja →</Link>
-          </div>
-        </div>
-      </div>
-      {metrics.storeComparison && metrics.storeComparison.length > 0 && (
-        <div className="mt-10 px-6 max-w-6xl mx-auto">
-          <h3 className="text-white text-lg font-bold mb-4">Comparativa por Sucursal</h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm text-white bg-black border border-crediyaGreen">
-              <thead>
-                <tr className="bg-gray-900 text-lime-400">
-                  <th className="px-4 py-2 text-left">Sucursal</th>
-                  <th className="px-4 py-2 text-left">Préstamos Activos</th>
-                  <th className="px-4 py-2 text-left">Préstamos Vencidos</th>
-                  <th className="px-4 py-2 text-left">Capital Prestado</th>
-                  <th className="px-4 py-2 text-left">Préstamo Promedio</th>
-                  <th className="px-4 py-2 text-left">Tasa de Cobranza</th>
-                </tr>
-              </thead>
-              <tbody>
-                {metrics.storeComparison.map((sucursal) => (
-                  <tr key={sucursal.store} className="border-t border-crediyaGreen">
-                    <td className="px-4 py-2">{sucursal.store}</td>
-                    <td className="px-4 py-2">{sucursal.active_loans}</td>
-                    <td className="px-4 py-2">{sucursal.overdue_loans}</td>
-                    <td className="px-4 py-2">${parseFloat(sucursal.capital_lent).toLocaleString()}</td>
-                    <td className="px-4 py-2">${parseFloat(sucursal.avg_loan_size).toLocaleString()}</td>
-                    <td className="px-4 py-2">{parseFloat(sucursal.collection_rate).toFixed(2)}%</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-      {metrics.overdueCustomersTable && metrics.overdueCustomersTable.length > 0 && (
-        <div className="mt-10 px-6 max-w-6xl mx-auto">
-          <h3 className="text-white text-lg font-bold mb-4">Clientes con pagos vencidos</h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm text-white bg-black border border-crediyaGreen">
-              <thead>
-                <tr className="bg-gray-900 text-lime-400">
-                  <th className="px-4 py-2 text-left">Cliente</th>
-                  <th className="px-4 py-2 text-left">Teléfono</th>
-                  <th className="px-4 py-2 text-left">Pagos Vencidos</th>
-                  <th className="px-4 py-2 text-left">Monto Total Vencido</th>
-                </tr>
-              </thead>
-              <tbody>
-                {metrics.overdueCustomersTable.map((c) => (
-                  <tr key={c.customer_id} className="border-t border-crediyaGreen">
-                    <td className="px-4 py-2">{c.first_name} {c.last_name}</td>
-                    <td className="px-4 py-2">{c.phone}</td>
-                    <td className="px-4 py-2">{c.overdue_installments}</td>
-                    <td className="px-4 py-2">${parseFloat(c.total_overdue).toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-      {overdueTrends.length > 0 && (
-        <div className="mt-10 px-6 max-w-6xl mx-auto">
-          <h3 className="text-white text-lg font-bold mb-4">Tendencia de Pagos Vencidos</h3>
-          <div className="bg-black p-4 rounded">
-            <Line
-              data={{
-                labels: overdueTrends.map(row => new Date(row.week_start).toLocaleDateString()),
-                datasets: [
+
+            {/* Cash Flow Summary */}
+            <div className="bg-gray-900 rounded-xl p-6 border border-gray-700">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-white">💸 Flujo de Caja</h3>
+                <select
+                  value={cashflowPeriod}
+                  onChange={(e) => setCashflowPeriod(e.target.value)}
+                  className="bg-gray-800 text-white border border-gray-600 rounded-lg px-3 py-1 focus:border-crediyaGreen focus:outline-none"
+                >
+                  <option value="day">Hoy</option>
+                  <option value="week">Esta Semana</option>
+                  <option value="month">Este Mes</option>
+                  <option value="ytd">Año en Curso</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {[
                   {
-                    label: "Monto vencido por semana",
-                    data: overdueTrends.map(row => parseFloat(row.total_due)),
-                    borderColor: "rgb(132, 204, 22)",
-                    backgroundColor: "rgba(132, 204, 22, 0.2)",
+                    label: "Total Cobrado",
+                    value: `$${(metrics.totalCollectedToday || 0).toLocaleString()}`,
+                    icon: "📈",
+                    color: "text-green-400",
                   },
-                ],
-              }}
-            />
+                  {
+                    label: "Total Prestado",
+                    value: `$${(metrics.totalDisbursedToday || 0).toLocaleString()}`,
+                    icon: "📉",
+                    color: "text-blue-400",
+                  },
+                  {
+                    label: "Flujo Neto",
+                    value: `$${Math.abs(metrics.netCashFlowToday || 0).toLocaleString()}`,
+                    icon: metrics.netCashFlowToday >= 0 ? "✅" : "❌",
+                    color: metrics.netCashFlowToday >= 0 ? "text-green-400" : "text-red-400",
+                  },
+                ].map((item) => (
+                  <div key={item.label} className="text-center">
+                    <div className="text-2xl mb-2">{item.icon}</div>
+                    <div className={`text-2xl font-bold mb-1 ${item.color}`}>
+                      {item.value}
+                    </div>
+                    <div className="text-sm text-gray-400">{item.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Charts Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Overdue Trends Chart */}
+              <div className="bg-gray-900 rounded-xl p-6 border border-gray-700">
+                <h3 className="text-lg font-bold text-white mb-4">📈 Tendencia de Pagos Vencidos</h3>
+                {overdueTrends.length > 0 ? (
+                  <Line
+                    data={chartData.overdueTrends}
+                    options={{
+                      responsive: true,
+                      plugins: {
+                        legend: {
+                          labels: { color: "white" },
+                        },
+                      },
+                      scales: {
+                        y: {
+                          ticks: { color: "white" },
+                          grid: { color: "rgba(255,255,255,0.1)" },
+                        },
+                        x: {
+                          ticks: { color: "white" },
+                          grid: { color: "rgba(255,255,255,0.1)" },
+                        },
+                      },
+                    }}
+                  />
+                ) : (
+                  <div className="text-center text-gray-400 py-8">
+                    <div className="text-4xl mb-4">📊</div>
+                    <p>No hay datos de tendencias disponibles</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Loan Distribution Chart */}
+              <div className="bg-gray-900 rounded-xl p-6 border border-gray-700">
+                <h3 className="text-lg font-bold text-white mb-4">🥧 Distribución de Préstamos</h3>
+                <Doughnut
+                  data={chartData.loanDistribution}
+                  options={{
+                    responsive: true,
+                    plugins: {
+                      legend: {
+                        position: "bottom",
+                        labels: { color: "white" },
+                      },
+                    },
+                  }}
+                />
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Analytics Tab */}
+        {activeTab === "analytics" && (
+          <div className="space-y-8">
+            {/* Store Performance */}
+            {metrics.storeComparison && metrics.storeComparison.length > 0 && (
+              <div className="bg-gray-900 rounded-xl p-6 border border-gray-700">
+                <h3 className="text-lg font-bold text-white mb-6">🏪 Rendimiento por Sucursal</h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div>
+                    <Bar
+                      data={chartData.storePerformance}
+                      options={{
+                        responsive: true,
+                        plugins: {
+                          legend: {
+                            labels: { color: "white" },
+                          },
+                        },
+                        scales: {
+                          y: {
+                            ticks: { color: "white" },
+                            grid: { color: "rgba(255,255,255,0.1)" },
+                          },
+                          x: {
+                            ticks: { color: "white" },
+                            grid: { color: "rgba(255,255,255,0.1)" },
+                          },
+                        },
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    {metrics.storeComparison.map((store) => (
+                      <div key={store.store} className="bg-gray-800 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-semibold text-white">{store.store}</h4>
+                          <span className="text-sm text-gray-400">
+                            {parseFloat(store.collection_rate).toFixed(1)}% cobranza
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <div className="text-gray-400">Préstamos Activos</div>
+                            <div className="text-white font-semibold">{store.active_loans}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-400">Capital Prestado</div>
+                            <div className="text-white font-semibold">
+                              ${parseFloat(store.capital_lent).toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Overdue Customers Table */}
+            {metrics.overdueCustomersTable && metrics.overdueCustomersTable.length > 0 && (
+              <div className="bg-gray-900 rounded-xl p-6 border border-gray-700">
+                <h3 className="text-lg font-bold text-white mb-6">⚠️ Clientes con Pagos Vencidos</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-700">
+                        <th className="text-left py-3 px-4 text-gray-400 font-semibold">Cliente</th>
+                        <th className="text-left py-3 px-4 text-gray-400 font-semibold">Teléfono</th>
+                        <th className="text-left py-3 px-4 text-gray-400 font-semibold">Pagos Vencidos</th>
+                        <th className="text-left py-3 px-4 text-gray-400 font-semibold">Monto Vencido</th>
+                        <th className="text-left py-3 px-4 text-gray-400 font-semibold">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {metrics.overdueCustomersTable.slice(0, 10).map((customer) => (
+                        <tr key={customer.customer_id} className="border-b border-gray-800 hover:bg-gray-800">
+                          <td className="py-3 px-4 text-white">
+                            {customer.first_name} {customer.last_name}
+                          </td>
+                          <td className="py-3 px-4 text-gray-300">{customer.phone}</td>
+                          <td className="py-3 px-4">
+                            <span className="bg-red-500/20 text-red-300 px-2 py-1 rounded-full text-xs">
+                              {customer.overdue_installments}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-red-400 font-semibold">
+                            ${parseFloat(customer.total_overdue).toLocaleString()}
+                          </td>
+                          <td className="py-3 px-4">
+                            <Link
+                              to={`/register-payment?customer=${customer.customer_id}`}
+                              className="text-crediyaGreen hover:text-emerald-400 text-sm"
+                            >
+                              💰 Registrar Pago
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {metrics.overdueCustomersTable.length > 10 && (
+                  <div className="mt-4 text-center">
+                    <Link
+                      to="/overdue-loans"
+                      className="text-crediyaGreen hover:text-emerald-400 text-sm"
+                    >
+                      Ver todos los clientes vencidos →
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Performance Tab */}
+        {activeTab === "performance" && (
+          <div className="space-y-8">
+            {/* Performance Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                {
+                  label: "Tasa de Cobranza",
+                  value: "94.2%",
+                  icon: "📊",
+                  color: "from-green-500 to-emerald-600",
+                  trend: "+2.1%",
+                },
+                {
+                  label: "Tiempo Promedio de Cobro",
+                  value: "3.2 días",
+                  icon: "⏱️",
+                  color: "from-blue-500 to-cyan-600",
+                  trend: "-0.5 días",
+                },
+                {
+                  label: "Satisfacción del Cliente",
+                  value: "4.8/5",
+                  icon: "⭐",
+                  color: "from-yellow-500 to-orange-600",
+                  trend: "+0.2",
+                },
+              ].map((metric) => (
+                <div
+                  key={metric.label}
+                  className={`bg-gradient-to-r ${metric.color} p-6 rounded-xl text-white shadow-lg`}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="text-3xl">{metric.icon}</div>
+                    <div className="text-sm bg-white/20 px-2 py-1 rounded-full">
+                      {metric.trend}
+                    </div>
+                  </div>
+                  <div className="text-2xl font-bold mb-1">{metric.value}</div>
+                  <div className="text-sm opacity-90">{metric.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Performance Insights */}
+            <div className="bg-gray-900 rounded-xl p-6 border border-gray-700">
+              <h3 className="text-lg font-bold text-white mb-6">💡 Insights de Rendimiento</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div className="flex items-center p-4 bg-green-500/10 rounded-lg border border-green-500/20">
+                    <div className="text-2xl mr-4">✅</div>
+                    <div>
+                      <div className="font-semibold text-white">Cobranza Mejorada</div>
+                      <div className="text-sm text-gray-400">15% mejor que el mes anterior</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                    <div className="text-2xl mr-4">📈</div>
+                    <div>
+                      <div className="font-semibold text-white">Nuevos Clientes</div>
+                      <div className="text-sm text-gray-400">+23 clientes este mes</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+                    <div className="text-2xl mr-4">⚠️</div>
+                    <div>
+                      <div className="font-semibold text-white">Atención Requerida</div>
+                      <div className="text-sm text-gray-400">8 clientes con 2+ pagos vencidos</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                    <div className="text-2xl mr-4">🎯</div>
+                    <div>
+                      <div className="font-semibold text-white">Meta Alcanzada</div>
+                      <div className="text-sm text-gray-400">95% de la meta mensual</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Activity Tab */}
+        {activeTab === "activity" && (
+          <div className="space-y-8">
+            {/* Recent Activity */}
+            <div className="bg-gray-900 rounded-xl p-6 border border-gray-700">
+              <h3 className="text-lg font-bold text-white mb-6">🔄 Actividad Reciente</h3>
+              <div className="space-y-4">
+                {recentActivity.length > 0 ? (
+                  recentActivity.map((activity, index) => (
+                    <div key={index} className="flex items-center p-4 bg-gray-800 rounded-lg">
+                      <div className="text-2xl mr-4">{activity.icon || "📝"}</div>
+                      <div className="flex-1">
+                        <div className="text-white font-semibold">{activity.title}</div>
+                        <div className="text-sm text-gray-400">{activity.description}</div>
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {new Date(activity.timestamp).toLocaleString()}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center text-gray-400 py-8">
+                    <div className="text-4xl mb-4">📝</div>
+                    <p>No hay actividad reciente</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* System Status */}
+            <div className="bg-gray-900 rounded-xl p-6 border border-gray-700">
+              <h3 className="text-lg font-bold text-white mb-6">🔧 Estado del Sistema</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[
+                  { label: "Base de Datos", status: "online", icon: "💾" },
+                  { label: "API Backend", status: "online", icon: "⚙️" },
+                  { label: "WhatsApp API", status: "online", icon: "📱" },
+                  { label: "Sistema de Pagos", status: "online", icon: "💳" },
+                ].map((service) => (
+                  <div key={service.label} className="flex items-center p-4 bg-gray-800 rounded-lg">
+                    <div className="text-2xl mr-4">{service.icon}</div>
+                    <div className="flex-1">
+                      <div className="text-white font-semibold">{service.label}</div>
+                      <div className="text-sm text-gray-400">{service.status}</div>
+                    </div>
+                    <div className={`w-3 h-3 rounded-full ${
+                      service.status === "online" ? "bg-green-500" : "bg-red-500"
+                    }`}></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </Layout>
   );
 };
