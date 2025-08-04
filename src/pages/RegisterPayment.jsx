@@ -18,6 +18,7 @@ const RegisterPayment = () => {
   const [movements, setMovements] = useState([]);
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [paymentBreakdowns, setPaymentBreakdowns] = useState([]);
+  const [loanTotals, setLoanTotals] = useState(null);
   const [applyExtraTo, setApplyExtraTo] = useState("next");
   const [lastPayment, setLastPayment] = useState(null);
   const receiptRef = useRef(null);
@@ -70,6 +71,11 @@ const RegisterPayment = () => {
       } else {
         setInstallments(installmentsData);
       }
+      
+      // Extract totals from the details response
+      const totalsData = loanDetailRes.data?.totals || null;
+      console.log("💡 Totals received:", totalsData);
+      setLoanTotals(totalsData);
       
       // Ensure paymentsRes.data includes actual payment records with amounts
       const paymentsWithAmounts = Array.isArray(paymentsRes.data)
@@ -357,8 +363,8 @@ const RegisterPayment = () => {
                             <p><strong>Monto Original:</strong> ${parseFloat(selectedLoan.amount).toLocaleString()}</p>
                             <p><strong>Plazo:</strong> {selectedLoan.term || 'N/A'} semanas</p>
                             <p><strong>Pago Semanal:</strong> ${selectedLoan.weekly_payment ? parseFloat(selectedLoan.weekly_payment).toFixed(2) : 'N/A'}</p>
-                            <p><strong>Total a Pagar:</strong> ${selectedLoan.total_repay ? parseFloat(selectedLoan.total_repay).toFixed(2) : 'N/A'}</p>
-                            <p><strong>Interés Total:</strong> ${selectedLoan.total_interest ? parseFloat(selectedLoan.total_interest).toFixed(2) : 'N/A'}</p>
+                            <p><strong>Total a Pagar:</strong> ${loanTotals ? parseFloat(loanTotals.totalDue).toFixed(2) : 'N/A'}</p>
+                            <p><strong>Interés Total:</strong> ${loanTotals ? parseFloat(loanTotals.totalInterest).toFixed(2) : 'N/A'}</p>
                           </div>
                         </div>
 
@@ -390,8 +396,8 @@ const RegisterPayment = () => {
                                 ? `${new Date(paymentHistory[paymentHistory.length - 1].payment_date).toLocaleDateString()} — $${paymentHistory[paymentHistory.length - 1].amount}` 
                                 : "N/A"
                             }</p>
-                            <p><strong>Total pagado:</strong> ${paymentHistory && paymentHistory.length > 0 ? paymentHistory.reduce((acc, p) => acc + parseFloat(p.amount || 0), 0).toFixed(2) : "0.00"}</p>
-                            <p><strong>Saldo restante:</strong> ${
+                            <p><strong>Total pagado:</strong> ${loanTotals ? parseFloat(loanTotals.totalPaid).toFixed(2) : (paymentHistory && paymentHistory.length > 0 ? paymentHistory.reduce((acc, p) => acc + parseFloat(p.amount || 0), 0).toFixed(2) : "0.00")}</p>
+                            <p><strong>Saldo restante:</strong> ${loanTotals ? parseFloat(loanTotals.remainingBalance).toFixed(2) : (
                               (
                                 parseFloat(selectedLoan.amount) -
                                 (Array.isArray(paymentBreakdowns) ? paymentBreakdowns
@@ -399,8 +405,8 @@ const RegisterPayment = () => {
                                   .reduce((acc, b) => acc + parseFloat(b.amount), 0) : 0) +
                                 installments.reduce((acc, i) => acc + parseFloat(i.penalty_applied), 0)
                               ).toFixed(2)
-                            }</p>
-                            <p><strong>Penalidades acumuladas:</strong> ${installments.reduce((acc, i) => acc + parseFloat(i.penalty_applied), 0).toFixed(2)}</p>
+                            )}</p>
+                            <p><strong>Penalidades acumuladas:</strong> ${loanTotals ? parseFloat(loanTotals.totalPenalties).toFixed(2) : installments.reduce((acc, i) => acc + parseFloat(i.penalty_applied), 0).toFixed(2)}</p>
                           </div>
                         </div>
 
