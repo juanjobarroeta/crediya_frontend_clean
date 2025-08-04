@@ -707,6 +707,7 @@ const InventoryRequest = () => {
               </div>
             </div>
           </div>
+        </div>
         )}
 
         {activeTab === "import" && (
