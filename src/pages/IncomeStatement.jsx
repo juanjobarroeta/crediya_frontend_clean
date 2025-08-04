@@ -2,6 +2,33 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { API_BASE_URL } from "../utils/constants";
 import Layout from "../components/Layout";
 import axios from "axios";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from 'chart.js';
+import { Line, Bar, Doughnut } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 const IncomeStatement = () => {
   const [statement, setStatement] = useState(null);
@@ -10,14 +37,15 @@ const IncomeStatement = () => {
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
   const [showDetails, setShowDetails] = useState(false);
-  const [periodType, setPeriodType] = useState("month"); // month, quarter, year, custom
+  const [periodType, setPeriodType] = useState("month");
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
   const [selectedQuarter, setSelectedQuarter] = useState("");
-  const [showCharts, setShowCharts] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
   const [exportLoading, setExportLoading] = useState(false);
   const [comparisonMode, setComparisonMode] = useState(false);
   const [comparisonData, setComparisonData] = useState(null);
+  const [timeRange, setTimeRange] = useState("month");
   const token = localStorage.getItem("token");
 
   // Initialize with current month and year
@@ -46,13 +74,9 @@ const IncomeStatement = () => {
         url = `${API_BASE_URL}/income-statement?year=${selectedYear}&details=${showDetails}`;
       }
       
-      console.log("🔍 Fetching income statement:", url);
-      
       const res = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
-      console.log("📊 Income statement data:", res.data);
       
       if (isComparison) {
         setComparisonData(res.data);
@@ -60,7 +84,7 @@ const IncomeStatement = () => {
         setStatement(res.data);
       }
     } catch (err) {
-      console.error("❌ Error fetching income statement:", err);
+      console.error("Error fetching income statement:", err);
       setError(err.response?.data?.message || "Error al cargar el estado de resultados");
     } finally {
       setLoading(false);
@@ -99,38 +123,49 @@ const IncomeStatement = () => {
     };
   }, [statement]);
 
-  const comparisonCalculations = useMemo(() => {
-    if (!comparisonData) return null;
-    
-    const totalIncome = (comparisonData.interestPaid || 0) + (comparisonData.productMargin || 0) + (comparisonData.penalties || 0);
-    const totalExpenses = (comparisonData.costOfGoods || 0) + (comparisonData.expenses || 0);
-    const grossProfit = totalIncome - (comparisonData.costOfGoods || 0);
-    const netIncome = grossProfit - (comparisonData.expenses || 0);
-    
+  // Chart data
+  const chartData = useMemo(() => {
+    if (!calculations) return null;
+
     return {
-      totalIncome,
-      totalExpenses,
-      grossProfit,
-      netIncome,
-      interestPaid: comparisonData.interestPaid || 0,
-      penalties: comparisonData.penalties || 0,
-      productMargin: comparisonData.productMargin || 0,
-      costOfGoods: comparisonData.costOfGoods || 0,
-      expenses: comparisonData.expenses || 0
+      revenue: {
+        labels: ['Intereses', 'Penalidades', 'Productos'],
+        datasets: [{
+          data: [calculations.interestPaid, calculations.penalties, calculations.productMargin],
+          backgroundColor: ['#10B981', '#F59E0B', '#3B82F6'],
+          borderWidth: 0,
+        }]
+      },
+      expenses: {
+        labels: ['Costo de Venta', 'Gastos Operativos'],
+        datasets: [{
+          data: [calculations.costOfGoods, calculations.expenses],
+          backgroundColor: ['#EF4444', '#F97316'],
+          borderWidth: 0,
+        }]
+      },
+      trend: {
+        labels: statement?.weeklyBreakdown?.map(week => week.range) || [],
+        datasets: [{
+          label: 'Ingresos',
+          data: statement?.weeklyBreakdown?.map(week => week.interestPaid + week.penalties + week.productMargin) || [],
+          borderColor: '#10B981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          fill: true,
+        }, {
+          label: 'Gastos',
+          data: statement?.weeklyBreakdown?.map(week => week.costOfGoods + week.expenses) || [],
+          borderColor: '#EF4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          fill: true,
+        }]
+      }
     };
-  }, [comparisonData]);
+  }, [calculations, statement]);
 
-  const handleMonthChange = (e) => {
-    setSelectedMonth(e.target.value);
-  };
-
-  const handleYearChange = (e) => {
-    setSelectedYear(e.target.value);
-  };
-
-  const handlePeriodTypeChange = (e) => {
-    setPeriodType(e.target.value);
-  };
+  const handleMonthChange = (e) => setSelectedMonth(e.target.value);
+  const handleYearChange = (e) => setSelectedYear(e.target.value);
+  const handlePeriodTypeChange = (e) => setPeriodType(e.target.value);
 
   const handleCurrentMonth = () => {
     const today = new Date();
@@ -251,12 +286,6 @@ const IncomeStatement = () => {
     }
   };
 
-  const handleComparison = async () => {
-    if (comparisonMode) {
-      await loadData(true);
-    }
-  };
-
   const getPeriodLabel = () => {
     const monthNames = [
       "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -278,10 +307,12 @@ const IncomeStatement = () => {
   if (loading && !statement) {
     return (
       <Layout>
-        <div className="bg-[#0a0a0a] p-4 rounded-lg border border-green-400 w-full">
-          <div className="text-white text-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-400 mx-auto mb-4"></div>
-            <p>Cargando estado de resultados...</p>
+        <div className="p-6 max-w-7xl mx-auto">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-crediyaGreen mx-auto mb-4"></div>
+              <p className="text-gray-400 text-lg">Cargando estado de resultados...</p>
+            </div>
           </div>
         </div>
       </Layout>
@@ -290,53 +321,73 @@ const IncomeStatement = () => {
 
   return (
     <Layout>
-      <div className="bg-[#0a0a0a] p-4 rounded-lg border border-green-400 overflow-x-auto w-full">
-        {/* Header and Controls */}
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold text-crediyaGreen">
-              Estado de Resultados
-            </h2>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowCharts(!showCharts)}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded font-semibold"
+      <div className="p-6 max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-2">📊 Estado de Resultados</h1>
+              <p className="text-gray-400">Análisis completo de ingresos, gastos y rentabilidad</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <select
+                value={timeRange}
+                onChange={(e) => setTimeRange(e.target.value)}
+                className="bg-gray-800 text-white border border-gray-600 rounded-lg px-4 py-2 focus:border-crediyaGreen focus:outline-none"
               >
-                {showCharts ? "📊 Tabla" : "📈 Gráficos"}
-              </button>
+                <option value="month">Este Mes</option>
+                <option value="quarter">Este Trimestre</option>
+                <option value="year">Este Año</option>
+                <option value="ytd">YTD</option>
+              </select>
               <button
-                onClick={handleExportPDF}
-                disabled={exportLoading}
-                className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white px-4 py-2 rounded font-semibold"
+                onClick={() => setComparisonMode(!comparisonMode)}
+                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                  comparisonMode 
+                    ? "bg-yellow-600 hover:bg-yellow-700 text-white" 
+                    : "bg-gray-700 hover:bg-gray-600 text-white"
+                }`}
               >
-                {exportLoading ? "⏳" : "📄 PDF"}
-              </button>
-              <button
-                onClick={handleExportExcel}
-                disabled={exportLoading}
-                className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-4 py-2 rounded font-semibold"
-              >
-                {exportLoading ? "⏳" : "📊 Excel"}
+                {comparisonMode ? "🔍 Comparación ON" : "🔍 Comparación"}
               </button>
             </div>
           </div>
-          
-          {/* Error Display */}
-          {error && (
-            <div className="bg-red-900 border border-red-400 text-red-200 px-4 py-3 rounded mb-4">
-              <strong>Error:</strong> {error}
+
+          {/* Quick Stats Cards */}
+          {calculations && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+              <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6 rounded-xl text-white">
+                <div className="text-2xl font-bold">${calculations.totalIncome.toLocaleString()}</div>
+                <div className="text-sm opacity-90">Ingresos Totales</div>
+              </div>
+              <div className="bg-gradient-to-r from-red-500 to-pink-600 p-6 rounded-xl text-white">
+                <div className="text-2xl font-bold">${calculations.totalExpenses.toLocaleString()}</div>
+                <div className="text-sm opacity-90">Gastos Totales</div>
+              </div>
+              <div className="bg-gradient-to-r from-blue-500 to-cyan-600 p-6 rounded-xl text-white">
+                <div className="text-2xl font-bold">${calculations.grossProfit.toLocaleString()}</div>
+                <div className="text-sm opacity-90">Utilidad Bruta</div>
+              </div>
+              <div className={`p-6 rounded-xl text-white ${
+                calculations.netIncome >= 0 
+                  ? "bg-gradient-to-r from-crediyaGreen to-emerald-500" 
+                  : "bg-gradient-to-r from-red-500 to-pink-600"
+              }`}>
+                <div className="text-2xl font-bold">${calculations.netIncome.toLocaleString()}</div>
+                <div className="text-sm opacity-90">Utilidad Neta</div>
+              </div>
             </div>
           )}
 
           {/* Period Selection */}
-          <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 mb-4">
+          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 mb-8">
             <div className="flex flex-wrap items-end gap-4 mb-4">
               <div>
-                <label className="block text-white text-sm mb-1">Tipo de Período</label>
+                <label className="block text-white text-sm mb-2">Tipo de Período</label>
                 <select 
                   value={periodType} 
                   onChange={handlePeriodTypeChange}
-                  className="p-2 bg-black border border-green-400 text-white rounded"
+                  className="p-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:border-crediyaGreen focus:outline-none"
                 >
                   <option value="month">Mes</option>
                   <option value="quarter">Trimestre</option>
@@ -346,56 +397,52 @@ const IncomeStatement = () => {
               </div>
 
               {periodType === "month" && (
-                <>
-                  <div>
-                    <label className="block text-white text-sm mb-1">Mes</label>
-                    <select 
-                      value={selectedMonth} 
-                      onChange={handleMonthChange}
-                      className="p-2 bg-black border border-green-400 text-white rounded"
-                    >
-                      <option value="1">Enero</option>
-                      <option value="2">Febrero</option>
-                      <option value="3">Marzo</option>
-                      <option value="4">Abril</option>
-                      <option value="5">Mayo</option>
-                      <option value="6">Junio</option>
-                      <option value="7">Julio</option>
-                      <option value="8">Agosto</option>
-                      <option value="9">Septiembre</option>
-                      <option value="10">Octubre</option>
-                      <option value="11">Noviembre</option>
-                      <option value="12">Diciembre</option>
-                    </select>
-                  </div>
-                </>
+                <div>
+                  <label className="block text-white text-sm mb-2">Mes</label>
+                  <select 
+                    value={selectedMonth} 
+                    onChange={handleMonthChange}
+                    className="p-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:border-crediyaGreen focus:outline-none"
+                  >
+                    <option value="1">Enero</option>
+                    <option value="2">Febrero</option>
+                    <option value="3">Marzo</option>
+                    <option value="4">Abril</option>
+                    <option value="5">Mayo</option>
+                    <option value="6">Junio</option>
+                    <option value="7">Julio</option>
+                    <option value="8">Agosto</option>
+                    <option value="9">Septiembre</option>
+                    <option value="10">Octubre</option>
+                    <option value="11">Noviembre</option>
+                    <option value="12">Diciembre</option>
+                  </select>
+                </div>
               )}
 
               {periodType === "quarter" && (
-                <>
-                  <div>
-                    <label className="block text-white text-sm mb-1">Trimestre</label>
-                    <select 
-                      value={selectedQuarter} 
-                      onChange={(e) => setSelectedQuarter(e.target.value)}
-                      className="p-2 bg-black border border-green-400 text-white rounded"
-                    >
-                      <option value="1">Q1 (Ene-Mar)</option>
-                      <option value="2">Q2 (Abr-Jun)</option>
-                      <option value="3">Q3 (Jul-Sep)</option>
-                      <option value="4">Q4 (Oct-Dic)</option>
-                    </select>
-                  </div>
-                </>
+                <div>
+                  <label className="block text-white text-sm mb-2">Trimestre</label>
+                  <select 
+                    value={selectedQuarter} 
+                    onChange={(e) => setSelectedQuarter(e.target.value)}
+                    className="p-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:border-crediyaGreen focus:outline-none"
+                  >
+                    <option value="1">Q1 (Ene-Mar)</option>
+                    <option value="2">Q2 (Abr-Jun)</option>
+                    <option value="3">Q3 (Jul-Sep)</option>
+                    <option value="4">Q4 (Oct-Dic)</option>
+                  </select>
+                </div>
               )}
 
               {(periodType === "month" || periodType === "quarter" || periodType === "year") && (
                 <div>
-                  <label className="block text-white text-sm mb-1">Año</label>
+                  <label className="block text-white text-sm mb-2">Año</label>
                   <select 
                     value={selectedYear} 
                     onChange={handleYearChange}
-                    className="p-2 bg-black border border-green-400 text-white rounded"
+                    className="p-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:border-crediyaGreen focus:outline-none"
                   >
                     {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map(year => (
                       <option key={year} value={year}>{year}</option>
@@ -407,21 +454,21 @@ const IncomeStatement = () => {
               {periodType === "custom" && (
                 <>
                   <div>
-                    <label className="block text-white text-sm mb-1">Fecha Inicio</label>
+                    <label className="block text-white text-sm mb-2">Fecha Inicio</label>
                     <input 
                       type="date" 
                       value={customStartDate} 
                       onChange={(e) => setCustomStartDate(e.target.value)}
-                      className="p-2 bg-black border border-green-400 text-white rounded"
+                      className="p-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:border-crediyaGreen focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-white text-sm mb-1">Fecha Fin</label>
+                    <label className="block text-white text-sm mb-2">Fecha Fin</label>
                     <input 
                       type="date" 
                       value={customEndDate} 
                       onChange={(e) => setCustomEndDate(e.target.value)}
-                      className="p-2 bg-black border border-green-400 text-white rounded"
+                      className="p-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:border-crediyaGreen focus:outline-none"
                     />
                   </div>
                 </>
@@ -444,103 +491,120 @@ const IncomeStatement = () => {
             <div className="flex flex-wrap gap-2">
               <button 
                 onClick={handleCurrentMonth}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm font-semibold"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
               >
-                Mes Actual
+                📅 Mes Actual
               </button>
               <button 
                 onClick={handleCurrentYear}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm font-semibold"
+                className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
               >
-                Año Actual
+                📅 Año Actual
               </button>
               <button 
                 onClick={handleYTD}
-                className="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded text-sm font-semibold"
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
               >
-                YTD
+                📊 YTD
               </button>
               <div className="flex gap-1">
                 <button 
                   onClick={handlePreviousPeriod}
-                  className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm"
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg text-sm transition-colors"
                   title="Período anterior"
                 >
                   ←
                 </button>
                 <button 
                   onClick={handleNextPeriod}
-                  className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm"
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg text-sm transition-colors"
                   title="Período siguiente"
                 >
                   →
                 </button>
               </div>
-              <button
-                onClick={() => setComparisonMode(!comparisonMode)}
-                className={`px-3 py-1 rounded text-sm font-semibold ${
-                  comparisonMode 
-                    ? "bg-yellow-600 hover:bg-yellow-700 text-white" 
-                    : "bg-gray-600 hover:bg-gray-700 text-white"
-                }`}
-              >
-                {comparisonMode ? "Comparación ON" : "Comparación"}
-              </button>
             </div>
 
             {/* Period Label */}
-            <div className="mt-2">
-              <span className="text-lime-400 font-semibold">Período: {getPeriodLabel()}</span>
+            <div className="mt-4">
+              <span className="text-crediyaGreen font-semibold text-lg">📅 Período: {getPeriodLabel()}</span>
             </div>
           </div>
         </div>
 
-        {/* Charts View */}
-        {showCharts && statement && calculations && (
-          <div className="mb-6">
-            <h3 className="text-lg font-bold text-center mb-4 text-crediyaGreen">
-              Análisis Gráfico
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Revenue Breakdown */}
-              <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                <h4 className="text-white font-semibold mb-2">Desglose de Ingresos</h4>
-                <div className="space-y-2">
+        {/* Navigation Tabs */}
+        <div className="flex space-x-1 mb-8 bg-gray-800 p-1 rounded-lg">
+          {[
+            { id: "overview", label: "📊 Resumen", icon: "📊" },
+            { id: "analytics", label: "📈 Análisis", icon: "📈" },
+            { id: "details", label: "📋 Detalles", icon: "📋" },
+            { id: "charts", label: "📊 Gráficos", icon: "📊" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 py-3 px-4 rounded-md font-semibold transition-all duration-200 ${
+                activeTab === tab.id
+                  ? "bg-crediyaGreen text-black shadow-lg"
+                  : "text-gray-400 hover:text-white hover:bg-gray-700"
+              }`}
+            >
+              <span className="mr-2">{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-900/20 border border-red-600 rounded-lg p-4 mb-6">
+            <h4 className="text-red-400 font-semibold mb-2">❌ Error</h4>
+            <p className="text-red-300">{error}</p>
+          </div>
+        )}
+
+        {/* Tab Content */}
+        {activeTab === "overview" && statement && calculations && (
+          <div className="space-y-6">
+            {/* Key Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h3 className="text-lg font-semibold text-white mb-4">💰 Ingresos</h3>
+                <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-300">Intereses:</span>
-                    <span className="text-lime-400">${calculations.interestPaid.toLocaleString()}</span>
+                    <span className="text-gray-400">Intereses:</span>
+                    <span className="text-green-400 font-semibold">${calculations.interestPaid.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-300">Penalidades:</span>
-                    <span className="text-lime-400">${calculations.penalties.toLocaleString()}</span>
+                    <span className="text-gray-400">Penalidades:</span>
+                    <span className="text-green-400 font-semibold">${calculations.penalties.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-300">Productos:</span>
-                    <span className="text-lime-400">${calculations.productMargin.toLocaleString()}</span>
+                    <span className="text-gray-400">Productos:</span>
+                    <span className="text-green-400 font-semibold">${calculations.productMargin.toLocaleString()}</span>
                   </div>
-                  <div className="border-t border-gray-600 pt-2">
-                    <div className="flex justify-between font-semibold">
+                  <div className="border-t border-gray-600 pt-3">
+                    <div className="flex justify-between font-bold text-lg">
                       <span className="text-white">Total:</span>
-                      <span className="text-lime-400">${calculations.totalIncome.toLocaleString()}</span>
+                      <span className="text-green-400">${calculations.totalIncome.toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Expense Breakdown */}
-              <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                <h4 className="text-white font-semibold mb-2">Desglose de Gastos</h4>
-                <div className="space-y-2">
+              <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h3 className="text-lg font-semibold text-white mb-4">💸 Gastos</h3>
+                <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-300">Costo de Venta:</span>
-                    <span className="text-red-400">${calculations.costOfGoods.toLocaleString()}</span>
+                    <span className="text-gray-400">Costo de Venta:</span>
+                    <span className="text-red-400 font-semibold">${calculations.costOfGoods.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-300">Gastos Operativos:</span>
-                    <span className="text-red-400">${calculations.expenses.toLocaleString()}</span>
+                    <span className="text-gray-400">Gastos Operativos:</span>
+                    <span className="text-red-400 font-semibold">${calculations.expenses.toLocaleString()}</span>
                   </div>
-                  <div className="border-t border-gray-600 pt-2">
-                    <div className="flex justify-between font-semibold">
+                  <div className="border-t border-gray-600 pt-3">
+                    <div className="flex justify-between font-bold text-lg">
                       <span className="text-white">Total:</span>
                       <span className="text-red-400">${calculations.totalExpenses.toLocaleString()}</span>
                     </div>
@@ -548,32 +612,27 @@ const IncomeStatement = () => {
                 </div>
               </div>
 
-              {/* Key Metrics */}
-              <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                <h4 className="text-white font-semibold mb-2">Métricas Clave</h4>
-                <div className="space-y-2">
+              <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h3 className="text-lg font-semibold text-white mb-4">📈 Métricas</h3>
+                <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-300">Margen de Utilidad:</span>
+                    <span className="text-gray-400">Utilidad Bruta:</span>
+                    <span className="text-blue-400 font-semibold">${calculations.grossProfit.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Margen de Utilidad:</span>
                     <span className={`font-semibold ${calculations.profitMargin >= 0 ? "text-green-400" : "text-red-400"}`}>
                       {calculations.profitMargin.toFixed(1)}%
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-300">Ratio de Gastos:</span>
-                    <span className="text-orange-400 font-semibold">
-                      {calculations.expenseRatio.toFixed(1)}%
-                    </span>
+                    <span className="text-gray-400">Ratio de Gastos:</span>
+                    <span className="text-orange-400 font-semibold">{calculations.expenseRatio.toFixed(1)}%</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-300">Utilidad Bruta:</span>
-                    <span className="text-blue-400 font-semibold">
-                      ${calculations.grossProfit.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="border-t border-gray-600 pt-2">
-                    <div className="flex justify-between font-semibold">
+                  <div className="border-t border-gray-600 pt-3">
+                    <div className="flex justify-between font-bold text-lg">
                       <span className="text-white">Utilidad Neta:</span>
-                      <span className={`${calculations.netIncome >= 0 ? "text-green-400" : "text-red-400"}`}>
+                      <span className={`${calculations.netIncome >= 0 ? "text-crediyaGreen" : "text-red-400"}`}>
                         ${calculations.netIncome.toLocaleString()}
                       </span>
                     </div>
@@ -581,121 +640,194 @@ const IncomeStatement = () => {
                 </div>
               </div>
             </div>
+
+            {/* Export Actions */}
+            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+              <h3 className="text-lg font-semibold text-white mb-4">📤 Exportar</h3>
+              <div className="flex gap-4">
+                <button
+                  onClick={handleExportPDF}
+                  disabled={exportLoading}
+                  className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+                >
+                  {exportLoading ? "⏳ Generando..." : "📄 Exportar PDF"}
+                </button>
+                <button
+                  onClick={handleExportExcel}
+                  disabled={exportLoading}
+                  className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+                >
+                  {exportLoading ? "⏳ Generando..." : "📊 Exportar Excel"}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Income Statement Table */}
-        {statement && calculations && (
-          <div className="flex flex-col items-center w-full">
-            <table className="min-w-max text-sm text-white border border-green-400">
-              <thead>
-                <tr className="bg-crediyaGreen text-black">
-                  <th className="p-2 text-left">Concepto</th>
-                  <th className="p-2 text-right">Monto</th>
-                  {comparisonMode && comparisonCalculations && (
-                    <th className="p-2 text-right">Comparación</th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-t border-green-400">
-                  <td className="p-2 font-semibold text-lime-400">INGRESOS</td>
-                  <td className="p-2 text-right"></td>
-                  {comparisonMode && comparisonCalculations && <td className="p-2 text-right"></td>}
-                </tr>
-                <tr className="border-t border-green-400">
-                  <td className="p-2 pl-4">Intereses cobrados</td>
-                  <td className="p-2 text-right text-lime-400">${calculations.interestPaid.toLocaleString()}</td>
-                  {comparisonMode && comparisonCalculations && (
-                    <td className="p-2 text-right text-lime-400">${comparisonCalculations.interestPaid.toLocaleString()}</td>
-                  )}
-                </tr>
-                <tr className="border-t border-green-400">
-                  <td className="p-2 pl-4">Penalidades</td>
-                  <td className="p-2 text-right text-lime-400">${calculations.penalties.toLocaleString()}</td>
-                  {comparisonMode && comparisonCalculations && (
-                    <td className="p-2 text-right text-lime-400">${comparisonCalculations.penalties.toLocaleString()}</td>
-                  )}
-                </tr>
-                <tr className="border-t border-green-400">
-                  <td className="p-2 pl-4">Margen de productos</td>
-                  <td className="p-2 text-right text-lime-400">${calculations.productMargin.toLocaleString()}</td>
-                  {comparisonMode && comparisonCalculations && (
-                    <td className="p-2 text-right text-lime-400">${comparisonCalculations.productMargin.toLocaleString()}</td>
-                  )}
-                </tr>
-                
-                <tr className="border-t border-green-400">
-                  <td className="p-2 font-semibold text-red-400">COSTOS Y GASTOS</td>
-                  <td className="p-2 text-right"></td>
-                  {comparisonMode && comparisonCalculations && <td className="p-2 text-right"></td>}
-                </tr>
-                <tr className="border-t border-green-400">
-                  <td className="p-2 pl-4">Costo de ventas</td>
-                  <td className="p-2 text-right text-red-400">${calculations.costOfGoods.toLocaleString()}</td>
-                  {comparisonMode && comparisonCalculations && (
-                    <td className="p-2 text-right text-red-400">${comparisonCalculations.costOfGoods.toLocaleString()}</td>
-                  )}
-                </tr>
-                <tr className="border-t border-green-400">
-                  <td className="p-2 pl-4">Gastos operativos</td>
-                  <td className="p-2 text-right text-red-400">${calculations.expenses.toLocaleString()}</td>
-                  {comparisonMode && comparisonCalculations && (
-                    <td className="p-2 text-right text-red-400">${comparisonCalculations.expenses.toLocaleString()}</td>
-                  )}
-                </tr>
-              </tbody>
-            </table>
+        {activeTab === "analytics" && statement && calculations && (
+          <div className="space-y-6">
+            {/* Performance Analysis */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h3 className="text-lg font-semibold text-white mb-4">📊 Análisis de Rentabilidad</h3>
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-gray-400">Margen de Utilidad</span>
+                      <span className={`font-semibold ${calculations.profitMargin >= 0 ? "text-green-400" : "text-red-400"}`}>
+                        {calculations.profitMargin.toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-700 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full ${calculations.profitMargin >= 0 ? "bg-green-500" : "bg-red-500"}`}
+                        style={{ width: `${Math.min(Math.abs(calculations.profitMargin), 100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-gray-400">Ratio de Gastos</span>
+                      <span className="text-orange-400 font-semibold">{calculations.expenseRatio.toFixed(1)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-700 rounded-full h-2">
+                      <div 
+                        className="bg-orange-500 h-2 rounded-full"
+                        style={{ width: `${Math.min(calculations.expenseRatio, 100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-            {/* Summary */}
-            <div className="mt-6 text-right text-white space-y-2 w-full max-w-md">
-              <p><span className="font-bold text-lime-400">Total Ingresos:</span> ${calculations.totalIncome.toLocaleString()}</p>
-              <p><span className="font-bold text-red-400">Costo de Venta:</span> ${calculations.costOfGoods.toLocaleString()}</p>
-              <p><span className="font-bold text-white">Utilidad Bruta:</span> ${calculations.grossProfit.toLocaleString()}</p>
-              <p><span className="font-bold text-blue-300">Gastos Generales:</span> ${calculations.expenses.toLocaleString()}</p>
-              <p>
-                <span className={`font-bold ${calculations.netIncome >= 0 ? "text-crediyaGreen" : "text-red-400"}`}>
-                  Utilidad Neta:
-                </span>
-                ${calculations.netIncome.toLocaleString()}
-              </p>
-              <p>
-                <span className="font-bold text-purple-400">Margen de Utilidad:</span>
-                {calculations.profitMargin.toFixed(1)}%
-              </p>
+              <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h3 className="text-lg font-semibold text-white mb-4">💰 Composición de Ingresos</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Intereses</span>
+                    <span className="text-green-400">
+                      {((calculations.interestPaid / calculations.totalIncome) * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Penalidades</span>
+                    <span className="text-green-400">
+                      {((calculations.penalties / calculations.totalIncome) * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Productos</span>
+                    <span className="text-green-400">
+                      {((calculations.productMargin / calculations.totalIncome) * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "details" && statement && calculations && (
+          <div className="space-y-6">
+            {/* Income Statement Table */}
+            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+              <h3 className="text-lg font-semibold text-white mb-4">📋 Estado de Resultados Detallado</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-white">
+                  <thead>
+                    <tr className="border-b border-gray-600">
+                      <th className="text-left py-3 px-4 text-gray-400 font-semibold">Concepto</th>
+                      <th className="text-right py-3 px-4 text-gray-400 font-semibold">Monto</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b border-gray-700">
+                      <td className="py-3 px-4 font-semibold text-green-400">INGRESOS</td>
+                      <td className="py-3 px-4 text-right"></td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 pl-8">Intereses cobrados</td>
+                      <td className="py-3 px-4 text-right text-green-400">${calculations.interestPaid.toLocaleString()}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 pl-8">Penalidades</td>
+                      <td className="py-3 px-4 text-right text-green-400">${calculations.penalties.toLocaleString()}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 pl-8">Margen de productos</td>
+                      <td className="py-3 px-4 text-right text-green-400">${calculations.productMargin.toLocaleString()}</td>
+                    </tr>
+                    
+                    <tr className="border-b border-gray-700">
+                      <td className="py-3 px-4 font-semibold text-red-400">COSTOS Y GASTOS</td>
+                      <td className="py-3 px-4 text-right"></td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 pl-8">Costo de ventas</td>
+                      <td className="py-3 px-4 text-right text-red-400">${calculations.costOfGoods.toLocaleString()}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 pl-8">Gastos operativos</td>
+                      <td className="py-3 px-4 text-right text-red-400">${calculations.expenses.toLocaleString()}</td>
+                    </tr>
+                    
+                    <tr className="border-t border-gray-600">
+                      <td className="py-3 px-4 font-bold text-white">Total Ingresos</td>
+                      <td className="py-3 px-4 text-right text-green-400 font-bold">${calculations.totalIncome.toLocaleString()}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-bold text-white">Costo de Venta</td>
+                      <td className="py-3 px-4 text-right text-red-400 font-bold">${calculations.costOfGoods.toLocaleString()}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-bold text-white">Utilidad Bruta</td>
+                      <td className="py-3 px-4 text-right text-blue-400 font-bold">${calculations.grossProfit.toLocaleString()}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-bold text-white">Gastos Generales</td>
+                      <td className="py-3 px-4 text-right text-red-400 font-bold">${calculations.expenses.toLocaleString()}</td>
+                    </tr>
+                    <tr className="border-t-2 border-gray-500">
+                      <td className="py-3 px-4 font-bold text-lg text-white">Utilidad Neta</td>
+                      <td className={`py-3 px-4 text-right font-bold text-lg ${calculations.netIncome >= 0 ? "text-crediyaGreen" : "text-red-400"}`}>
+                        ${calculations.netIncome.toLocaleString()}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             {/* Weekly Breakdown */}
             {showDetails && statement.weeklyBreakdown && (
-              <div className="mt-8 w-full">
-                <h3 className="text-lg font-bold text-center mb-4 text-crediyaGreen">
-                  Desglose Semanal
-                </h3>
+              <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h3 className="text-lg font-semibold text-white mb-4">📅 Desglose Semanal</h3>
                 <div className="overflow-x-auto">
-                  <table className="min-w-full text-sm text-white border border-green-400">
+                  <table className="w-full text-sm text-white">
                     <thead>
-                      <tr className="bg-gray-800 text-lime-400">
-                        <th className="p-2 text-left">Semana</th>
-                        <th className="p-2 text-right">Intereses</th>
-                        <th className="p-2 text-right">Penalidades</th>
-                        <th className="p-2 text-right">Productos</th>
-                        <th className="p-2 text-right">Costos</th>
-                        <th className="p-2 text-right">Gastos</th>
-                        <th className="p-2 text-right">Neto</th>
+                      <tr className="border-b border-gray-600">
+                        <th className="text-left py-3 px-4 text-gray-400 font-semibold">Semana</th>
+                        <th className="text-right py-3 px-4 text-gray-400 font-semibold">Intereses</th>
+                        <th className="text-right py-3 px-4 text-gray-400 font-semibold">Penalidades</th>
+                        <th className="text-right py-3 px-4 text-gray-400 font-semibold">Productos</th>
+                        <th className="text-right py-3 px-4 text-gray-400 font-semibold">Costos</th>
+                        <th className="text-right py-3 px-4 text-gray-400 font-semibold">Gastos</th>
+                        <th className="text-right py-3 px-4 text-gray-400 font-semibold">Neto</th>
                       </tr>
                     </thead>
                     <tbody>
                       {statement.weeklyBreakdown.map((week, index) => {
                         const weekNet = (week.interestPaid + week.penalties + week.productMargin) - week.costOfGoods - week.expenses;
                         return (
-                          <tr key={index} className="border-t border-green-400">
-                            <td className="p-2">{week.range}</td>
-                            <td className="p-2 text-right text-lime-400">${week.interestPaid.toLocaleString()}</td>
-                            <td className="p-2 text-right text-lime-400">${week.penalties.toLocaleString()}</td>
-                            <td className="p-2 text-right text-lime-400">${week.productMargin.toLocaleString()}</td>
-                            <td className="p-2 text-right text-red-400">${week.costOfGoods.toLocaleString()}</td>
-                            <td className="p-2 text-right text-red-400">${week.expenses.toLocaleString()}</td>
-                            <td className={`p-2 text-right font-semibold ${weekNet >= 0 ? "text-crediyaGreen" : "text-red-400"}`}>
+                          <tr key={index} className="border-b border-gray-700">
+                            <td className="py-3 px-4">{week.range}</td>
+                            <td className="py-3 px-4 text-right text-green-400">${week.interestPaid.toLocaleString()}</td>
+                            <td className="py-3 px-4 text-right text-green-400">${week.penalties.toLocaleString()}</td>
+                            <td className="py-3 px-4 text-right text-green-400">${week.productMargin.toLocaleString()}</td>
+                            <td className="py-3 px-4 text-right text-red-400">${week.costOfGoods.toLocaleString()}</td>
+                            <td className="py-3 px-4 text-right text-red-400">${week.expenses.toLocaleString()}</td>
+                            <td className={`py-3 px-4 text-right font-semibold ${weekNet >= 0 ? "text-crediyaGreen" : "text-red-400"}`}>
                               ${weekNet.toLocaleString()}
                             </td>
                           </tr>
@@ -709,11 +841,103 @@ const IncomeStatement = () => {
           </div>
         )}
 
+        {activeTab === "charts" && statement && calculations && chartData && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Revenue Chart */}
+              <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h3 className="text-lg font-semibold text-white mb-4">💰 Composición de Ingresos</h3>
+                <div className="h-64">
+                  <Doughnut 
+                    data={chartData.revenue}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          position: 'bottom',
+                          labels: {
+                            color: '#ffffff'
+                          }
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Expenses Chart */}
+              <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h3 className="text-lg font-semibold text-white mb-4">💸 Composición de Gastos</h3>
+                <div className="h-64">
+                  <Doughnut 
+                    data={chartData.expenses}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          position: 'bottom',
+                          labels: {
+                            color: '#ffffff'
+                          }
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Trend Chart */}
+            {statement.weeklyBreakdown && (
+              <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h3 className="text-lg font-semibold text-white mb-4">📈 Tendencias Semanales</h3>
+                <div className="h-80">
+                  <Line 
+                    data={chartData.trend}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          labels: {
+                            color: '#ffffff'
+                          }
+                        }
+                      },
+                      scales: {
+                        x: {
+                          ticks: {
+                            color: '#ffffff'
+                          },
+                          grid: {
+                            color: '#374151'
+                          }
+                        },
+                        y: {
+                          ticks: {
+                            color: '#ffffff'
+                          },
+                          grid: {
+                            color: '#374151'
+                          }
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* No Data State */}
         {!loading && !statement && !error && (
-          <div className="text-center py-8">
-            <div className="text-white text-xl mb-2">📊</div>
-            <div className="text-gray-400">No hay datos disponibles para el período seleccionado.</div>
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">📊</div>
+            <div className="text-white text-xl mb-2">No hay datos disponibles</div>
+            <div className="text-gray-400">Selecciona un período diferente para ver los resultados.</div>
           </div>
         )}
       </div>
