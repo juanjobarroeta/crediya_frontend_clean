@@ -1,10 +1,35 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import axios from "axios";
 import Layout from "../components/Layout";
 import MovementLog from "../components/MovementLog";
 import { API_BASE_URL } from "../utils/constants";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  BarElement,
+} from "chart.js";
+import { Line, Doughnut, Bar } from "react-chartjs-2";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  BarElement
+);
 
 const RegisterPayment = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -21,38 +46,56 @@ const RegisterPayment = () => {
   const [loanTotals, setLoanTotals] = useState(null);
   const [applyExtraTo, setApplyExtraTo] = useState("next");
   const [lastPayment, setLastPayment] = useState(null);
-  const receiptRef = useRef(null);
-  const token = localStorage.getItem("token");
-  // Collapsible section states
-  const [showLoanInfo, setShowLoanInfo] = useState(true);
-  const [showAmortization, setShowAmortization] = useState(false);
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
-  const [showLastPayment, setShowLastPayment] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
-  const [showBreakdown, setShowBreakdown] = useState(false);
-  const [showMovements, setShowMovements] = useState(false);
   const [receiptData, setReceiptData] = useState(null);
   const [showReceiptOptions, setShowReceiptOptions] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [activeStep, setActiveStep] = useState(1);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  
+  const receiptRef = useRef(null);
+  const token = localStorage.getItem("token");
+
+  // Enhanced collapsible section states
+  const [expandedSections, setExpandedSections] = useState({
+    loanInfo: true,
+    amortization: false,
+    paymentForm: true,
+    lastPayment: false,
+    history: false,
+    breakdown: false,
+    movements: false,
+  });
+
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
 
   const fetchLoans = async () => {
+    setLoading(true);
     try {
-      // Fetch customers with loan summary
       const res = await axios.get(`${API_BASE_URL}/customers`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setFilteredCustomers(res.data);
     } catch (err) {
       console.error("Error fetching customers:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchLoans();
-    console.log("🔁 Fetched customers on mount");
   }, []);
 
   const fetchLoanDetails = async (loanId) => {
-    if (!loanId) return console.warn("🚨 No loan ID provided to fetchLoanDetails");
+    if (!loanId) return;
+    setLoading(true);
     try {
       const [loanDetailRes, paymentsRes, breakdownsRes, movementsRes] = await Promise.all([
         axios.get(`${API_BASE_URL}/loans/${loanId}/details`, { headers: { Authorization: `Bearer ${token}` } }),
@@ -61,32 +104,20 @@ const RegisterPayment = () => {
         axios.get(`${API_BASE_URL}/loans/${loanId}/financial-movements`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       
-      // Extract installments from the details response
       const installmentsData = loanDetailRes.data?.installments || [];
-      console.log("💡 Installments received:", installmentsData);
+      setInstallments(Array.isArray(installmentsData) ? installmentsData : []);
       
-      if (!Array.isArray(installmentsData)) {
-        console.warn("⚠️ Installments data is not an array:", installmentsData);
-        setInstallments([]);
-      } else {
-        setInstallments(installmentsData);
-      }
-      
-      // Extract totals from the details response
       const totalsData = loanDetailRes.data?.totals || null;
-      console.log("💡 Totals received:", totalsData);
       setLoanTotals(totalsData);
       
-      // Ensure paymentsRes.data includes actual payment records with amounts
       const paymentsWithAmounts = Array.isArray(paymentsRes.data)
         ? paymentsRes.data.filter(p => typeof p.amount !== "undefined")
         : [];
       setPaymentHistory(paymentsWithAmounts);
       
-      // Ensure breakdowns data is properly handled
       const breakdownsData = breakdownsRes.data?.payment_breakdown || [];
       setPaymentBreakdowns(Array.isArray(breakdownsData) ? breakdownsData : []);
-      // Movements are already filtered by loan_id in backend
+      
       setMovements(
         Array.isArray(movementsRes.data)
           ? movementsRes.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
@@ -94,118 +125,125 @@ const RegisterPayment = () => {
       );
     } catch (err) {
       console.error("Error fetching loan details:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
-  };
-
-  const handleSelectLoan = (loan) => {
-    // Fallback guard: Ensure loan.id is defined
-    if (!loan?.id) {
-      console.error("❌ Loan ID is missing. Cannot proceed.");
+    const value = e.target.value;
+    setSearchTerm(value);
+    
+    if (!value.trim()) {
+      setFilteredCustomers([]);
       return;
     }
 
-    // Debug log for selected loan
-    console.log("🟢 Selected loan object:", loan);
-    // Debug log before fetching loan details
-    console.log("Fetching loan details for ID:", loan?.id);
+    const filtered = filteredCustomers.filter(customer =>
+      customer.first_name?.toLowerCase().includes(value.toLowerCase()) ||
+      customer.last_name?.toLowerCase().includes(value.toLowerCase()) ||
+      customer.id?.toString().includes(value) ||
+      customer.phone?.includes(value)
+    );
+    setFilteredCustomers(filtered);
+  };
 
+  const handleSelectLoan = (loan) => {
     setSelectedLoan(loan);
+    setActiveStep(3);
     fetchLoanDetails(loan.id);
+    setStoreId(loan.store_id || "");
   };
 
   const handlePayment = async (e) => {
     e.preventDefault();
-    if (!selectedLoan) return;
+    if (!selectedLoan || !amount || !method) {
+      alert("Por favor complete todos los campos requeridos.");
+      return;
+    }
 
-    // Debug log before payment POST
-    console.log("🧠 selectedLoan before payment:", selectedLoan);
-
-    // Determine the next unpaid installment
-    const nextInstallment = installments.find(i => i.status === 'pending');
-    const installment_week = nextInstallment?.week_number;
-
+    setLoading(true);
     try {
-      console.log("🟡 Submitting payment:", {
+      const paymentData = {
         loan_id: selectedLoan.id,
         amount: parseFloat(amount),
-        method,
-        store_id: parseInt(storeId),
+        payment_method: method,
+        store_id: storeId,
         apply_extra_to: applyExtraTo,
-        installment_week,
-      });
-      const res = await axios.post(`${API_BASE_URL}/make-installment-payment`, {
-        loan_id: selectedLoan.id,
-        amount: parseFloat(amount),
-        method,
-        store_id: parseInt(storeId),
-        apply_extra_to: applyExtraTo,
-        installment_week,
-      }, {
+      };
+
+      const res = await axios.post(`${API_BASE_URL}/payments`, paymentData, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log("✅ Payment response:", res.data);
+
+      setReceiptData(res.data);
+      setPaymentSuccess(true);
+      setShowReceiptOptions(true);
       
-      // Handle receipt generation
-      if (res.data.receipt_generated) {
-        setReceiptData({
-          receipt_number: res.data.receipt_number,
-          payment_amount: parseFloat(amount),
-          payment_method: method,
-          loan_id: selectedLoan.id
-        });
-        setShowReceiptOptions(true);
-      }
+      // Refresh loan details
+      await fetchLoanDetails(selectedLoan.id);
       
-      // Safe fallback for paidInstallments and remaining
-      const paidInstallments = res.data.paidInstallments || [];
-      alert(`✅ Payment applied: ${paidInstallments.join(", ") || "N/A"}. Remaining: $${res.data.remaining ?? "unknown"}`);
-      setLastPayment(res.data);
-      fetchLoanDetails(selectedLoan.id);
+      // Reset form
       setAmount("");
+      setMethod("efectivo");
+      
+      // Show success message
+      setTimeout(() => {
+        setPaymentSuccess(false);
+      }, 3000);
+      
     } catch (err) {
-      console.error("Payment error:", err);
-      const errorMessage = Array.isArray(err?.response?.data?.message)
-        ? err.response.data.message.join(" - ")
-        : err?.response?.data?.message || "Unknown error";
-      alert(`❌ Error registering payment: ${errorMessage}`);
+      console.error("Error processing payment:", err);
+      alert("Error al procesar el pago. Por favor intente nuevamente.");
+    } finally {
+      setLoading(false);
     }
   };
 
   const downloadPDF = async () => {
-    const input = receiptRef.current;
-    const canvas = await html2canvas(input);
-    const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF();
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const imgProps = pdf.getImageProperties(imgData);
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`recibo_prestamo_${selectedLoan.id}.pdf`);
+    if (!receiptRef.current) return;
+    
+    try {
+      const canvas = await html2canvas(receiptRef.current, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+      });
+      
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const imgWidth = 210;
+      const pageHeight = 295;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      
+      let position = 0;
+      
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+      
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+      
+      pdf.save(`recibo-pago-${receiptData?.id || Date.now()}.pdf`);
+    } catch (err) {
+      console.error("Error generating PDF:", err);
+      alert("Error al generar el PDF.");
+    }
   };
 
-  const matchingCustomers = Array.isArray(filteredCustomers) 
-    ? filteredCustomers.filter((customer) => {
-        console.log("Evaluating customer match:", customer);
-        return (
-          `${customer.first_name} ${customer.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          customer.id.toString() === searchTerm ||
-          (customer.phone && customer.phone.toLowerCase().includes(searchTerm.toLowerCase()))
-        );
-      })
-    : [];
-
   const handleSelectCustomer = async (customer) => {
+    setSelectedCustomer(customer);
+    setActiveStep(2);
     try {
-      // Fetch all loans for this customer
       const res = await axios.get(`${API_BASE_URL}/customers/${customer.id}/loans`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (Array.isArray(res.data) && res.data.length > 0) {
-        // Attach customer info to each loan if not present, and parse id as integer (support loan_id fallback)
         const loansWithCustomer = res.data.map(loan => ({
           ...loan,
           id: Number(loan.loan_id || loan.id),
@@ -216,7 +254,6 @@ const RegisterPayment = () => {
         }));
         setCustomerLoans(loansWithCustomer);
         setSelectedLoan(null);
-        console.log("🧹 Loan cleared");
       } else {
         setCustomerLoans([]);
         alert("Este cliente no tiene préstamos registrados.");
@@ -227,128 +264,273 @@ const RegisterPayment = () => {
     }
   };
 
-  // --- UI Split into 3 clear sections ---
+  // Enhanced data calculations
+  const paymentStats = useMemo(() => {
+    if (!selectedLoan || !loanTotals) return null;
+    
+    const totalPaid = parseFloat(loanTotals.totalPaid || 0);
+    const totalDue = parseFloat(loanTotals.totalDue || 0);
+    const remainingBalance = parseFloat(loanTotals.remainingBalance || 0);
+    const progressPercentage = (totalPaid / totalDue) * 100;
+    
+    return {
+      totalPaid,
+      totalDue,
+      remainingBalance,
+      progressPercentage,
+      paymentsCount: paymentHistory.length,
+      lastPaymentDate: paymentHistory.length > 0 ? new Date(paymentHistory[paymentHistory.length - 1].payment_date) : null,
+    };
+  }, [selectedLoan, loanTotals, paymentHistory]);
+
+  // Chart data for payment trends
+  const chartData = useMemo(() => {
+    if (!paymentHistory.length) return null;
+    
+    const recentPayments = paymentHistory.slice(-6);
+    return {
+      paymentTrends: {
+        labels: recentPayments.map(p => new Date(p.payment_date).toLocaleDateString()),
+        datasets: [{
+          label: "Monto de Pago",
+          data: recentPayments.map(p => parseFloat(p.amount)),
+          borderColor: "#10b981",
+          backgroundColor: "rgba(16, 185, 129, 0.1)",
+          tension: 0.4,
+        }],
+      },
+      paymentMethods: {
+        labels: ["Efectivo", "Transferencia", "Tarjeta", "Otros"],
+        datasets: [{
+          data: [
+            paymentHistory.filter(p => p.payment_method === "efectivo").length,
+            paymentHistory.filter(p => p.payment_method === "transferencia").length,
+            paymentHistory.filter(p => p.payment_method === "tarjeta").length,
+            paymentHistory.filter(p => !["efectivo", "transferencia", "tarjeta"].includes(p.payment_method)).length,
+          ],
+          backgroundColor: ["#10b981", "#3b82f6", "#f59e0b", "#6b7280"],
+          borderWidth: 2,
+          borderColor: "#1f2937",
+        }],
+      },
+    };
+  }, [paymentHistory]);
+
+  const matchingCustomers = filteredCustomers.filter(customer =>
+    customer.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    customer.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    customer.id?.toString().includes(searchTerm) ||
+    customer.phone?.includes(searchTerm)
+  );
+
   return (
     <Layout>
-      <div className="container mt-4 bg-black text-white p-6 rounded-lg shadow-lg border border-crediyaGreen">
-        {/* Progress Flow */}
-        <div className="flex items-center justify-center mb-6">
-          <div className="flex items-center gap-4 text-sm">
-            <span className="font-bold text-crediyaGreen">Paso 1: Cliente</span>
-            <span className="text-crediyaGreen">→</span>
-            <span className={`font-bold ${selectedLoan ? "text-crediyaGreen" : "text-gray-400"}`}>Paso 2: Préstamo</span>
-            <span className="text-crediyaGreen">→</span>
-            <span className={`font-bold ${selectedLoan && storeId ? "text-crediyaGreen" : "text-gray-400"}`}>Paso 3: Pago</span>
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* Enhanced Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-white mb-2">
+            💰 Registrar Pago
+          </h1>
+          <p className="text-gray-400">
+            Sistema avanzado de registro de pagos con análisis en tiempo real
+          </p>
+        </div>
+
+        {/* Enhanced Progress Flow */}
+        <div className="bg-black border border-crediyaGreen rounded-lg p-6 mb-6">
+          <div className="flex items-center justify-center mb-6">
+            <div className="flex items-center space-x-8">
+              {[
+                { step: 1, label: "Cliente", icon: "👤", active: activeStep >= 1 },
+                { step: 2, label: "Préstamo", icon: "📋", active: activeStep >= 2 },
+                { step: 3, label: "Pago", icon: "💰", active: activeStep >= 3 },
+              ].map((stepInfo, index) => (
+                <div key={stepInfo.step} className="flex items-center">
+                  <div className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all ${
+                    stepInfo.active 
+                      ? "border-lime-400 bg-lime-400 text-black" 
+                      : "border-gray-600 text-gray-400"
+                  }`}>
+                    <span className="text-lg">{stepInfo.icon}</span>
+                  </div>
+                  <span className={`ml-3 font-medium ${
+                    stepInfo.active ? "text-lime-400" : "text-gray-400"
+                  }`}>
+                    {stepInfo.label}
+                  </span>
+                  {index < 2 && (
+                    <div className={`w-16 h-0.5 ml-4 ${
+                      activeStep > stepInfo.step ? "bg-lime-400" : "bg-gray-600"
+                    }`} />
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Customer Selection Panel */}
-          <section className="md:w-1/3 w-full mb-6 md:mb-0">
-            <div className="bg-black border border-crediyaGreen rounded-lg p-4 shadow mb-4">
-              <h3 className="text-lg font-semibold text-crediyaGreen mb-3">👤 Seleccionar Cliente</h3>
-              <input
-                type="text"
-                className="form-control bg-black text-white border border-crediyaGreen rounded mb-3"
-                placeholder="Buscar por nombre, ID o teléfono..."
-                value={searchTerm}
-                onChange={handleSearch}
-              />
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Enhanced Customer Selection Panel */}
+          <div className="lg:col-span-1">
+            <div className="bg-black border border-crediyaGreen rounded-lg p-6">
+              <h3 className="text-xl font-semibold text-lime-400 mb-4 flex items-center">
+                👤 Seleccionar Cliente
+              </h3>
+              
+              {/* Enhanced Search */}
+              <div className="relative mb-4">
+                <input
+                  type="text"
+                  className="w-full bg-gray-800 border border-crediyaGreen rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lime-400"
+                  placeholder="Buscar por nombre, ID o teléfono..."
+                  value={searchTerm}
+                  onChange={handleSearch}
+                />
+                <div className="absolute right-3 top-3 text-gray-400">
+                  🔍
+                </div>
+              </div>
+
+              {/* Customer List */}
               {matchingCustomers.length > 0 && (
-                <div className="max-h-60 overflow-y-auto border border-crediyaGreen rounded-lg">
-                  <ul className="divide-y divide-crediyaGreen text-sm">
+                <div className="max-h-80 overflow-y-auto border border-crediyaGreen rounded-lg">
+                  <div className="divide-y divide-crediyaGreen">
                     {matchingCustomers.map(customer => (
-                      <li
+                      <div
                         key={customer.id}
-                        className={`flex justify-between items-center p-2 ${
-                          customer.has_overdue ? 'bg-red-900 text-white' : 'bg-black text-white'
+                        className={`p-4 transition-colors cursor-pointer hover:bg-gray-800 ${
+                          customer.has_overdue ? 'bg-red-900/30 border-l-4 border-red-500' : 'bg-black'
                         }`}
+                        onClick={() => handleSelectCustomer(customer)}
                       >
-                        <span className="truncate">
-                          <span className="font-bold text-crediyaGreen">#{customer.id}</span>{" "}
-                          {customer.first_name} {customer.last_name}{" "}
-                          <span className="text-gray-400 ml-1">
-                            ({customer.loan_count || 0} préstamos)
-                          </span>
-                          {customer.has_overdue && (
-                            <span className="ml-2 px-2 py-0.5 text-xs rounded bg-red-600 text-white">
-                              Vencido
-                            </span>
-                          )}
-                        </span>
-                        <button
-                          className="bg-crediyaGreen hover:bg-white hover:text-crediyaGreen text-black font-bold py-1 px-3 rounded transition duration-200"
-                          onClick={() => handleSelectCustomer(customer)}
-                        >
-                          Seleccionar
-                        </button>
-                      </li>
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-bold text-lime-400">#{customer.id}</span>
+                              <span className="font-medium text-white">
+                                {customer.first_name} {customer.last_name}
+                              </span>
+                            </div>
+                            <div className="text-sm text-gray-400 mb-2">
+                              📞 {customer.phone || "Sin teléfono"}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs bg-blue-600 px-2 py-1 rounded">
+                                {customer.loan_count || 0} préstamos
+                              </span>
+                              {customer.has_overdue && (
+                                <span className="text-xs bg-red-600 px-2 py-1 rounded">
+                                  ⚠️ Vencido
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <button className="bg-lime-600 hover:bg-lime-700 text-white px-4 py-2 rounded-lg transition-colors">
+                            Seleccionar
+                          </button>
+                        </div>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               )}
-              {/* Customer Loans List */}
+
+              {/* Selected Customer Info */}
+              {selectedCustomer && (
+                <div className="mt-6 p-4 bg-gray-800 rounded-lg border border-lime-400">
+                  <h4 className="text-lime-400 font-semibold mb-3">Cliente Seleccionado</h4>
+                  <div className="space-y-2 text-sm">
+                    <p><strong>Nombre:</strong> {selectedCustomer.first_name} {selectedCustomer.last_name}</p>
+                    <p><strong>Teléfono:</strong> {selectedCustomer.phone || "N/A"}</p>
+                    <p><strong>Préstamos:</strong> {customerLoans.length}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Loan Selection */}
               {customerLoans.length > 0 && (
-                <div className="mt-4 border-t border-crediyaGreen pt-4">
-                  <h4 className="text-crediyaGreen font-semibold mb-2">📑 Seleccionar Préstamo</h4>
-                  <ul className="space-y-2 text-sm">
+                <div className="mt-6">
+                  <h4 className="text-lime-400 font-semibold mb-3">📋 Seleccionar Préstamo</h4>
+                  <div className="space-y-3">
                     {customerLoans.map((loan) => {
-                      // Defensive: Ensure loan object is fully defined and id is an integer
                       const safeLoan = {
                         ...loan,
                         id: parseInt(loan.id),
                         amount: loan.amount,
                         status: loan.status,
-                        first_name: loan.first_name,
-                        last_name: loan.last_name,
-                        customer_phone: loan.customer_phone,
-                        customer_address: loan.customer_address,
-                        store_id: loan.store_id,
-                        financial_product_id: loan.financial_product_id,
                       };
                       return (
-                        <li key={`${safeLoan.id}-${safeLoan.amount}`} className="flex justify-between items-center bg-gray-900 p-2 rounded border border-crediyaGreen">
-                          <span>#{safeLoan.id} — ${safeLoan.amount} — {safeLoan.status}</span>
-                          <button
-                            className="bg-crediyaGreen hover:bg-white hover:text-crediyaGreen text-black font-bold py-1 px-3 rounded transition duration-200"
-                            onClick={() => {
-                              console.log("🟢 Selected loan object:", safeLoan);
-                              handleSelectLoan(safeLoan);
-                            }}
-                          >
-                            Seleccionar
-                          </button>
-                        </li>
+                        <div
+                          key={`${safeLoan.id}-${safeLoan.amount}`}
+                          className={`p-4 rounded-lg border transition-all cursor-pointer ${
+                            selectedLoan?.id === safeLoan.id
+                              ? "border-lime-400 bg-lime-400/10"
+                              : "border-gray-600 hover:border-lime-400 bg-gray-800"
+                          }`}
+                          onClick={() => handleSelectLoan(safeLoan)}
+                        >
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <div className="font-medium text-white">
+                                #{safeLoan.id} — ${parseFloat(safeLoan.amount).toLocaleString()}
+                              </div>
+                              <div className="text-sm text-gray-400">
+                                {safeLoan.status === 'approved' ? 'Aprobado' :
+                                 safeLoan.status === 'delivered' ? 'Entregado' :
+                                 safeLoan.status === 'pending' ? 'Pendiente' :
+                                 safeLoan.status}
+                              </div>
+                            </div>
+                            <div className={`px-3 py-1 rounded-full text-xs ${
+                              safeLoan.status === 'approved' ? 'bg-blue-600' :
+                              safeLoan.status === 'delivered' ? 'bg-green-600' :
+                              safeLoan.status === 'pending' ? 'bg-yellow-600' :
+                              'bg-gray-600'
+                            }`}>
+                              {safeLoan.status}
+                            </div>
+                          </div>
+                        </div>
                       );
                     })}
-                  </ul>
+                  </div>
                 </div>
               )}
             </div>
-          </section>
-          {/* Main Panel: Loan + Amortization + Payment */}
-          <section className="md:w-2/3 w-full flex flex-col gap-6">
-            {/* Loan Summary + Amortization Panel */}
-            {selectedLoan && (
+          </div>
+
+          {/* Enhanced Main Content */}
+          <div className="lg:col-span-2">
+            {selectedLoan ? (
               <div className="space-y-6">
-                {/* Loan Summary */}
-                <div className="sticky top-0 z-20 bg-black border-b border-crediyaGreen shadow-lg mb-4">
-                  <div className="card bg-black text-white border border-crediyaGreen rounded-none p-4 shadow">
-                    <h4
-                      onClick={() => setShowLoanInfo(!showLoanInfo)}
-                      className="mb-2 text-lg font-semibold text-crediyaGreen cursor-pointer flex items-center justify-between"
+                {/* Loan Summary Card */}
+                <div className="bg-black border border-crediyaGreen rounded-lg p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="text-xl font-semibold text-lime-400">
+                      📋 Resumen del Préstamo #{selectedLoan.id}
+                    </h3>
+                    <button
+                      onClick={() => toggleSection('loanInfo')}
+                      className="text-gray-400 hover:text-lime-400"
                     >
-                      <span>📋 Resumen del Préstamo</span>
-                      <span>{showLoanInfo ? "🔽" : "▶️"}</span>
-                    </h4>
-                    {showLoanInfo && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Basic Loan Info */}
-                        <div className="space-y-2">
-                          <h5 className="text-crediyaGreen font-semibold border-b border-crediyaGreen pb-1">📋 Información del Préstamo</h5>
-                          <div className="space-y-1 text-sm">
-                            <p><strong>ID Préstamo:</strong> #{selectedLoan.id}</p>
-                            <p><strong>Estado:</strong> 
-                              <span className={`ml-1 px-2 py-0.5 rounded text-xs ${
+                      {expandedSections.loanInfo ? "🔽" : "▶️"}
+                    </button>
+                  </div>
+                  
+                  {expandedSections.loanInfo && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Basic Loan Info */}
+                      <div className="space-y-4">
+                        <div className="bg-gray-800 rounded-lg p-4">
+                          <h4 className="text-lime-400 font-semibold mb-3">📋 Información del Préstamo</h4>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">ID Préstamo:</span>
+                              <span className="text-white font-medium">#{selectedLoan.id}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Estado:</span>
+                              <span className={`px-2 py-1 rounded text-xs ${
                                 selectedLoan.status === 'approved' ? 'bg-blue-600' :
                                 selectedLoan.status === 'delivered' ? 'bg-green-600' :
                                 selectedLoan.status === 'pending' ? 'bg-yellow-600' :
@@ -359,420 +541,347 @@ const RegisterPayment = () => {
                                  selectedLoan.status === 'pending' ? 'Pendiente' :
                                  selectedLoan.status}
                               </span>
-                            </p>
-                            <p><strong>Monto Original:</strong> ${parseFloat(selectedLoan.amount).toLocaleString()}</p>
-                            <p><strong>Plazo:</strong> {installments.length > 0 ? installments.length : 'N/A'} semanas</p>
-                            <p><strong>Pago Semanal:</strong> ${installments.length > 0 ? parseFloat(installments[0].amount_due).toFixed(2) : 'N/A'}</p>
-                            <p><strong>Total a Pagar:</strong> ${loanTotals ? parseFloat(loanTotals.totalDue).toFixed(2) : 'N/A'}</p>
-                            <p><strong>Interés Total:</strong> ${loanTotals ? parseFloat(loanTotals.totalInterest).toFixed(2) : 'N/A'}</p>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Monto Original:</span>
+                              <span className="text-white font-medium">${parseFloat(selectedLoan.amount).toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Plazo:</span>
+                              <span className="text-white font-medium">{installments.length} semanas</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Pago Semanal:</span>
+                              <span className="text-white font-medium">
+                                ${installments.length > 0 ? parseFloat(installments[0].amount_due).toFixed(2) : 'N/A'}
+                              </span>
+                            </div>
                           </div>
                         </div>
 
-                        {/* Customer Info */}
-                        <div className="space-y-2">
-                          <h5 className="text-crediyaGreen font-semibold border-b border-crediyaGreen pb-1">👤 Información del Cliente</h5>
-                          <div className="space-y-1 text-sm">
-                            <p><strong>Cliente:</strong> {selectedLoan.first_name || ""} {selectedLoan.last_name || ""}</p>
-                            <p><strong>Teléfono:</strong> {selectedLoan.customer_phone || "N/A"}</p>
-                            <p><strong>Dirección:</strong> {selectedLoan.customer_address || "N/A"}</p>
-                            <p><strong>Fecha de Creación:</strong> {selectedLoan.created_at ? new Date(selectedLoan.created_at).toLocaleDateString() : 'N/A'}</p>
+                        {/* Payment Progress */}
+                        {paymentStats && (
+                          <div className="bg-gray-800 rounded-lg p-4">
+                            <h4 className="text-lime-400 font-semibold mb-3">💰 Progreso de Pagos</h4>
+                            <div className="space-y-3">
+                              <div>
+                                <div className="flex justify-between text-sm mb-1">
+                                  <span className="text-gray-400">Progreso</span>
+                                  <span className="text-white">{paymentStats.progressPercentage.toFixed(1)}%</span>
+                                </div>
+                                <div className="w-full bg-gray-700 rounded-full h-2">
+                                  <div 
+                                    className="bg-lime-400 h-2 rounded-full transition-all duration-300"
+                                    style={{ width: `${Math.min(paymentStats.progressPercentage, 100)}%` }}
+                                  />
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                  <div className="text-gray-400">Total Pagado</div>
+                                  <div className="text-white font-medium">${paymentStats.totalPaid.toLocaleString()}</div>
+                                </div>
+                                <div>
+                                  <div className="text-gray-400">Saldo Restante</div>
+                                  <div className="text-white font-medium">${paymentStats.remainingBalance.toLocaleString()}</div>
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-
-                        {/* Payment Status */}
-                        <div className="space-y-2">
-                          <h5 className="text-crediyaGreen font-semibold border-b border-crediyaGreen pb-1">💰 Estado de Pagos</h5>
-                          <div className="space-y-1 text-sm">
-                            <p><strong>Próximo pago:</strong> {
-                              Array.isArray(installments) && installments.filter(i => i.status === "pending").length > 0
-                                ? (() => {
-                                    const next = installments.find(i => i.status === "pending");
-                                    return `${new Date(next.due_date).toLocaleDateString()} — $${next.amount_due}`;
-                                  })()
-                                : "✔️ Completado"
-                            }</p>
-                            <p><strong>Último pago:</strong> {
-                              paymentHistory.length > 0 
-                                ? `${new Date(paymentHistory[paymentHistory.length - 1].payment_date).toLocaleDateString()} — $${paymentHistory[paymentHistory.length - 1].amount}` 
-                                : "N/A"
-                            }</p>
-                            <p><strong>Total pagado:</strong> ${loanTotals ? parseFloat(loanTotals.totalPaid).toFixed(2) : (paymentHistory && paymentHistory.length > 0 ? paymentHistory.reduce((acc, p) => acc + parseFloat(p.amount || 0), 0).toFixed(2) : "0.00")}</p>
-                            <p><strong>Saldo restante:</strong> ${loanTotals ? parseFloat(loanTotals.remainingBalance).toFixed(2) : (
-                              (
-                                parseFloat(selectedLoan.amount) -
-                                (Array.isArray(paymentBreakdowns) ? paymentBreakdowns
-                                  .filter(b => b.type === 'capital')
-                                  .reduce((acc, b) => acc + parseFloat(b.amount), 0) : 0) +
-                                installments.reduce((acc, i) => acc + parseFloat(i.penalty_applied), 0)
-                              ).toFixed(2)
-                            )}</p>
-                            <p><strong>Penalidades acumuladas:</strong> ${loanTotals ? parseFloat(loanTotals.totalPenalties).toFixed(2) : installments.reduce((acc, i) => acc + parseFloat(i.penalty_applied), 0).toFixed(2)}</p>
-                          </div>
-                        </div>
-
-                        {/* Loan Progress */}
-                        <div className="space-y-2">
-                          <h5 className="text-crediyaGreen font-semibold border-b border-crediyaGreen pb-1">📊 Progreso del Préstamo</h5>
-                          <div className="space-y-1 text-sm">
-                            <p><strong>Cuotas Pagadas:</strong> {Array.isArray(installments) ? installments.filter(i => i.status === 'paid').length : 0} de {Array.isArray(installments) ? installments.length : 0}</p>
-                            <p><strong>Cuotas Pendientes:</strong> {Array.isArray(installments) ? installments.filter(i => i.status === 'pending').length : 0}</p>
-                            <p><strong>Cuotas Vencidas:</strong> {Array.isArray(installments) ? installments.filter(i => {
-                              const dueDate = new Date(i.due_date);
-                              const today = new Date();
-                              return i.status === 'pending' && dueDate < today;
-                            }).length : 0}</p>
-                            <p><strong>Porcentaje Completado:</strong> {Array.isArray(installments) && installments.length > 0 ? Math.round((installments.filter(i => i.status === 'paid').length / installments.length) * 100) : 0}%</p>
-                          </div>
-                        </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </div>
-                {/* Amortization Table */}
-                <div className="card bg-black text-white border border-crediyaGreen rounded-lg p-4 shadow">
-                  <h4
-                    onClick={() => setShowAmortization(!showAmortization)}
-                    className="mb-2 text-lg font-semibold text-crediyaGreen cursor-pointer flex items-center justify-between"
-                  >
-                    <span>📆 Amortización</span>
-                    <span>{showAmortization ? "🔽" : "▶️"}</span>
-                  </h4>
-                  {showAmortization && (
-                    <div className="overflow-x-auto">
-                      {installments.length === 0 ? (
-                        <div className="text-center py-8 text-gray-400">
-                          <p>📋 No hay datos de amortización disponibles</p>
-                          <p className="text-sm">Selecciona un préstamo para ver el calendario de pagos</p>
-                        </div>
-                      ) : (
-                        <>
-                          <table className="min-w-full text-xs border-separate border-spacing-y-1">
-                            <thead>
-                              <tr className="bg-gray-900 text-lime-400">
-                                <th className="px-2 py-1 text-left">Semana</th>
-                                <th className="px-2 py-1 text-left">Fecha</th>
-                                <th className="px-2 py-1 text-right">Capital</th>
-                                <th className="px-2 py-1 text-right">Interés</th>
-                                <th className="px-2 py-1 text-right">Penalidad</th>
-                                <th className="px-2 py-1 text-right">Total</th>
-                                <th className="px-2 py-1 text-right">Pagado</th>
-                                <th className="px-2 py-1 text-right">Saldo</th>
-                                <th className="px-2 py-1 text-center">Estado</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {installments.map(inst => {
-                                const dueDate = new Date(inst.due_date);
-                                const today = new Date();
-                                const msInDay = 1000 * 60 * 60 * 24;
-                                const daysOverdue = Math.floor((today - dueDate) / msInDay);
-                                let bgClass = "";
-                                if (inst.status === "pending") {
-                                  if (daysOverdue > 7) bgClass = "bg-red-800";
-                                  else if (daysOverdue > 0) bgClass = "bg-yellow-600";
-                                  else bgClass = "bg-gray-800";
-                                } else if (inst.status === "paid") {
-                                  bgClass = "bg-green-800";
-                                } else {
-                                  bgClass = "bg-gray-800";
-                                }
-                                return (
-                                  <tr key={inst.week_number} className={`${bgClass} border-b border-crediyaGreen`}>
-                                    <td className="px-2 py-1 font-bold">{inst.week_number}</td>
-                                    <td className="px-2 py-1">{dueDate.toLocaleDateString()}</td>
-                                    <td className="px-2 py-1 text-right">
-                                      ${inst.capital_portion}
-                                    </td>
-                                    <td className="px-2 py-1 text-right">
-                                      {inst.interest_paid > 0 && inst.interest_paid < inst.interest_portion
-                                        ? `$${inst.interest_paid.toFixed(2)} (de $${inst.interest_portion})`
-                                        : `$${inst.interest_portion}`}
-                                    </td>
-                                    <td className="px-2 py-1 text-right">
-                                      {inst.penalty_paid > 0 && inst.penalty_paid < inst.penalty_applied
-                                        ? `$${inst.penalty_paid.toFixed(2)} (de $${Number(inst.penalty_applied || 0).toFixed(2)})`
-                                        : `$${Number(inst.penalty_applied || 0).toFixed(2)}`}
-                                    </td>
-                                    <td className="px-2 py-1 text-right">
-                                      ${(
-                                        parseFloat(inst.capital_portion || 0) +
-                                        parseFloat(inst.interest_portion || 0) +
-                                        Number(inst.penalty_applied || 0)
-                                      ).toFixed(2)}
-                                    </td>
-                                    <td className="px-2 py-1 text-right">
-                                      ${(
-                                        parseFloat(inst.capital_paid || 0) +
-                                        parseFloat(inst.interest_paid || 0) +
-                                        parseFloat(inst.penalty_paid || 0)
-                                      ).toFixed(2)}
-                                    </td>
-                                    <td className="px-2 py-1 text-right">
-                                      ${(
-                                        (parseFloat(inst.capital_portion || 0) +
-                                         parseFloat(inst.interest_portion || 0) +
-                                         parseFloat(inst.penalty_applied || 0)) -
-                                        (parseFloat(inst.capital_paid || 0) +
-                                         parseFloat(inst.interest_paid || 0) +
-                                         parseFloat(inst.penalty_paid || 0))
-                                      ).toFixed(2)}
-                                    </td>
-                                    <td className="px-2 py-1 text-center">
-                                      <span className="badge bg-secondary">{inst.status}</span>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                          {/* Color Legend */}
-                          <div className="flex gap-4 text-xs mt-4 text-white">
-                            <div className="flex items-center gap-1">
-                              <div className="w-4 h-4 bg-red-800 rounded-sm"></div> &gt;7 días vencido
+
+                      {/* Customer Info & Charts */}
+                      <div className="space-y-4">
+                        <div className="bg-gray-800 rounded-lg p-4">
+                          <h4 className="text-lime-400 font-semibold mb-3">👤 Información del Cliente</h4>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Cliente:</span>
+                              <span className="text-white">{selectedLoan.first_name || ""} {selectedLoan.last_name || ""}</span>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <div className="w-4 h-4 bg-yellow-600 rounded-sm"></div> 1-7 días vencido
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Teléfono:</span>
+                              <span className="text-white">{selectedLoan.customer_phone || "N/A"}</span>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <div className="w-4 h-4 bg-gray-800 rounded-sm"></div> Pendiente
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Dirección:</span>
+                              <span className="text-white">{selectedLoan.customer_address || "N/A"}</span>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <div className="w-4 h-4 bg-green-800 rounded-sm"></div> Pagado
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Fecha de Creación:</span>
+                              <span className="text-white">
+                                {selectedLoan.created_at ? new Date(selectedLoan.created_at).toLocaleDateString() : 'N/A'}
+                              </span>
                             </div>
                           </div>
-                        </>
-                      )}
+                        </div>
+
+                        {/* Payment Methods Chart */}
+                        {chartData && (
+                          <div className="bg-gray-800 rounded-lg p-4">
+                            <h4 className="text-lime-400 font-semibold mb-3">💳 Métodos de Pago</h4>
+                            <div className="h-32">
+                              <Doughnut
+                                data={chartData.paymentMethods}
+                                options={{
+                                  responsive: true,
+                                  maintainAspectRatio: false,
+                                  plugins: {
+                                    legend: {
+                                      position: "bottom",
+                                      labels: { color: "white", font: { size: 10 } },
+                                    },
+                                  },
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
-              </div>
-            )}
-            {/* Payment Entry Panel */}
-            {selectedLoan && (
-              <div>
-                <div className="card bg-black text-white border border-crediyaGreen rounded-lg p-4 shadow">
-                  <h4
-                    onClick={() => setShowPaymentForm(!showPaymentForm)}
-                    className="mb-2 text-lg font-semibold text-crediyaGreen cursor-pointer flex items-center justify-between"
-                  >
-                    <span>💳 Registrar un Pago</span>
-                    <span>{showPaymentForm ? "🔽" : "▶️"}</span>
-                  </h4>
-                  {showPaymentForm && (
-                    <form onSubmit={handlePayment} className="mb-4">
-                      <fieldset className="mb-4 border border-crediyaGreen rounded p-4">
-                        <legend className="text-crediyaGreen font-semibold mb-2">Detalles del Pago</legend>
-                        <div className="mb-3">
-                          <label className="block text-sm font-medium mb-1">Monto a pagar</label>
-                          <input 
-                            type="number" 
+
+                {/* Payment Form */}
+                <div className="bg-black border border-crediyaGreen rounded-lg p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="text-xl font-semibold text-lime-400">
+                      💰 Registrar Pago
+                    </h3>
+                    <button
+                      onClick={() => toggleSection('paymentForm')}
+                      className="text-gray-400 hover:text-lime-400"
+                    >
+                      {expandedSections.paymentForm ? "🔽" : "▶️"}
+                    </button>
+                  </div>
+
+                  {expandedSections.paymentForm && (
+                    <form onSubmit={handlePayment} className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">
+                            Monto del Pago
+                          </label>
+                          <input
+                            type="number"
                             step="0.01"
-                            className="w-full form-control bg-black text-white border border-crediyaGreen rounded px-3 py-2" 
-                            value={amount} 
-                            onChange={(e) => setAmount(e.target.value)} 
+                            value={amount}
+                            onChange={(e) => setAmount(e.target.value)}
+                            className="w-full bg-gray-800 border border-crediyaGreen rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-lime-400"
                             placeholder="0.00"
-                            required 
+                            required
                           />
                         </div>
-                        <div className="mb-3">
-                          <label className="block text-sm font-medium mb-1">Método de Pago</label>
-                          <select className="w-full form-select bg-black text-white border border-crediyaGreen rounded px-3 py-2" value={method} onChange={(e) => setMethod(e.target.value)} required>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">
+                            Método de Pago
+                          </label>
+                          <select
+                            value={method}
+                            onChange={(e) => setMethod(e.target.value)}
+                            className="w-full bg-gray-800 border border-crediyaGreen rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-lime-400"
+                            required
+                          >
                             <option value="efectivo">Efectivo</option>
                             <option value="transferencia">Transferencia</option>
                             <option value="tarjeta">Tarjeta</option>
+                            <option value="cheque">Cheque</option>
+                            <option value="otro">Otro</option>
                           </select>
                         </div>
-                        <div className="mb-3">
-                          <label className="block text-sm font-medium mb-1">Sucursal</label>
-                          <select
-                            className={`w-full form-select bg-black text-white border border-crediyaGreen rounded px-3 py-2 ${!storeId ? "text-gray-400" : ""}`}
-                            value={storeId}
-                            onChange={(e) => setStoreId(e.target.value)}
-                            required
-                          >
-                            <option value="" className="text-gray-400">Seleccione una sucursal</option>
-                            <option value="1">Atlixco</option>
-                            <option value="2">Cholula</option>
-                            <option value="3">Chipilo</option>
-                          </select>
-                        </div>
-                      </fieldset>
-                      <div className="mb-3">
-                        <label className="block text-sm font-medium mb-1">Aplicar extra a</label>
-                        <select className="w-full form-select bg-black text-white border border-crediyaGreen rounded px-3 py-2" value={applyExtraTo} onChange={(e) => setApplyExtraTo(e.target.value)}>
-                          <option value="next">Siguiente semana</option>
-                          <option value="capital">Amortizar capital</option>
-                        </select>
                       </div>
+
+                      {/* Advanced Options */}
+                      <div className="border-t border-gray-700 pt-4">
+                        <button
+                          type="button"
+                          onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                          className="text-lime-400 hover:text-lime-300 text-sm flex items-center gap-2"
+                        >
+                          {showAdvancedOptions ? "🔽" : "▶️"} Opciones Avanzadas
+                        </button>
+                        
+                        {showAdvancedOptions && (
+                          <div className="mt-4 space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-2">
+                                Aplicar Extra a
+                              </label>
+                              <select
+                                value={applyExtraTo}
+                                onChange={(e) => setApplyExtraTo(e.target.value)}
+                                className="w-full bg-gray-800 border border-crediyaGreen rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-lime-400"
+                              >
+                                <option value="next">Próximo pago</option>
+                                <option value="capital">Capital</option>
+                                <option value="interest">Interés</option>
+                              </select>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Success Message */}
+                      {paymentSuccess && (
+                        <div className="bg-green-600/20 border border-green-500 rounded-lg p-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-green-400">✅</span>
+                            <span className="text-green-400 font-medium">
+                              Pago registrado exitosamente
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
                       <button
-                        className={`w-full bg-crediyaGreen hover:bg-white hover:text-crediyaGreen text-black font-bold py-3 px-4 rounded transition duration-200 ${!storeId ? "opacity-50 cursor-not-allowed" : ""}`}
                         type="submit"
-                        disabled={!storeId}
+                        disabled={loading}
+                        className="w-full bg-lime-600 hover:bg-lime-700 disabled:bg-gray-600 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
                       >
-                        💳 Registrar Pago
+                        {loading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            Procesando...
+                          </>
+                        ) : (
+                          <>
+                            💰 Registrar Pago
+                          </>
+                        )}
                       </button>
                     </form>
                   )}
                 </div>
-                {/* Último Pago */}
-                {lastPayment && (
-                  <div ref={receiptRef} className="card bg-black text-white border border-crediyaGreen rounded-lg p-4 mt-6 shadow">
-                    <h4
-                      onClick={() => setShowLastPayment(!showLastPayment)}
-                      className="mb-2 text-lg font-semibold text-crediyaGreen cursor-pointer flex items-center justify-between"
-                    >
-                      <span>🧾 Último Pago</span>
-                      <span>{showLastPayment ? "🔽" : "▶️"}</span>
-                    </h4>
-                    {showLastPayment && (
-                      <div>
-                        <p>Cuotas pagadas: {lastPayment.paidInstallments.join(", ")}</p>
-                        <p>Restante: ${lastPayment.remaining}</p>
-                        <button className="bg-crediyaGreen hover:bg-white hover:text-crediyaGreen text-black font-bold py-2 px-4 rounded transition duration-200 mt-2" onClick={downloadPDF}>Descargar PDF</button>
+
+                {/* Payment History & Charts */}
+                {paymentHistory.length > 0 && (
+                  <div className="bg-black border border-crediyaGreen rounded-lg p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="text-xl font-semibold text-lime-400">
+                        📊 Historial de Pagos
+                      </h3>
+                      <button
+                        onClick={() => toggleSection('history')}
+                        className="text-gray-400 hover:text-lime-400"
+                      >
+                        {expandedSections.history ? "🔽" : "▶️"}
+                      </button>
+                    </div>
+
+                    {expandedSections.history && (
+                      <div className="space-y-6">
+                        {/* Payment Trends Chart */}
+                        {chartData && (
+                          <div className="bg-gray-800 rounded-lg p-4">
+                            <h4 className="text-lime-400 font-semibold mb-3">📈 Tendencias de Pagos</h4>
+                            <div className="h-64">
+                              <Line
+                                data={chartData.paymentTrends}
+                                options={{
+                                  responsive: true,
+                                  maintainAspectRatio: false,
+                                  plugins: {
+                                    legend: {
+                                      labels: { color: "white" },
+                                    },
+                                  },
+                                  scales: {
+                                    y: {
+                                      beginAtZero: true,
+                                      ticks: { color: "white" },
+                                      grid: { color: "rgba(255,255,255,0.1)" },
+                                    },
+                                    x: {
+                                      ticks: { color: "white" },
+                                      grid: { color: "rgba(255,255,255,0.1)" },
+                                    },
+                                  },
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Recent Payments Table */}
+                        <div className="bg-gray-800 rounded-lg p-4">
+                          <h4 className="text-lime-400 font-semibold mb-3">💳 Pagos Recientes</h4>
+                          <div className="overflow-x-auto">
+                            <table className="min-w-full text-sm">
+                              <thead>
+                                <tr className="border-b border-gray-600">
+                                  <th className="text-left py-2 text-gray-400">Fecha</th>
+                                  <th className="text-left py-2 text-gray-400">Monto</th>
+                                  <th className="text-left py-2 text-gray-400">Método</th>
+                                  <th className="text-left py-2 text-gray-400">Estado</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {paymentHistory.slice(-5).map((payment, index) => (
+                                  <tr key={index} className="border-b border-gray-700">
+                                    <td className="py-2 text-white">
+                                      {new Date(payment.payment_date).toLocaleDateString()}
+                                    </td>
+                                    <td className="py-2 text-white">
+                                      ${parseFloat(payment.amount).toLocaleString()}
+                                    </td>
+                                    <td className="py-2 text-white capitalize">
+                                      {payment.payment_method}
+                                    </td>
+                                    <td className="py-2">
+                                      <span className="px-2 py-1 rounded text-xs bg-green-600">
+                                        Completado
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
                 )}
-                {/* Historial de Pagos */}
-                {paymentHistory.length > 0 && (
-                  <div className="card bg-black text-white border border-crediyaGreen rounded-lg p-4 mt-6 shadow">
-                    <h4
-                      onClick={() => setShowHistory(!showHistory)}
-                      className="mb-2 text-lg font-semibold text-crediyaGreen cursor-pointer flex items-center justify-between"
-                    >
-                      <span>📜 Historial de Pagos</span>
-                      <span>{showHistory ? "🔽" : "▶️"}</span>
-                    </h4>
-                    {showHistory && (
-                      <ul className="list-group text-xs">
-                        {paymentHistory.map((p, idx) => (
-                          <li key={idx} className="list-group-item">
-                            {p.payment_date ? new Date(p.payment_date).toLocaleDateString() : "Fecha desconocida"} — ${p.amount} vía {p.method}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+
+                {/* Receipt Options */}
+                {showReceiptOptions && receiptData && (
+                  <div className="bg-black border border-crediyaGreen rounded-lg p-6">
+                    <h3 className="text-xl font-semibold text-lime-400 mb-4">
+                      📄 Opciones de Recibo
+                    </h3>
+                    <div className="flex gap-4">
+                      <button
+                        onClick={downloadPDF}
+                        className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg transition-colors"
+                      >
+                        📄 Descargar PDF
+                      </button>
+                      <button
+                        onClick={() => setShowReceiptOptions(false)}
+                        className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg transition-colors"
+                      >
+                        Cerrar
+                      </button>
+                    </div>
                   </div>
                 )}
-                {/* Desglose de Pagos */}
-                {Array.isArray(paymentBreakdowns) && paymentBreakdowns.length > 0 && (
-                  <div className="card bg-black text-white border border-crediyaGreen rounded-lg p-4 mt-6 shadow">
-                    <h4
-                      onClick={() => setShowBreakdown(!showBreakdown)}
-                      className="mb-2 text-lg font-semibold text-crediyaGreen cursor-pointer flex items-center justify-between"
-                    >
-                      <span>📊 Desglose de Pagos</span>
-                      <span>{showBreakdown ? "🔽" : "▶️"}</span>
-                    </h4>
-                    {showBreakdown && (
-                      <table className="min-w-full text-xs text-white border border-crediyaGreen mt-2">
-                        <thead>
-                          <tr className="bg-gray-900 text-lime-400">
-                            <th className="px-2 py-1 text-left">Fecha</th>
-                            <th className="px-2 py-1 text-left">Tipo</th>
-                            <th className="px-2 py-1 text-left">Semana</th>
-                            <th className="px-2 py-1 text-right">Monto</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {paymentBreakdowns?.map((payment, idx) => (
-                            <React.Fragment key={idx}>
-                              {/* Main payment row */}
-                              <tr className="border-t border-crediyaGreen bg-gray-800">
-                                <td className="px-2 py-1">{new Date(payment.payment_date).toLocaleDateString()}</td>
-                                <td className="px-2 py-1 font-bold">Pago Total</td>
-                                <td className="px-2 py-1">Semana {payment.installment_week}</td>
-                                <td className="px-2 py-1 text-right font-bold">${parseFloat(payment.total_amount || 0).toFixed(2)}</td>
-                              </tr>
-                              {/* Component breakdown rows */}
-                              {payment.components?.map((component, compIdx) => (
-                                <tr key={`${idx}-${compIdx}`} className="border-t border-gray-600 bg-gray-900">
-                                  <td className="px-2 py-1"></td>
-                                  <td className="px-2 py-1 text-sm text-gray-400">└─ {component.type}</td>
-                                  <td className="px-2 py-1"></td>
-                                  <td className="px-2 py-1 text-right text-sm">${parseFloat(component.amount || 0).toFixed(2)}</td>
-                                </tr>
-                              ))}
-                            </React.Fragment>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
-                )}
-                {/* Movimientos Financieros */}
-                <div className="card bg-black text-white border border-crediyaGreen rounded-lg p-4 mt-6 shadow">
-                  <h4
-                    onClick={() => setShowMovements(!showMovements)}
-                    className="mb-2 text-lg font-semibold text-crediyaGreen cursor-pointer flex items-center justify-between"
-                  >
-                    <span>📘 Movimientos Financieros</span>
-                    <span>{showMovements ? "🔽" : "▶️"}</span>
-                  </h4>
-                  {showMovements && (
-                    <>
-                      <p className="text-sm text-gray-400 mb-2">
-                        Mostrando historial completo de pagos, penalidades y movimientos financieros registrados.
-                      </p>
-                      <MovementLog loanId={selectedLoan.id} movements={movements} />
-                    </>
-                  )}
-                </div>
+              </div>
+            ) : (
+              <div className="bg-black border border-crediyaGreen rounded-lg p-12 text-center">
+                <div className="text-6xl mb-4">💰</div>
+                <h3 className="text-xl font-semibold text-white mb-2">
+                  Selecciona un Cliente y Préstamo
+                </h3>
+                <p className="text-gray-400">
+                  Para registrar un pago, primero selecciona un cliente y luego un préstamo
+                </p>
               </div>
             )}
-          </section>
-        </div>
-      </div>
-
-      {/* Receipt Options Modal */}
-      {showReceiptOptions && receiptData && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-black border border-crediyaGreen rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-xl font-bold text-crediyaGreen mb-4">📋 Recibo Generado</h3>
-            <div className="text-white mb-4">
-              <p><strong>Recibo #:</strong> {receiptData.receipt_number}</p>
-              <p><strong>Monto:</strong> ${receiptData.payment_amount.toFixed(2)}</p>
-              <p><strong>Método:</strong> {receiptData.payment_method}</p>
-              <p><strong>Préstamo #:</strong> {receiptData.loan_id}</p>
-            </div>
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={() => {
-                  window.open(`${API_BASE_URL}/receipts/${receiptData.receipt_number}`, '_blank');
-                  setShowReceiptOptions(false);
-                }}
-                className="bg-crediyaGreen hover:bg-white hover:text-crediyaGreen text-black font-bold py-2 px-4 rounded transition duration-200"
-              >
-                📄 Ver Recibo PDF
-              </button>
-              <button
-                onClick={async () => {
-                  try {
-                    const response = await axios.post(
-                      `${API_BASE_URL}/payments/${receiptData.payment_id}/receipt`,
-                      { send_whatsapp: true },
-                      { headers: { Authorization: `Bearer ${token}` } }
-                    );
-                    alert("✅ Recibo enviado por WhatsApp!");
-                    setShowReceiptOptions(false);
-                  } catch (err) {
-                    alert("❌ Error enviando por WhatsApp: " + err.message);
-                  }
-                }}
-                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-200"
-              >
-                📱 Enviar por WhatsApp
-              </button>
-              <button
-                onClick={() => setShowReceiptOptions(false)}
-                className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition duration-200"
-              >
-                ❌ Cerrar
-              </button>
-            </div>
           </div>
         </div>
-      )}
+      </div>
     </Layout>
   );
 };
