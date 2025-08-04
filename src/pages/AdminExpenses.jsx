@@ -10,6 +10,7 @@ const AdminExpenses = () => {
   const [activeTab, setActiveTab] = useState("register");
   const [selectedExpense, setSelectedExpense] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [pendingApprovals, setPendingApprovals] = useState([]);
   const [filters, setFilters] = useState({
     store: "",
     type: "",
@@ -25,7 +26,7 @@ const AdminExpenses = () => {
     priority: "medium",
     category: "",
     budget_code: "",
-    approval_required: false,
+    approval_required: true, // Default to true - all expenses require approval
     recurring: false,
     recurring_frequency: "monthly"
   });
@@ -68,10 +69,45 @@ const AdminExpenses = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       setExpenses(res.data);
+      
+      // Separate pending approvals
+      const pending = res.data.filter(expense => expense.status === 'pending' || !expense.status);
+      setPendingApprovals(pending);
     } catch (err) {
       console.error("Error fetching expenses:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleApproveExpense = async (expenseId) => {
+    try {
+      await axios.put(`${API_BASE_URL}/expenses/${expenseId}/approve`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      alert("✅ Gasto aprobado correctamente");
+      fetchExpenses(); // Refresh the list
+    } catch (err) {
+      console.error("Error approving expense:", err);
+      alert("❌ Error al aprobar el gasto");
+    }
+  };
+
+  const handleRejectExpense = async (expenseId) => {
+    const reason = prompt("Motivo del rechazo:");
+    if (!reason) return;
+    
+    try {
+      await axios.put(`${API_BASE_URL}/expenses/${expenseId}/reject`, {
+        reason: reason
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      alert("❌ Gasto rechazado correctamente");
+      fetchExpenses(); // Refresh the list
+    } catch (err) {
+      console.error("Error rejecting expense:", err);
+      alert("❌ Error al rechazar el gasto");
     }
   };
 
@@ -378,8 +414,9 @@ const AdminExpenses = () => {
                         checked={form.approval_required}
                         onChange={handleChange}
                         className="mr-2"
+                        disabled // All expenses require approval by default
                       />
-                      Requiere Aprobación
+                      ✅ Requiere Aprobación (Obligatorio)
                     </label>
                     
                     <label className="flex items-center">
@@ -390,7 +427,7 @@ const AdminExpenses = () => {
                         onChange={handleChange}
                         className="mr-2"
                       />
-                      Gasto Recurrente
+                      🔄 Gasto Recurrente
                     </label>
                   </div>
 
@@ -520,9 +557,79 @@ const AdminExpenses = () => {
         {activeTab === "approvals" && (
           <div className="bg-gray-900 rounded-xl p-6 border border-gray-700">
             <h2 className="text-xl font-bold text-crediyaGreen mb-6">✅ Aprobaciones Pendientes</h2>
-            <div className="text-center text-gray-400 py-8">
-              No hay aprobaciones pendientes
-            </div>
+            
+            {pendingApprovals.length === 0 ? (
+              <div className="text-center text-gray-400 py-8">
+                <div className="text-4xl mb-4">🎉</div>
+                <div className="text-lg mb-2">¡Excelente!</div>
+                <div className="text-sm">No hay aprobaciones pendientes</div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {pendingApprovals.map((expense) => (
+                  <div key={expense.id} className="bg-gray-800 rounded-lg p-4 border border-gray-600">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            expense.priority === 'urgent' ? 'bg-red-900 text-red-200' :
+                            expense.priority === 'high' ? 'bg-orange-900 text-orange-200' :
+                            expense.priority === 'medium' ? 'bg-yellow-900 text-yellow-200' :
+                            'bg-green-900 text-green-200'
+                          }`}>
+                            {expense.priority === 'urgent' ? '🚨 Urgente' :
+                             expense.priority === 'high' ? '🔴 Alta' :
+                             expense.priority === 'medium' ? '🟡 Media' : '🟢 Baja'}
+                          </span>
+                          <span className="text-sm text-gray-400">
+                            {expense.created_at ? new Date(expense.created_at).toLocaleDateString() : "Sin fecha"}
+                          </span>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <div className="text-sm text-gray-400">Sucursal</div>
+                            <div className="font-semibold">{expense.store_name || `ID ${expense.store_id}`}</div>
+                          </div>
+                          <div>
+                            <div className="text-sm text-gray-400">Categoría</div>
+                            <div className="font-semibold">{expenseTypes.find(t => t.id === expense.type)?.name || expense.type}</div>
+                          </div>
+                          <div>
+                            <div className="text-sm text-gray-400">Monto</div>
+                            <div className="font-semibold text-crediyaGreen">
+                              ${expense.amount ? parseFloat(expense.amount).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "0.00"}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {expense.description && (
+                          <div className="mt-2">
+                            <div className="text-sm text-gray-400">Descripción</div>
+                            <div className="text-sm">{expense.description}</div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex gap-2 ml-4">
+                        <button
+                          onClick={() => handleApproveExpense(expense.id)}
+                          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors"
+                        >
+                          ✅ Aprobar
+                        </button>
+                        <button
+                          onClick={() => handleRejectExpense(expense.id)}
+                          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors"
+                        >
+                          ❌ Rechazar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -603,8 +710,18 @@ const AdminExpenses = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 py-1 text-xs rounded-full bg-green-900 text-green-200">
-                          ✅ Aprobado
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          expense.status === 'pending' || !expense.status ? 'bg-yellow-900 text-yellow-200' :
+                          expense.status === 'approved' ? 'bg-green-900 text-green-200' :
+                          expense.status === 'rejected' ? 'bg-red-900 text-red-200' :
+                          expense.status === 'paid' ? 'bg-blue-900 text-blue-200' :
+                          'bg-gray-900 text-gray-200'
+                        }`}>
+                          {expense.status === 'pending' || !expense.status ? '⏳ Pendiente' :
+                           expense.status === 'approved' ? '✅ Aprobado' :
+                           expense.status === 'rejected' ? '❌ Rechazado' :
+                           expense.status === 'paid' ? '💰 Pagado' :
+                           '❓ Desconocido'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
