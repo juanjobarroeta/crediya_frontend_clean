@@ -361,8 +361,8 @@ const RegisterPayment = () => {
                               </span>
                             </p>
                             <p><strong>Monto Original:</strong> ${parseFloat(selectedLoan.amount).toLocaleString()}</p>
-                            <p><strong>Plazo:</strong> {selectedLoan.term || 'N/A'} semanas</p>
-                            <p><strong>Pago Semanal:</strong> ${selectedLoan.weekly_payment ? parseFloat(selectedLoan.weekly_payment).toFixed(2) : 'N/A'}</p>
+                            <p><strong>Plazo:</strong> {installments.length > 0 ? installments.length : 'N/A'} semanas</p>
+                            <p><strong>Pago Semanal:</strong> ${installments.length > 0 ? parseFloat(installments[0].amount_due).toFixed(2) : 'N/A'}</p>
                             <p><strong>Total a Pagar:</strong> ${loanTotals ? parseFloat(loanTotals.totalDue).toFixed(2) : 'N/A'}</p>
                             <p><strong>Interés Total:</strong> ${loanTotals ? parseFloat(loanTotals.totalInterest).toFixed(2) : 'N/A'}</p>
                           </div>
