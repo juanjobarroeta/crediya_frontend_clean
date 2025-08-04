@@ -110,26 +110,25 @@ const BalanceSheet = () => {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
 
-      const raw = res.data;
-      const grouped = {};
-      for (const row of raw) {
-        if (!grouped[row.type]) grouped[row.type] = [];
-        grouped[row.type].push({
-          label: row.name,
-          amount: row.balance,
-        });
-      }
-      const data = grouped;
+      console.log("📊 Balance sheet response:", res.data);
 
-      const categories = Object.keys(data).map(name => {
-        let accounts = data[name].map(account => ({
+      // Handle the new balance sheet data structure
+      const balanceSheetData = res.data;
+      
+      // Transform the data to match the expected format
+      const categories = [];
+      
+      // Process each section (ACTIVO, PASIVO, CAPITAL)
+      Object.keys(balanceSheetData.balanceSheet).forEach(sectionName => {
+        const section = balanceSheetData.balanceSheet[sectionName];
+        const accounts = section.accounts.map(account => ({
           label: account.label,
-          weeklyAmounts: { week0: Math.abs(account.amount) },
-          total: Math.abs(account.amount)
+          weeklyAmounts: { week0: account.value },
+          total: account.value
         }));
         
-        // If ACTIVO, sort accounts: Fondo Fijo de Caja, Cuenta Bancaria at top
-        if (name === "ACTIVO") {
+        // Sort accounts for ACTIVO section
+        if (sectionName === "ACTIVO") {
           const priority = ["Fondo Fijo de Caja", "Cuenta Bancaria"];
           accounts.sort((a, b) => {
             const aIdx = priority.indexOf(a.label);
@@ -140,10 +139,11 @@ const BalanceSheet = () => {
             return aIdx - bIdx;
           });
         }
-        return {
-          name,
+        
+        categories.push({
+          name: sectionName,
           accounts
-        };
+        });
       });
 
       setEntries({
@@ -151,18 +151,10 @@ const BalanceSheet = () => {
         categories
       });
 
-      const todayStr = new Date().toISOString().slice(0, 10);
-      try {
-        const incomeRes = await axios.get(`${API_BASE_URL}/accounting/income-statement?start=2000-01-01&end=${todayStr}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        });
-
-        const ingreso = incomeRes.data.INGRESO.reduce((sum, i) => sum + i.amount, 0);
-        const egreso = incomeRes.data.EGRESO.reduce((sum, i) => sum + Math.abs(i.amount), 0);
-        setProvisionalNetIncome(ingreso - egreso);
-      } catch (err) {
-        console.error("Error fetching provisional net income:", err);
-      }
+      // Calculate provisional net income from the balance sheet control
+      const control = balanceSheetData.totals?.control || 0;
+      setProvisionalNetIncome(control);
+      
     } catch (err) {
       console.error("Error fetching balance sheet:", err);
     } finally {
