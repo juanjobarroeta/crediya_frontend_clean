@@ -214,7 +214,7 @@ const Header = () => {
             </button>
 
             {showNotifications && (
-              <div className="absolute top-full right-0 mt-2 w-80 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-50">
+              <div className="absolute top-full right-0 mt-2 w-80 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-[9999]">
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold">Notificaciones</h3>
@@ -273,7 +273,7 @@ const Header = () => {
             </button>
 
             {showUserMenu && (
-              <div className="absolute top-full right-0 mt-2 w-64 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-50">
+              <div className="absolute top-full right-0 mt-2 w-64 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-[9999]">
                 <div className="p-4">
                   <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-700">
                     <div className="w-12 h-12 bg-gradient-to-r from-crediyaGreen to-emerald-500 rounded-full flex items-center justify-center text-black font-semibold text-lg">
