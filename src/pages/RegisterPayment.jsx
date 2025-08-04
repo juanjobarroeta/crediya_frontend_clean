@@ -236,6 +236,122 @@ const RegisterPayment = () => {
     }
   };
 
+  const generatePaymentReceipt = async (payment) => {
+    try {
+      // Create receipt data for historical payment
+      const receiptData = {
+        customer_name: selectedCustomer?.name || selectedCustomer?.first_name + " " + selectedCustomer?.last_name || "Cliente",
+        customer_phone: selectedCustomer?.phone || selectedCustomer?.customer_phone || "",
+        customer_address: selectedCustomer?.address || selectedCustomer?.customer_address || "",
+        loan_id: selectedLoan?.id || "",
+        payment_amount: payment.amount,
+        payment_method: payment.payment_method,
+        payment_date: new Date(payment.payment_date).toLocaleDateString(),
+        payment_time: new Date(payment.payment_date).toLocaleTimeString(),
+        receipt_number: `REC-${Date.now()}`,
+        store_name: "CrediYa",
+        store_address: "Dirección de la Tienda",
+        store_phone: "Teléfono de la Tienda",
+        payment_breakdown: payment.components || [],
+        total_amount: payment.amount,
+        remaining_balance: payment.remaining_balance || 0,
+        installment_week: payment.installment_week || "N/A"
+      };
+
+      // Create a temporary receipt element
+      const tempReceiptRef = React.createRef();
+      const receiptElement = (
+        <div ref={tempReceiptRef} className="bg-white text-black p-8 max-w-md mx-auto">
+          {/* Header */}
+          <div className="text-center border-b-2 border-gray-300 pb-4 mb-4">
+            <h1 className="text-2xl font-bold text-gray-800">CrediYa</h1>
+            <p className="text-gray-600">Recibo de Pago</p>
+            <p className="text-sm text-gray-500">Fecha: {receiptData.payment_date}</p>
+            <p className="text-sm text-gray-500">Hora: {receiptData.payment_time}</p>
+            <p className="text-sm text-gray-500">Recibo #: {receiptData.receipt_number}</p>
+          </div>
+
+          {/* Customer Info */}
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold mb-2">Información del Cliente</h2>
+            <p><strong>Nombre:</strong> {receiptData.customer_name}</p>
+            <p><strong>Teléfono:</strong> {receiptData.customer_phone}</p>
+            <p><strong>Dirección:</strong> {receiptData.customer_address}</p>
+          </div>
+
+          {/* Loan Info */}
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold mb-2">Información del Préstamo</h2>
+            <p><strong>Préstamo #:</strong> {receiptData.loan_id}</p>
+            <p><strong>Semana:</strong> {receiptData.installment_week}</p>
+          </div>
+
+          {/* Payment Details */}
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold mb-2">Detalles del Pago</h2>
+            <p><strong>Método de Pago:</strong> {receiptData.payment_method}</p>
+            <p><strong>Monto Total:</strong> ${parseFloat(receiptData.total_amount).toFixed(2)}</p>
+          </div>
+
+          {/* Payment Breakdown */}
+          {receiptData.payment_breakdown && receiptData.payment_breakdown.length > 0 && (
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold mb-2">Desglose del Pago</h2>
+              <div className="border border-gray-300 rounded p-2">
+                {receiptData.payment_breakdown.map((component, idx) => (
+                  <div key={idx} className="flex justify-between py-1">
+                    <span className="capitalize">
+                      {component.type === 'capital' ? 'Capital' :
+                       component.type === 'interest' ? 'Interés' :
+                       component.type === 'penalty' ? 'Penalidad' : component.type}:
+                    </span>
+                    <span>${parseFloat(component.amount || 0).toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="text-center border-t-2 border-gray-300 pt-4 mt-4">
+            <p className="text-sm text-gray-600">Gracias por su pago</p>
+            <p className="text-sm text-gray-600">Saldo Restante: ${parseFloat(receiptData.remaining_balance).toFixed(2)}</p>
+            <p className="text-xs text-gray-500 mt-2">Este es un recibo oficial de CrediYa</p>
+          </div>
+        </div>
+      );
+
+      // Generate PDF
+      const canvas = await html2canvas(tempReceiptRef.current, {
+        backgroundColor: "#ffffff",
+        scale: 2,
+      });
+      
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const imgWidth = 210;
+      const pageHeight = 295;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      
+      let position = 0;
+      
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+      
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+      
+      pdf.save(`recibo-pago-${receiptData.customer_name}-${receiptData.payment_date.replace(/\//g, '-')}.pdf`);
+    } catch (error) {
+      console.error("Error generating payment receipt PDF:", error);
+    }
+  };
+
   const handleSelectCustomer = async (customer) => {
     setSelectedCustomer(customer);
     setActiveStep(2);
@@ -968,6 +1084,7 @@ const RegisterPayment = () => {
                                    <th className="text-left py-2 text-gray-400">Monto</th>
                                    <th className="text-left py-2 text-gray-400">Método</th>
                                    <th className="text-left py-2 text-gray-400">Estado</th>
+                                   <th className="text-center py-2 text-gray-400">Acciones</th>
                                  </tr>
                                </thead>
                                <tbody>
@@ -986,6 +1103,15 @@ const RegisterPayment = () => {
                                        <span className="px-2 py-1 rounded text-xs bg-green-600">
                                          Completado
                                        </span>
+                                     </td>
+                                     <td className="py-2 text-center">
+                                       <button
+                                         onClick={() => generatePaymentReceipt(payment)}
+                                         className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
+                                         title="Descargar Recibo PDF"
+                                       >
+                                         📄 PDF
+                                       </button>
                                      </td>
                                    </tr>
                                  ))}
@@ -1043,9 +1169,9 @@ const RegisterPayment = () => {
                                    <tr key={`${idx}-${compIdx}`} className="border-t border-gray-600 bg-gray-900">
                                      <td className="px-3 py-2"></td>
                                      <td className="px-3 py-2 text-sm text-gray-400">
-                                       └─ {component.type === 'capital' ? 'Capital' :
-                                           component.type === 'interest' ? 'Interés' :
-                                           component.type === 'penalty' ? 'Penalidad' :
+                                       └─ {component.type === 'capital' ? '💰 Capital' :
+                                           component.type === 'interest' ? '📈 Interés' :
+                                           component.type === 'penalty' ? '⚠️ Penalidad' :
                                            component.type}
                                      </td>
                                      <td className="px-3 py-2"></td>
@@ -1054,6 +1180,22 @@ const RegisterPayment = () => {
                                      </td>
                                    </tr>
                                  ))}
+                                 
+                                 {/* Summary row */}
+                                 {payment.components && payment.components.length > 0 && (
+                                   <tr className="border-t-2 border-lime-400 bg-gray-800">
+                                     <td className="px-3 py-2"></td>
+                                     <td className="px-3 py-2 text-sm font-bold text-lime-400">
+                                       📊 Resumen
+                                     </td>
+                                     <td className="px-3 py-2"></td>
+                                     <td className="px-3 py-2 text-right text-sm font-bold text-lime-400">
+                                       Capital: ${payment.components.find(c => c.type === 'capital')?.amount || 0} | 
+                                       Interés: ${payment.components.find(c => c.type === 'interest')?.amount || 0} | 
+                                       Penalidad: ${payment.components.find(c => c.type === 'penalty')?.amount || 0}
+                                     </td>
+                                   </tr>
+                                 )}
                                </React.Fragment>
                              ))}
                            </tbody>
