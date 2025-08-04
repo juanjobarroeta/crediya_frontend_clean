@@ -341,7 +341,7 @@ const InventoryRequest = () => {
       const totalAmount = validItems.reduce((sum, item) => sum + (item.purchase_price * item.quantity), 0);
       
       // Create bulk request
-      const response = await fetch('/api/inventory-requests/bulk', {
+      const response = await fetch(`${API_BASE_URL}/inventory-requests/bulk`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
