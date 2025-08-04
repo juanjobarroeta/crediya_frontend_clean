@@ -158,15 +158,27 @@ const Header = () => {
                     <div className="mt-4 space-y-2">
                       <div className="text-xs text-gray-400 uppercase tracking-wider">Resultados rápidos</div>
                       <div className="space-y-1">
-                        <button className="w-full text-left px-3 py-2 rounded hover:bg-gray-700 text-sm">
+                        <Link 
+                          to="/create-loan" 
+                          onClick={() => setShowSearch(false)}
+                          className="block w-full text-left px-3 py-2 rounded hover:bg-gray-700 text-sm"
+                        >
                           💳 Crear nuevo préstamo
-                        </button>
-                        <button className="w-full text-left px-3 py-2 rounded hover:bg-gray-700 text-sm">
+                        </Link>
+                        <Link 
+                          to="/create-customer" 
+                          onClick={() => setShowSearch(false)}
+                          className="block w-full text-left px-3 py-2 rounded hover:bg-gray-700 text-sm"
+                        >
                           👤 Crear nuevo cliente
-                        </button>
-                        <button className="w-full text-left px-3 py-2 rounded hover:bg-gray-700 text-sm">
+                        </Link>
+                        <Link 
+                          to="/register-payment" 
+                          onClick={() => setShowSearch(false)}
+                          className="block w-full text-left px-3 py-2 rounded hover:bg-gray-700 text-sm"
+                        >
                           💰 Registrar pago
-                        </button>
+                        </Link>
                       </div>
                     </div>
                   )}
@@ -220,7 +232,12 @@ const Header = () => {
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold">Notificaciones</h3>
-                    <button className="text-sm text-crediyaGreen hover:text-emerald-400">
+                    <button 
+                      onClick={() => {
+                        setNotifications(prev => prev.map(notif => ({ ...notif, read: true })));
+                      }}
+                      className="text-sm text-crediyaGreen hover:text-emerald-400"
+                    >
                       Marcar todo como leído
                     </button>
                   </div>
@@ -228,7 +245,18 @@ const Header = () => {
                     {notifications.map((notification) => (
                       <div
                         key={notification.id}
-                        onClick={() => markNotificationAsRead(notification.id)}
+                        onClick={() => {
+                          markNotificationAsRead(notification.id);
+                          // Navigate based on notification type
+                          if (notification.type === "payment") {
+                            window.location.href = "/register-payment";
+                          } else if (notification.type === "overdue") {
+                            window.location.href = "/admin/overdue-loans";
+                          } else if (notification.type === "approval") {
+                            window.location.href = "/admin/loans";
+                          }
+                          setShowNotifications(false);
+                        }}
                         className={`p-3 rounded-lg cursor-pointer transition-colors duration-200 ${
                           notification.read ? "bg-gray-700" : "bg-blue-900/20"
                         } hover:bg-gray-700`}
@@ -249,7 +277,11 @@ const Header = () => {
                     ))}
                   </div>
                   <div className="mt-4 pt-3 border-t border-gray-700">
-                    <Link to="/notifications" className="text-sm text-crediyaGreen hover:text-emerald-400">
+                    <Link 
+                      to="/notifications" 
+                      onClick={() => setShowNotifications(false)}
+                      className="text-sm text-crediyaGreen hover:text-emerald-400"
+                    >
                       Ver todas las notificaciones
                     </Link>
                   </div>
@@ -289,13 +321,31 @@ const Header = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <button className="w-full text-left px-3 py-2 rounded hover:bg-gray-700 text-sm">
+                    <button 
+                      onClick={() => {
+                        window.location.href = "/customer-profile";
+                        setShowUserMenu(false);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded hover:bg-gray-700 text-sm"
+                    >
                       👤 Mi Perfil
                     </button>
-                    <button className="w-full text-left px-3 py-2 rounded hover:bg-gray-700 text-sm">
+                    <button 
+                      onClick={() => {
+                        window.location.href = "/admin/settings";
+                        setShowUserMenu(false);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded hover:bg-gray-700 text-sm"
+                    >
                       ⚙️ Configuración
                     </button>
-                    <button className="w-full text-left px-3 py-2 rounded hover:bg-gray-700 text-sm">
+                    <button 
+                      onClick={() => {
+                        // Toggle dark mode logic here
+                        setShowUserMenu(false);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded hover:bg-gray-700 text-sm"
+                    >
                       🌙 Modo Oscuro
                     </button>
                     <div className="border-t border-gray-700 my-2"></div>
@@ -303,6 +353,7 @@ const Header = () => {
                       onClick={() => {
                         localStorage.removeItem("token");
                         window.location.href = "/auth";
+                        setShowUserMenu(false);
                       }}
                       className="w-full text-left px-3 py-2 rounded hover:bg-red-900 text-red-400 text-sm"
                     >
