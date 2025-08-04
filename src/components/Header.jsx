@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { createPortal } from "react-dom";
 
 const Header = () => {
   const location = useLocation();
@@ -141,7 +142,7 @@ const Header = () => {
               <span className="text-xs text-gray-500">⌘K</span>
             </button>
             
-            {showSearch && (
+            {showSearch && createPortal(
               <div className="fixed top-16 left-6 mt-2 w-96 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-[999999]">
                 <div className="p-4">
                   <input
@@ -170,7 +171,8 @@ const Header = () => {
                     </div>
                   )}
                 </div>
-              </div>
+              </div>,
+              document.body
             )}
           </div>
         </div>
@@ -213,7 +215,7 @@ const Header = () => {
               )}
             </button>
 
-            {showNotifications && (
+            {showNotifications && createPortal(
               <div className="fixed top-16 right-6 mt-2 w-80 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-[999999]">
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-4">
@@ -252,7 +254,8 @@ const Header = () => {
                     </Link>
                   </div>
                 </div>
-              </div>
+              </div>,
+              document.body
             )}
           </div>
 
@@ -272,7 +275,7 @@ const Header = () => {
               <span className="text-gray-400">▼</span>
             </button>
 
-            {showUserMenu && (
+            {showUserMenu && createPortal(
               <div className="fixed top-16 right-6 mt-2 w-64 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-[999999]">
                 <div className="p-4">
                   <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-700">
@@ -307,7 +310,8 @@ const Header = () => {
                     </button>
                   </div>
                 </div>
-              </div>
+              </div>,
+              document.body
             )}
           </div>
         </div>
