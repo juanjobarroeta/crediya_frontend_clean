@@ -23,6 +23,18 @@ const InventoryRequest = () => {
   const [dragActive, setDragActive] = useState(false);
   const [message, setMessage] = useState("");
 
+  // New state for bulk import
+  const [importedData, setImportedData] = useState([]);
+  const [importPreview, setImportPreview] = useState(false);
+  const [importErrors, setImportErrors] = useState([]);
+  const [bulkRequestData, setBulkRequestData] = useState({
+    category: "",
+    supplier: "",
+    expected_delivery: "",
+    notes: "",
+    priority: "medium"
+  });
+
   const token = localStorage.getItem("token");
 
   // Inventory categories with icons and descriptions
@@ -187,6 +199,129 @@ const InventoryRequest = () => {
     }
   };
 
+  // New functions for bulk import
+  const handleFileUpload = async (file) => {
+    try {
+      setLoading(true);
+      setImportErrors([]);
+      
+      // Read file content
+      const text = await file.text();
+      const lines = text.split('\n');
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      
+      // Parse CSV data
+      const parsedData = lines.slice(1).filter(line => line.trim()).map((line, index) => {
+        const values = line.split(',').map(v => v.trim());
+        const item = {};
+        
+        headers.forEach((header, i) => {
+          item[header] = values[i] || '';
+        });
+        
+        // Add validation
+        const errors = [];
+        if (!item.category || !item.brand || !item.model) {
+          errors.push(`Row ${index + 2}: Missing required fields`);
+        }
+        if (!item.quantity || isNaN(item.quantity) || parseInt(item.quantity) <= 0) {
+          errors.push(`Row ${index + 2}: Invalid quantity`);
+        }
+        if (!item.purchase_price || isNaN(item.purchase_price)) {
+          errors.push(`Row ${index + 2}: Invalid purchase price`);
+        }
+        
+        return {
+          ...item,
+          id: index,
+          errors,
+          quantity: parseInt(item.quantity) || 0,
+          purchase_price: parseFloat(item.purchase_price) || 0,
+          sale_price: parseFloat(item.sale_price) || 0
+        };
+      });
+      
+      setImportedData(parsedData);
+      setImportPreview(true);
+      
+      // Auto-calculate totals
+      const totalAmount = parsedData.reduce((sum, item) => sum + (item.purchase_price * item.quantity), 0);
+      setBulkRequestData(prev => ({
+        ...prev,
+        amount: totalAmount,
+        category: parsedData[0]?.category || ""
+      }));
+      
+    } catch (error) {
+      console.error('Error parsing file:', error);
+      setImportErrors(['Error parsing file. Please check the format.']);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkEdit = (index, field, value) => {
+    setImportedData(prev => prev.map((item, i) => 
+      i === index ? { ...item, [field]: value } : item
+    ));
+  };
+
+  const handleBulkDelete = (index) => {
+    setImportedData(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleBulkSubmit = async () => {
+    try {
+      setLoading(true);
+      
+      // Validate all items
+      const validItems = importedData.filter(item => item.errors.length === 0);
+      if (validItems.length === 0) {
+        setImportErrors(['No valid items to submit']);
+        return;
+      }
+      
+      // Calculate total amount
+      const totalAmount = validItems.reduce((sum, item) => sum + (item.purchase_price * item.quantity), 0);
+      
+      // Create bulk request
+      const response = await fetch('/api/inventory-requests/bulk', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          ...bulkRequestData,
+          amount: totalAmount,
+          items: validItems
+        })
+      });
+      
+      if (response.ok) {
+        setImportPreview(false);
+        setImportedData([]);
+        setBulkRequestData({
+          category: "",
+          supplier: "",
+          expected_delivery: "",
+          notes: "",
+          priority: "medium"
+        });
+        fetchRequests();
+        alert('Bulk inventory request created successfully!');
+      } else {
+        const error = await response.json();
+        setImportErrors([error.message || 'Error creating bulk request']);
+      }
+    } catch (error) {
+      console.error('Error submitting bulk request:', error);
+      setImportErrors(['Error submitting request']);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchRequests();
   }, []);
@@ -250,6 +385,7 @@ const InventoryRequest = () => {
         <div className="flex space-x-1 mb-8 bg-gray-800 p-1 rounded-lg">
           {[
             { id: "request", label: "📝 Solicitar", icon: "📝" },
+            { id: "import", label: "📤 Importar", icon: "📤" },
             { id: "approvals", label: "✅ Aprobaciones", icon: "✅" },
             { id: "tracking", label: "📊 Seguimiento", icon: "📊" },
             { id: "reception", label: "📦 Recepción", icon: "📦" },
@@ -269,7 +405,7 @@ const InventoryRequest = () => {
           ))}
         </div>
 
-        {/* Request Tab */}
+        {/* Tab Content */}
         {activeTab === "request" && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Request Form */}
@@ -499,7 +635,276 @@ const InventoryRequest = () => {
           </div>
         )}
 
-        {/* Approvals Tab */}
+        {activeTab === "import" && (
+          <div className="space-y-6">
+            {/* Import Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white">
+              <h2 className="text-2xl font-bold mb-2">📤 Importar Inventario</h2>
+              <p className="text-blue-100">Sube un archivo Excel/CSV para crear solicitudes masivas de inventario</p>
+            </div>
+
+            {/* File Upload Area */}
+            {!importPreview && (
+              <div className="bg-gray-800 rounded-lg p-8 border-2 border-dashed border-gray-600">
+                <div className="text-center">
+                  <div className="text-4xl mb-4">📁</div>
+                  <h3 className="text-xl font-semibold mb-2">Arrastra tu archivo aquí</h3>
+                  <p className="text-gray-400 mb-4">o haz clic para seleccionar</p>
+                  
+                  <input
+                    type="file"
+                    accept=".xlsx,.csv"
+                    onChange={(e) => e.target.files[0] && handleFileUpload(e.target.files[0])}
+                    className="hidden"
+                    id="file-upload"
+                  />
+                  <label
+                    htmlFor="file-upload"
+                    className="bg-crediyaGreen text-black px-6 py-3 rounded-lg font-semibold cursor-pointer hover:bg-emerald-500 transition-colors"
+                  >
+                    Seleccionar Archivo
+                  </label>
+                  
+                  <div className="mt-4 text-sm text-gray-500">
+                    <p>Formatos soportados: .xlsx, .csv</p>
+                    <p>Columnas requeridas: category, brand, model, color, ram, storage, quantity, purchase_price, sale_price</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Import Preview */}
+            {importPreview && (
+              <div className="space-y-6">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="bg-blue-600 rounded-lg p-4 text-white">
+                    <div className="text-2xl font-bold">{importedData.length}</div>
+                    <div className="text-sm">Artículos</div>
+                  </div>
+                  <div className="bg-green-600 rounded-lg p-4 text-white">
+                    <div className="text-2xl font-bold">
+                      ${importedData.reduce((sum, item) => sum + (item.purchase_price * item.quantity), 0).toLocaleString()}
+                    </div>
+                    <div className="text-sm">Total</div>
+                  </div>
+                  <div className="bg-orange-600 rounded-lg p-4 text-white">
+                    <div className="text-2xl font-bold">
+                      {importedData.filter(item => item.errors.length > 0).length}
+                    </div>
+                    <div className="text-sm">Errores</div>
+                  </div>
+                  <div className="bg-purple-600 rounded-lg p-4 text-white">
+                    <div className="text-2xl font-bold">
+                      {importedData.reduce((sum, item) => sum + item.quantity, 0)}
+                    </div>
+                    <div className="text-sm">Unidades</div>
+                  </div>
+                </div>
+
+                {/* Request Details */}
+                <div className="bg-gray-800 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold mb-4">Detalles de la Solicitud</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Categoría</label>
+                      <input
+                        type="text"
+                        value={bulkRequestData.category}
+                        onChange={(e) => setBulkRequestData(prev => ({ ...prev, category: e.target.value }))}
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:border-crediyaGreen focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Proveedor</label>
+                      <input
+                        type="text"
+                        value={bulkRequestData.supplier}
+                        onChange={(e) => setBulkRequestData(prev => ({ ...prev, supplier: e.target.value }))}
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:border-crediyaGreen focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Fecha de Entrega Esperada</label>
+                      <input
+                        type="date"
+                        value={bulkRequestData.expected_delivery}
+                        onChange={(e) => setBulkRequestData(prev => ({ ...prev, expected_delivery: e.target.value }))}
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:border-crediyaGreen focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Prioridad</label>
+                      <select
+                        value={bulkRequestData.priority}
+                        onChange={(e) => setBulkRequestData(prev => ({ ...prev, priority: e.target.value }))}
+                        className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:border-crediyaGreen focus:outline-none"
+                      >
+                        <option value="low">Baja</option>
+                        <option value="medium">Media</option>
+                        <option value="high">Alta</option>
+                        <option value="urgent">Urgente</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium mb-2">Notas</label>
+                    <textarea
+                      value={bulkRequestData.notes}
+                      onChange={(e) => setBulkRequestData(prev => ({ ...prev, notes: e.target.value }))}
+                      rows={3}
+                      className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:border-crediyaGreen focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Data Table */}
+                <div className="bg-gray-800 rounded-lg overflow-hidden">
+                  <div className="p-4 border-b border-gray-700">
+                    <h3 className="text-lg font-semibold">Artículos Importados</h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-700">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-sm font-medium">Categoría</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium">Marca</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium">Modelo</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium">Color</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium">RAM</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium">Almacenamiento</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium">Cantidad</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium">Precio Compra</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium">Precio Venta</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {importedData.map((item, index) => (
+                          <tr key={item.id} className={`border-b border-gray-700 ${item.errors.length > 0 ? 'bg-red-900/20' : ''}`}>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={item.category}
+                                onChange={(e) => handleBulkEdit(index, 'category', e.target.value)}
+                                className="w-full bg-gray-700 text-white px-2 py-1 rounded border border-gray-600 focus:border-crediyaGreen focus:outline-none"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={item.brand}
+                                onChange={(e) => handleBulkEdit(index, 'brand', e.target.value)}
+                                className="w-full bg-gray-700 text-white px-2 py-1 rounded border border-gray-600 focus:border-crediyaGreen focus:outline-none"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={item.model}
+                                onChange={(e) => handleBulkEdit(index, 'model', e.target.value)}
+                                className="w-full bg-gray-700 text-white px-2 py-1 rounded border border-gray-600 focus:border-crediyaGreen focus:outline-none"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={item.color}
+                                onChange={(e) => handleBulkEdit(index, 'color', e.target.value)}
+                                className="w-full bg-gray-700 text-white px-2 py-1 rounded border border-gray-600 focus:border-crediyaGreen focus:outline-none"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={item.ram}
+                                onChange={(e) => handleBulkEdit(index, 'ram', e.target.value)}
+                                className="w-full bg-gray-700 text-white px-2 py-1 rounded border border-gray-600 focus:border-crediyaGreen focus:outline-none"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={item.storage}
+                                onChange={(e) => handleBulkEdit(index, 'storage', e.target.value)}
+                                className="w-full bg-gray-700 text-white px-2 py-1 rounded border border-gray-600 focus:border-crediyaGreen focus:outline-none"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => handleBulkEdit(index, 'quantity', parseInt(e.target.value) || 0)}
+                                className="w-full bg-gray-700 text-white px-2 py-1 rounded border border-gray-600 focus:border-crediyaGreen focus:outline-none"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="number"
+                                value={item.purchase_price}
+                                onChange={(e) => handleBulkEdit(index, 'purchase_price', parseFloat(e.target.value) || 0)}
+                                className="w-full bg-gray-700 text-white px-2 py-1 rounded border border-gray-600 focus:border-crediyaGreen focus:outline-none"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="number"
+                                value={item.sale_price}
+                                onChange={(e) => handleBulkEdit(index, 'sale_price', parseFloat(e.target.value) || 0)}
+                                className="w-full bg-gray-700 text-white px-2 py-1 rounded border border-gray-600 focus:border-crediyaGreen focus:outline-none"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <button
+                                onClick={() => handleBulkDelete(index)}
+                                className="text-red-400 hover:text-red-300"
+                              >
+                                🗑️
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => {
+                      setImportPreview(false);
+                      setImportedData([]);
+                    }}
+                    className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleBulkSubmit}
+                    disabled={loading || importedData.filter(item => item.errors.length === 0).length === 0}
+                    className="px-6 py-3 bg-crediyaGreen hover:bg-emerald-500 text-black rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? 'Creando...' : 'Crear Solicitud Masiva'}
+                  </button>
+                </div>
+
+                {/* Error Display */}
+                {importErrors.length > 0 && (
+                  <div className="bg-red-900/20 border border-red-600 rounded-lg p-4">
+                    <h4 className="text-red-400 font-semibold mb-2">Errores encontrados:</h4>
+                    <ul className="text-red-300 text-sm space-y-1">
+                      {importErrors.map((error, index) => (
+                        <li key={index}>• {error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {activeTab === "approvals" && (
           <div className="bg-gray-900 rounded-xl p-6 border border-gray-700">
             <h2 className="text-xl font-bold text-crediyaGreen mb-6">✅ Aprobaciones Pendientes</h2>
@@ -579,7 +984,6 @@ const InventoryRequest = () => {
           </div>
         )}
 
-        {/* Tracking Tab */}
         {activeTab === "tracking" && (
           <div className="bg-gray-900 rounded-xl p-6 border border-gray-700">
             <h2 className="text-xl font-bold text-crediyaGreen mb-6">📊 Seguimiento de Solicitudes</h2>
@@ -662,7 +1066,6 @@ const InventoryRequest = () => {
           </div>
         )}
 
-        {/* Reception Tab */}
         {activeTab === "reception" && (
           <div className="bg-gray-900 rounded-xl p-6 border border-gray-700">
             <h2 className="text-xl font-bold text-crediyaGreen mb-6">📦 Recepción de Inventario</h2>
