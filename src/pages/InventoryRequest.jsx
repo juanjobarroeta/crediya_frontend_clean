@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "../utils/constants";
 import Layout from "../components/Layout";
+import * as XLSX from 'xlsx';
 
 const InventoryRequest = () => {
   const [activeTab, setActiveTab] = useState("request");
@@ -205,41 +206,96 @@ const InventoryRequest = () => {
       setLoading(true);
       setImportErrors([]);
       
-      // Read file content
-      const text = await file.text();
-      const lines = text.split('\n');
-      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      let parsedData = [];
       
-      // Parse CSV data
-      const parsedData = lines.slice(1).filter(line => line.trim()).map((line, index) => {
-        const values = line.split(',').map(v => v.trim());
-        const item = {};
+      if (file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls')) {
+        // Handle Excel files
+        const arrayBuffer = await file.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
         
-        headers.forEach((header, i) => {
-          item[header] = values[i] || '';
+        // Convert to JSON with headers
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        
+        if (jsonData.length < 2) {
+          throw new Error('Excel file must have at least a header row and one data row');
+        }
+        
+        const headers = jsonData[0].map(h => h.toString().toLowerCase().trim());
+        const dataRows = jsonData.slice(1);
+        
+        parsedData = dataRows.map((row, index) => {
+          const item = {};
+          
+          headers.forEach((header, i) => {
+            item[header] = row[i] ? row[i].toString().trim() : '';
+          });
+          
+          // Add validation
+          const errors = [];
+          if (!item.category || !item.brand || !item.model) {
+            errors.push(`Row ${index + 2}: Missing required fields`);
+          }
+          if (!item.quantity || isNaN(item.quantity) || parseInt(item.quantity) <= 0) {
+            errors.push(`Row ${index + 2}: Invalid quantity`);
+          }
+          if (!item.purchase_price || isNaN(item.purchase_price)) {
+            errors.push(`Row ${index + 2}: Invalid purchase price`);
+          }
+          
+          return {
+            ...item,
+            id: index,
+            errors,
+            quantity: parseInt(item.quantity) || 0,
+            purchase_price: parseFloat(item.purchase_price) || 0,
+            sale_price: parseFloat(item.sale_price) || 0
+          };
         });
         
-        // Add validation
-        const errors = [];
-        if (!item.category || !item.brand || !item.model) {
-          errors.push(`Row ${index + 2}: Missing required fields`);
-        }
-        if (!item.quantity || isNaN(item.quantity) || parseInt(item.quantity) <= 0) {
-          errors.push(`Row ${index + 2}: Invalid quantity`);
-        }
-        if (!item.purchase_price || isNaN(item.purchase_price)) {
-          errors.push(`Row ${index + 2}: Invalid purchase price`);
-        }
+      } else if (file.name.toLowerCase().endsWith('.csv')) {
+        // Handle CSV files
+        const text = await file.text();
+        const lines = text.split('\n');
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
         
-        return {
-          ...item,
-          id: index,
-          errors,
-          quantity: parseInt(item.quantity) || 0,
-          purchase_price: parseFloat(item.purchase_price) || 0,
-          sale_price: parseFloat(item.sale_price) || 0
-        };
-      });
+        parsedData = lines.slice(1).filter(line => line.trim()).map((line, index) => {
+          const values = line.split(',').map(v => v.trim());
+          const item = {};
+          
+          headers.forEach((header, i) => {
+            item[header] = values[i] || '';
+          });
+          
+          // Add validation
+          const errors = [];
+          if (!item.category || !item.brand || !item.model) {
+            errors.push(`Row ${index + 2}: Missing required fields`);
+          }
+          if (!item.quantity || isNaN(item.quantity) || parseInt(item.quantity) <= 0) {
+            errors.push(`Row ${index + 2}: Invalid quantity`);
+          }
+          if (!item.purchase_price || isNaN(item.purchase_price)) {
+            errors.push(`Row ${index + 2}: Invalid purchase price`);
+          }
+          
+          return {
+            ...item,
+            id: index,
+            errors,
+            quantity: parseInt(item.quantity) || 0,
+            purchase_price: parseFloat(item.purchase_price) || 0,
+            sale_price: parseFloat(item.sale_price) || 0
+          };
+        });
+      } else {
+        throw new Error('Unsupported file format. Please upload .xlsx, .xls, or .csv files.');
+      }
+      
+      if (parsedData.length === 0) {
+        throw new Error('No data found in file. Please check the file format.');
+      }
       
       setImportedData(parsedData);
       setImportPreview(true);
@@ -254,7 +310,7 @@ const InventoryRequest = () => {
       
     } catch (error) {
       console.error('Error parsing file:', error);
-      setImportErrors(['Error parsing file. Please check the format.']);
+      setImportErrors([error.message || 'Error parsing file. Please check the format.']);
     } finally {
       setLoading(false);
     }
