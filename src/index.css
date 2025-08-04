@@ -170,7 +170,7 @@ a {
 }
 
 .card-hover {
-  @apply hover:bg-gray-750 hover:border-gray-600 transition-all duration-200;
+  @apply hover:bg-gray-700 hover:border-gray-600 transition-all duration-200;
 }
 
 /* Input Styles */
@@ -192,7 +192,7 @@ a {
 }
 
 .table tr:hover {
-  @apply bg-gray-750;
+  @apply bg-gray-700;
 }
 
 /* Status Indicators */
