@@ -812,36 +812,39 @@ const RegisterPayment = () => {
                                </tr>
                              </thead>
                              <tbody>
-                               {installments.map(inst => {
-                                 const dueDate = new Date(inst.due_date);
-                                 const today = new Date();
-                                 const msInDay = 1000 * 60 * 60 * 24;
-                                 const daysOverdue = Math.floor((today - dueDate) / msInDay);
-                                 
-                                 let bgClass = "";
-                                 if (inst.status === "pending") {
-                                   if (daysOverdue > 7) bgClass = "bg-red-800";
-                                   else if (daysOverdue > 0) bgClass = "bg-yellow-600";
-                                   else bgClass = "bg-gray-800";
-                                 } else if (inst.status === "paid") {
-                                   bgClass = "bg-green-800";
-                                 } else {
-                                   bgClass = "bg-gray-800";
-                                 }
+                                                                {installments.map(inst => {
+                                   // Defensive programming - ensure inst exists and has required properties
+                                   if (!inst) return null;
+                                   
+                                   const dueDate = new Date(inst.due_date || new Date());
+                                   const today = new Date();
+                                   const msInDay = 1000 * 60 * 60 * 24;
+                                   const daysOverdue = Math.floor((today - dueDate) / msInDay);
+                                   
+                                   let bgClass = "";
+                                   if (inst.status === "pending") {
+                                     if (daysOverdue > 7) bgClass = "bg-red-800";
+                                     else if (daysOverdue > 0) bgClass = "bg-yellow-600";
+                                     else bgClass = "bg-gray-800";
+                                   } else if (inst.status === "paid") {
+                                     bgClass = "bg-green-800";
+                                   } else {
+                                     bgClass = "bg-gray-800";
+                                   }
 
-                                 const totalDue = (
-                                   parseFloat(inst.capital_portion || 0) +
-                                   parseFloat(inst.interest_portion || 0) +
-                                   Number(inst.penalty_applied || 0)
-                                 );
+                                   const totalDue = (
+                                     parseFloat(inst.capital_portion || 0) +
+                                     parseFloat(inst.interest_portion || 0) +
+                                     parseFloat(inst.penalty_applied || 0)
+                                   );
 
-                                 const totalPaid = (
-                                   parseFloat(inst.capital_paid || 0) +
-                                   parseFloat(inst.interest_paid || 0) +
-                                   parseFloat(inst.penalty_paid || 0)
-                                 );
+                                   const totalPaid = (
+                                     parseFloat(inst.capital_paid || 0) +
+                                     parseFloat(inst.interest_paid || 0) +
+                                     parseFloat(inst.penalty_paid || 0)
+                                   );
 
-                                 const remaining = totalDue - totalPaid;
+                                   const remaining = totalDue - totalPaid;
 
                                  return (
                                    <tr key={inst.week_number} className={`${bgClass} border-b border-gray-700 hover:bg-gray-700 transition-colors`}>
@@ -851,14 +854,28 @@ const RegisterPayment = () => {
                                        ${parseFloat(inst.capital_portion || 0).toFixed(2)}
                                      </td>
                                      <td className="px-3 py-2 text-right text-white">
-                                       {inst.interest_paid > 0 && inst.interest_paid < inst.interest_portion
-                                         ? `$${inst.interest_paid.toFixed(2)} (de $${inst.interest_portion})`
-                                         : `$${inst.interest_portion.toFixed(2)}`}
+                                       {(() => {
+                                         const interestPortion = parseFloat(inst.interest_portion || 0);
+                                         const interestPaid = parseFloat(inst.interest_paid || 0);
+                                         
+                                         if (interestPaid > 0 && interestPaid < interestPortion) {
+                                           return `$${interestPaid.toFixed(2)} (de $${interestPortion.toFixed(2)})`;
+                                         } else {
+                                           return `$${interestPortion.toFixed(2)}`;
+                                         }
+                                       })()}
                                      </td>
                                      <td className="px-3 py-2 text-right text-white">
-                                       {inst.penalty_paid > 0 && inst.penalty_paid < inst.penalty_applied
-                                         ? `$${inst.penalty_paid.toFixed(2)} (de $${Number(inst.penalty_applied || 0).toFixed(2)})`
-                                         : `$${Number(inst.penalty_applied || 0).toFixed(2)}`}
+                                       {(() => {
+                                         const penaltyApplied = parseFloat(inst.penalty_applied || 0);
+                                         const penaltyPaid = parseFloat(inst.penalty_paid || 0);
+                                         
+                                         if (penaltyPaid > 0 && penaltyPaid < penaltyApplied) {
+                                           return `$${penaltyPaid.toFixed(2)} (de $${penaltyApplied.toFixed(2)})`;
+                                         } else {
+                                           return `$${penaltyApplied.toFixed(2)}`;
+                                         }
+                                       })()}
                                      </td>
                                      <td className="px-3 py-2 text-right font-bold text-white">
                                        ${totalDue.toFixed(2)}
