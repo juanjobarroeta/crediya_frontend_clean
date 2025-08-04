@@ -755,95 +755,296 @@ const RegisterPayment = () => {
                   )}
                 </div>
 
-                {/* Payment History & Charts */}
-                {paymentHistory.length > 0 && (
-                  <div className="bg-black border border-crediyaGreen rounded-lg p-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-xl font-semibold text-lime-400">
-                        📊 Historial de Pagos
-                      </h3>
-                      <button
-                        onClick={() => toggleSection('history')}
-                        className="text-gray-400 hover:text-lime-400"
-                      >
-                        {expandedSections.history ? "🔽" : "▶️"}
-                      </button>
-                    </div>
+                                 {/* Amortization Table */}
+                 {installments.length > 0 && (
+                   <div className="bg-black border border-crediyaGreen rounded-lg p-6">
+                     <div className="flex justify-between items-start mb-4">
+                       <h3 className="text-xl font-semibold text-lime-400">
+                         📆 Tabla de Amortización
+                       </h3>
+                       <button
+                         onClick={() => toggleSection('amortization')}
+                         className="text-gray-400 hover:text-lime-400"
+                       >
+                         {expandedSections.amortization ? "🔽" : "▶️"}
+                       </button>
+                     </div>
 
-                    {expandedSections.history && (
-                      <div className="space-y-6">
-                        {/* Payment Trends Chart */}
-                        {chartData && (
-                          <div className="bg-gray-800 rounded-lg p-4">
-                            <h4 className="text-lime-400 font-semibold mb-3">📈 Tendencias de Pagos</h4>
-                            <div className="h-64">
-                              <Line
-                                data={chartData.paymentTrends}
-                                options={{
-                                  responsive: true,
-                                  maintainAspectRatio: false,
-                                  plugins: {
-                                    legend: {
-                                      labels: { color: "white" },
-                                    },
-                                  },
-                                  scales: {
-                                    y: {
-                                      beginAtZero: true,
-                                      ticks: { color: "white" },
-                                      grid: { color: "rgba(255,255,255,0.1)" },
-                                    },
-                                    x: {
-                                      ticks: { color: "white" },
-                                      grid: { color: "rgba(255,255,255,0.1)" },
-                                    },
-                                  },
-                                }}
-                              />
-                            </div>
-                          </div>
-                        )}
+                     {expandedSections.amortization && (
+                       <div className="space-y-4">
+                         {/* Color Legend */}
+                         <div className="bg-gray-800 rounded-lg p-4">
+                           <h4 className="text-lime-400 font-semibold mb-3">🎨 Leyenda de Estados</h4>
+                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                             <div className="flex items-center gap-2">
+                               <div className="w-4 h-4 bg-green-800 rounded-sm"></div>
+                               <span className="text-white">Pagado</span>
+                             </div>
+                             <div className="flex items-center gap-2">
+                               <div className="w-4 h-4 bg-gray-800 rounded-sm"></div>
+                               <span className="text-white">Pendiente</span>
+                             </div>
+                             <div className="flex items-center gap-2">
+                               <div className="w-4 h-4 bg-yellow-600 rounded-sm"></div>
+                               <span className="text-white">1-7 días vencido</span>
+                             </div>
+                             <div className="flex items-center gap-2">
+                               <div className="w-4 h-4 bg-red-800 rounded-sm"></div>
+                               <span className="text-white">&gt;7 días vencido</span>
+                             </div>
+                           </div>
+                         </div>
 
-                        {/* Recent Payments Table */}
-                        <div className="bg-gray-800 rounded-lg p-4">
-                          <h4 className="text-lime-400 font-semibold mb-3">💳 Pagos Recientes</h4>
-                          <div className="overflow-x-auto">
-                            <table className="min-w-full text-sm">
-                              <thead>
-                                <tr className="border-b border-gray-600">
-                                  <th className="text-left py-2 text-gray-400">Fecha</th>
-                                  <th className="text-left py-2 text-gray-400">Monto</th>
-                                  <th className="text-left py-2 text-gray-400">Método</th>
-                                  <th className="text-left py-2 text-gray-400">Estado</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {paymentHistory.slice(-5).map((payment, index) => (
-                                  <tr key={index} className="border-b border-gray-700">
-                                    <td className="py-2 text-white">
-                                      {new Date(payment.payment_date).toLocaleDateString()}
-                                    </td>
-                                    <td className="py-2 text-white">
-                                      ${parseFloat(payment.amount).toLocaleString()}
-                                    </td>
-                                    <td className="py-2 text-white capitalize">
-                                      {payment.payment_method}
-                                    </td>
-                                    <td className="py-2">
-                                      <span className="px-2 py-1 rounded text-xs bg-green-600">
-                                        Completado
-                                      </span>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                         {/* Amortization Table */}
+                         <div className="bg-gray-800 rounded-lg p-4 overflow-x-auto">
+                           <table className="min-w-full text-xs">
+                             <thead>
+                               <tr className="border-b border-gray-600">
+                                 <th className="px-3 py-2 text-left text-lime-400">Semana</th>
+                                 <th className="px-3 py-2 text-left text-lime-400">Fecha</th>
+                                 <th className="px-3 py-2 text-right text-lime-400">Capital</th>
+                                 <th className="px-3 py-2 text-right text-lime-400">Interés</th>
+                                 <th className="px-3 py-2 text-right text-lime-400">Penalidad</th>
+                                 <th className="px-3 py-2 text-right text-lime-400">Total</th>
+                                 <th className="px-3 py-2 text-right text-lime-400">Pagado</th>
+                                 <th className="px-3 py-2 text-right text-lime-400">Saldo</th>
+                                 <th className="px-3 py-2 text-center text-lime-400">Estado</th>
+                               </tr>
+                             </thead>
+                             <tbody>
+                               {installments.map(inst => {
+                                 const dueDate = new Date(inst.due_date);
+                                 const today = new Date();
+                                 const msInDay = 1000 * 60 * 60 * 24;
+                                 const daysOverdue = Math.floor((today - dueDate) / msInDay);
+                                 
+                                 let bgClass = "";
+                                 if (inst.status === "pending") {
+                                   if (daysOverdue > 7) bgClass = "bg-red-800";
+                                   else if (daysOverdue > 0) bgClass = "bg-yellow-600";
+                                   else bgClass = "bg-gray-800";
+                                 } else if (inst.status === "paid") {
+                                   bgClass = "bg-green-800";
+                                 } else {
+                                   bgClass = "bg-gray-800";
+                                 }
+
+                                 const totalDue = (
+                                   parseFloat(inst.capital_portion || 0) +
+                                   parseFloat(inst.interest_portion || 0) +
+                                   Number(inst.penalty_applied || 0)
+                                 );
+
+                                 const totalPaid = (
+                                   parseFloat(inst.capital_paid || 0) +
+                                   parseFloat(inst.interest_paid || 0) +
+                                   parseFloat(inst.penalty_paid || 0)
+                                 );
+
+                                 const remaining = totalDue - totalPaid;
+
+                                 return (
+                                   <tr key={inst.week_number} className={`${bgClass} border-b border-gray-700 hover:bg-gray-700 transition-colors`}>
+                                     <td className="px-3 py-2 font-bold text-white">{inst.week_number}</td>
+                                     <td className="px-3 py-2 text-white">{dueDate.toLocaleDateString()}</td>
+                                     <td className="px-3 py-2 text-right text-white">
+                                       ${parseFloat(inst.capital_portion || 0).toFixed(2)}
+                                     </td>
+                                     <td className="px-3 py-2 text-right text-white">
+                                       {inst.interest_paid > 0 && inst.interest_paid < inst.interest_portion
+                                         ? `$${inst.interest_paid.toFixed(2)} (de $${inst.interest_portion})`
+                                         : `$${inst.interest_portion.toFixed(2)}`}
+                                     </td>
+                                     <td className="px-3 py-2 text-right text-white">
+                                       {inst.penalty_paid > 0 && inst.penalty_paid < inst.penalty_applied
+                                         ? `$${inst.penalty_paid.toFixed(2)} (de $${Number(inst.penalty_applied || 0).toFixed(2)})`
+                                         : `$${Number(inst.penalty_applied || 0).toFixed(2)}`}
+                                     </td>
+                                     <td className="px-3 py-2 text-right font-bold text-white">
+                                       ${totalDue.toFixed(2)}
+                                     </td>
+                                     <td className="px-3 py-2 text-right text-white">
+                                       ${totalPaid.toFixed(2)}
+                                     </td>
+                                     <td className="px-3 py-2 text-right text-white">
+                                       ${remaining.toFixed(2)}
+                                     </td>
+                                     <td className="px-3 py-2 text-center">
+                                       <span className={`px-2 py-1 rounded text-xs ${
+                                         inst.status === 'paid' ? 'bg-green-600' :
+                                         inst.status === 'pending' ? 'bg-yellow-600' :
+                                         'bg-gray-600'
+                                       }`}>
+                                         {inst.status === 'paid' ? 'Pagado' :
+                                          inst.status === 'pending' ? 'Pendiente' :
+                                          inst.status}
+                                       </span>
+                                     </td>
+                                   </tr>
+                                 );
+                               })}
+                             </tbody>
+                           </table>
+                         </div>
+                       </div>
+                     )}
+                   </div>
+                 )}
+
+                 {/* Payment History & Charts */}
+                 {paymentHistory.length > 0 && (
+                   <div className="bg-black border border-crediyaGreen rounded-lg p-6">
+                     <div className="flex justify-between items-start mb-4">
+                       <h3 className="text-xl font-semibold text-lime-400">
+                         📊 Historial de Pagos
+                       </h3>
+                       <button
+                         onClick={() => toggleSection('history')}
+                         className="text-gray-400 hover:text-lime-400"
+                       >
+                         {expandedSections.history ? "🔽" : "▶️"}
+                       </button>
+                     </div>
+
+                     {expandedSections.history && (
+                       <div className="space-y-6">
+                         {/* Payment Trends Chart */}
+                         {chartData && (
+                           <div className="bg-gray-800 rounded-lg p-4">
+                             <h4 className="text-lime-400 font-semibold mb-3">📈 Tendencias de Pagos</h4>
+                             <div className="h-64">
+                               <Line
+                                 data={chartData.paymentTrends}
+                                 options={{
+                                   responsive: true,
+                                   maintainAspectRatio: false,
+                                   plugins: {
+                                     legend: {
+                                       labels: { color: "white" },
+                                     },
+                                   },
+                                   scales: {
+                                     y: {
+                                       beginAtZero: true,
+                                       ticks: { color: "white" },
+                                       grid: { color: "rgba(255,255,255,0.1)" },
+                                     },
+                                     x: {
+                                       ticks: { color: "white" },
+                                       grid: { color: "rgba(255,255,255,0.1)" },
+                                     },
+                                   },
+                                 }}
+                               />
+                             </div>
+                           </div>
+                         )}
+
+                         {/* Recent Payments Table */}
+                         <div className="bg-gray-800 rounded-lg p-4">
+                           <h4 className="text-lime-400 font-semibold mb-3">💳 Pagos Recientes</h4>
+                           <div className="overflow-x-auto">
+                             <table className="min-w-full text-sm">
+                               <thead>
+                                 <tr className="border-b border-gray-600">
+                                   <th className="text-left py-2 text-gray-400">Fecha</th>
+                                   <th className="text-left py-2 text-gray-400">Monto</th>
+                                   <th className="text-left py-2 text-gray-400">Método</th>
+                                   <th className="text-left py-2 text-gray-400">Estado</th>
+                                 </tr>
+                               </thead>
+                               <tbody>
+                                 {paymentHistory.slice(-5).map((payment, index) => (
+                                   <tr key={index} className="border-b border-gray-700">
+                                     <td className="py-2 text-white">
+                                       {new Date(payment.payment_date).toLocaleDateString()}
+                                     </td>
+                                     <td className="py-2 text-white">
+                                       ${parseFloat(payment.amount).toLocaleString()}
+                                     </td>
+                                     <td className="py-2 text-white capitalize">
+                                       {payment.payment_method}
+                                     </td>
+                                     <td className="py-2">
+                                       <span className="px-2 py-1 rounded text-xs bg-green-600">
+                                         Completado
+                                       </span>
+                                     </td>
+                                   </tr>
+                                 ))}
+                               </tbody>
+                             </table>
+                           </div>
+                         </div>
+                       </div>
+                     )}
+                   </div>
+                 )}
+
+                 {/* Payment Breakdown Log */}
+                 {paymentBreakdowns.length > 0 && (
+                   <div className="bg-black border border-crediyaGreen rounded-lg p-6">
+                     <div className="flex justify-between items-start mb-4">
+                       <h3 className="text-xl font-semibold text-lime-400">
+                         📋 Desglose Detallado de Pagos
+                       </h3>
+                       <button
+                         onClick={() => toggleSection('breakdown')}
+                         className="text-gray-400 hover:text-lime-400"
+                       >
+                         {expandedSections.breakdown ? "🔽" : "▶️"}
+                       </button>
+                     </div>
+
+                     {expandedSections.breakdown && (
+                       <div className="bg-gray-800 rounded-lg p-4 overflow-x-auto">
+                         <table className="min-w-full text-sm">
+                           <thead>
+                             <tr className="border-b border-gray-600">
+                               <th className="px-3 py-2 text-left text-lime-400">Fecha</th>
+                               <th className="px-3 py-2 text-left text-lime-400">Tipo</th>
+                               <th className="px-3 py-2 text-left text-lime-400">Semana</th>
+                               <th className="px-3 py-2 text-right text-lime-400">Monto</th>
+                             </tr>
+                           </thead>
+                           <tbody>
+                             {paymentBreakdowns.map((payment, idx) => (
+                               <React.Fragment key={idx}>
+                                 {/* Main payment row */}
+                                 <tr className="border-t border-lime-400 bg-gray-700">
+                                   <td className="px-3 py-2 text-white font-medium">
+                                     {new Date(payment.payment_date).toLocaleDateString()}
+                                   </td>
+                                   <td className="px-3 py-2 text-white font-bold">Pago Total</td>
+                                   <td className="px-3 py-2 text-white">Semana {payment.installment_week}</td>
+                                   <td className="px-3 py-2 text-right text-white font-bold">
+                                     ${parseFloat(payment.total_amount || 0).toFixed(2)}
+                                   </td>
+                                 </tr>
+                                 {/* Component breakdown rows */}
+                                 {payment.components?.map((component, compIdx) => (
+                                   <tr key={`${idx}-${compIdx}`} className="border-t border-gray-600 bg-gray-900">
+                                     <td className="px-3 py-2"></td>
+                                     <td className="px-3 py-2 text-sm text-gray-400">
+                                       └─ {component.type === 'capital' ? 'Capital' :
+                                           component.type === 'interest' ? 'Interés' :
+                                           component.type === 'penalty' ? 'Penalidad' :
+                                           component.type}
+                                     </td>
+                                     <td className="px-3 py-2"></td>
+                                     <td className="px-3 py-2 text-right text-sm text-white">
+                                       ${parseFloat(component.amount || 0).toFixed(2)}
+                                     </td>
+                                   </tr>
+                                 ))}
+                               </React.Fragment>
+                             ))}
+                           </tbody>
+                         </table>
+                       </div>
+                     )}
+                   </div>
+                 )}
 
                 {/* Receipt Options */}
                 {showReceiptOptions && receiptData && (
