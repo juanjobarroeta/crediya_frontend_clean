@@ -42,6 +42,7 @@ import ProductProfile from "./pages/ProductProfile";
 import CreateUser from "./pages/CreateUser";
 import StoreDashboard from "./pages/StoreDashboard";
 import BudgetManagement from "./pages/BudgetManagement";
+import AccountingHub from "./pages/AccountingHub";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -147,6 +148,7 @@ const AppRouter = () => (
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/dashboard/store-dashboard" element={<AdminRoute><StoreDashboard /></AdminRoute>} />
       <Route path="/admin/reclassify-payment" element={<AdminRoute><ReclassifyPayment /></AdminRoute>} />
+      <Route path="/accounting-hub" element={<AdminRoute><AccountingHub /></AdminRoute>} />
       <Route
         path="/admin/collections"
         element={

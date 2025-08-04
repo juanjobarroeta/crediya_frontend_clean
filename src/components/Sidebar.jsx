@@ -32,6 +32,7 @@ const sectionList = [
     label: "Contabilidad",
     color: "from-purple-500 to-violet-600",
     links: [
+      { href: "/accounting-hub", label: "🏦 Centro de Contabilidad", icon: "🏦" },
       { href: "/income-statement", label: "Estado de Resultados", icon: "📈" },
       { href: "/balance-sheet", label: "Balance General", icon: "⚖️" },
       { href: "/admin/profit", label: "Ganancias", icon: "💎" },
