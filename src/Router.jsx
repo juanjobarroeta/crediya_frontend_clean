@@ -41,6 +41,7 @@ import CollectionsDashboard from "./pages/CollectionsDashboard";
 import ProductProfile from "./pages/ProductProfile";
 import CreateUser from "./pages/CreateUser";
 import StoreDashboard from "./pages/StoreDashboard";
+import BudgetManagement from "./pages/BudgetManagement";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -96,6 +97,7 @@ const AppRouter = () => (
       <Route path="/registro" element={<PublicRegister />} />
       <Route path="/admin/promotions" element={<AdminRoute><AdminPromotions /></AdminRoute>} />
       <Route path="/admin/expenses" element={<AdminRoute><AdminExpenses /></AdminRoute>} />
+      <Route path="/admin/budgets" element={<AdminRoute><BudgetManagement /></AdminRoute>} />
       <Route path="/admin/profit" element={<AdminRoute><ProfitSummary /></AdminRoute>} />
       <Route path="/admin/balance-sheet" element={<AdminRoute><BalanceSheet /></AdminRoute>} />
       <Route path="/admin/inventory-request" element={<AdminRoute><InventoryRequest /></AdminRoute>} />

@@ -22,6 +22,7 @@ const sectionList = [
     color: "from-blue-500 to-cyan-600",
     links: [
       { href: "/admin/expenses", label: "Gastos", icon: "💸" },
+      { href: "/admin/budgets", label: "Presupuestos", icon: "💰" },
       { href: "/admin/inventory-request", label: "Solicitar Inventario", icon: "📦" },
     ],
   },
