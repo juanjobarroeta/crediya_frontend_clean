@@ -105,43 +105,44 @@ const Header = () => {
 
   return (
     <header className="w-full bg-gradient-to-r from-gray-900 to-black text-white px-6 py-4 rounded-tl-3xl rounded-tr-3xl shadow-lg border-b border-gray-800">
-      {/* Top Row - Breadcrumbs and Search */}
-      <div className="flex items-center justify-between mb-4">
-        {/* Breadcrumbs */}
-        <nav className="flex items-center space-x-2 text-sm flex-1 min-w-0">
-          <Link to="/dashboard" className="text-gray-400 hover:text-crediyaGreen transition-colors whitespace-nowrap">
-            Dashboard
-          </Link>
-          {getBreadcrumbs().map((breadcrumb, index) => (
-            <div key={breadcrumb.path} className="flex items-center space-x-2">
-              <span className="text-gray-600">/</span>
-              {breadcrumb.isLast ? (
-                <span className="text-crediyaGreen font-semibold truncate">{breadcrumb.label}</span>
-              ) : (
-                <Link 
-                  to={breadcrumb.path} 
-                  className="text-gray-400 hover:text-crediyaGreen transition-colors truncate"
-                >
-                  {breadcrumb.label}
-                </Link>
-              )}
-            </div>
-          ))}
-        </nav>
+      <div className="flex items-center justify-between">
+        {/* Left Section - Breadcrumbs & Search */}
+        <div className="flex items-center gap-6">
+          {/* Breadcrumbs */}
+          <nav className="flex items-center space-x-2 text-sm">
+            <Link to="/dashboard" className="text-gray-400 hover:text-crediyaGreen transition-colors">
+              Dashboard
+            </Link>
+            {getBreadcrumbs().map((breadcrumb, index) => (
+              <div key={breadcrumb.path} className="flex items-center space-x-2">
+                <span className="text-gray-600">/</span>
+                {breadcrumb.isLast ? (
+                  <span className="text-crediyaGreen font-semibold">{breadcrumb.label}</span>
+                ) : (
+                  <Link 
+                    to={breadcrumb.path} 
+                    className="text-gray-400 hover:text-crediyaGreen transition-colors"
+                  >
+                    {breadcrumb.label}
+                  </Link>
+                )}
+              </div>
+            ))}
+          </nav>
 
-        {/* Global Search */}
-        <div className="relative ml-4">
-          <button
-            onClick={() => setShowSearch(!showSearch)}
-            className="flex items-center gap-2 px-3 py-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors duration-200 whitespace-nowrap"
-          >
-            <span>🔍</span>
-            <span className="text-sm text-gray-300 hidden sm:inline">Buscar</span>
-            <span className="text-xs text-gray-500">⌘K</span>
-          </button>
+          {/* Global Search */}
+          <div className="relative">
+            <button
+              onClick={() => setShowSearch(!showSearch)}
+              className="flex items-center gap-2 px-3 py-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors duration-200"
+            >
+              <span>🔍</span>
+              <span className="text-sm text-gray-300">Buscar</span>
+              <span className="text-xs text-gray-500">⌘K</span>
+            </button>
             
             {showSearch && (
-              <div className="absolute top-full left-0 mt-2 w-96 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-50">
+              <div className="absolute top-full left-0 mt-2 w-96 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-[9999]">
                 <div className="p-4">
                   <input
                     ref={searchRef}
@@ -174,32 +175,29 @@ const Header = () => {
           </div>
         </div>
 
-      {/* Bottom Row - Actions and User */}
-      <div className="flex items-center justify-between">
-        {/* Quick Actions */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <Link
-            to="/create-loan"
-            className="bg-gradient-to-r from-crediyaGreen to-emerald-500 hover:from-emerald-500 hover:to-crediyaGreen text-black font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 text-sm"
-          >
-            💳 Nuevo Préstamo
-          </Link>
-          <Link
-            to="/register-payment"
-            className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 text-sm"
-          >
-            💰 Registrar Pago
-          </Link>
-          <Link
-            to="/loan-quotes"
-            className="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-violet-500 hover:to-purple-500 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 text-sm"
-          >
-            📊 Cotizar
-          </Link>
-        </div>
-
-        {/* Right Section - Notifications & User */}
+        {/* Right Section - Actions & User */}
         <div className="flex items-center gap-4">
+          {/* Quick Actions */}
+          <div className="flex items-center gap-2">
+            <Link
+              to="/create-loan"
+              className="bg-gradient-to-r from-crediyaGreen to-emerald-500 hover:from-emerald-500 hover:to-crediyaGreen text-black font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+            >
+              💳 Nuevo Préstamo
+            </Link>
+            <Link
+              to="/register-payment"
+              className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+            >
+              💰 Registrar Pago
+            </Link>
+            <Link
+              to="/loan-quotes"
+              className="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-violet-500 hover:to-purple-500 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+            >
+              📊 Cotizar
+            </Link>
+          </div>
 
           {/* Notifications */}
           <div className="relative dropdown">
@@ -267,7 +265,7 @@ const Header = () => {
               <div className="w-8 h-8 bg-gradient-to-r from-crediyaGreen to-emerald-500 rounded-full flex items-center justify-center text-black font-semibold">
                 J
               </div>
-              <div className="text-left hidden sm:block">
+              <div className="text-left">
                 <div className="text-sm font-semibold">Juan José</div>
                 <div className="text-xs text-gray-400">Administrador</div>
               </div>
