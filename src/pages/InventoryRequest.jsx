@@ -440,30 +440,48 @@ const InventoryRequest = () => {
         {/* Navigation Tabs */}
         <div className="flex space-x-1 mb-8 bg-gray-800 p-1 rounded-lg">
           {[
-            { id: "request", label: "📝 Solicitar", icon: "📝" },
-            { id: "import", label: "📤 Importar", icon: "📤" },
-            { id: "approvals", label: "✅ Aprobaciones", icon: "✅" },
-            { id: "tracking", label: "📊 Seguimiento", icon: "📊" },
-            { id: "reception", label: "📦 Recepción", icon: "📦" },
+            { id: "request", label: "📝 Solicitud Individual", icon: "📝", description: "Crear una solicitud manual" },
+            { id: "import", label: "📤 Importación Masiva", icon: "📤", description: "Subir Excel/CSV con múltiples artículos" },
+            { id: "approvals", label: "✅ Aprobaciones", icon: "✅", description: "Revisar solicitudes pendientes" },
+            { id: "tracking", label: "📊 Seguimiento", icon: "📊", description: "Ver estado de solicitudes" },
+            { id: "reception", label: "📦 Recepción", icon: "📦", description: "Recibir inventario aprobado" },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 py-3 px-4 rounded-md font-semibold transition-all duration-200 ${
+              className={`flex-1 py-3 px-4 rounded-md font-semibold transition-all duration-200 relative group ${
                 activeTab === tab.id
                   ? "bg-crediyaGreen text-black shadow-lg"
                   : "text-gray-400 hover:text-white hover:bg-gray-700"
               }`}
+              title={tab.description}
             >
               <span className="mr-2">{tab.icon}</span>
               {tab.label}
+              {activeTab === tab.id && (
+                <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10">
+                  {tab.description}
+                </div>
+              )}
             </button>
           ))}
         </div>
 
         {/* Tab Content */}
         {activeTab === "request" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="space-y-6">
+            {/* Help Section */}
+            <div className="bg-blue-900/20 border border-blue-600 rounded-lg p-4">
+              <h3 className="text-blue-400 font-semibold mb-2">💡 ¿Cuándo usar Solicitud Individual?</h3>
+              <ul className="text-blue-300 text-sm space-y-1">
+                <li>• Para solicitar 1-3 artículos específicos</li>
+                <li>• Cuando necesitas adjuntar cotizaciones o documentos</li>
+                <li>• Para solicitudes urgentes o de alta prioridad</li>
+                <li>• Cuando necesitas agregar notas detalladas</li>
+              </ul>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Request Form */}
             <div className="lg:col-span-2">
               <div className="bg-gray-900 rounded-xl p-6 border border-gray-700">
@@ -693,6 +711,17 @@ const InventoryRequest = () => {
 
         {activeTab === "import" && (
           <div className="space-y-6">
+            {/* Help Section */}
+            <div className="bg-purple-900/20 border border-purple-600 rounded-lg p-4">
+              <h3 className="text-purple-400 font-semibold mb-2">💡 ¿Cuándo usar Importación Masiva?</h3>
+              <ul className="text-purple-300 text-sm space-y-1">
+                <li>• Para solicitar 4+ artículos de una vez</li>
+                <li>• Cuando tienes datos en Excel/CSV de proveedores</li>
+                <li>• Para inventarios completos o grandes pedidos</li>
+                <li>• Cuando necesitas procesar múltiples productos rápidamente</li>
+              </ul>
+            </div>
+            
             {/* Import Header */}
             <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white">
               <h2 className="text-2xl font-bold mb-2">📤 Importar Inventario</h2>
