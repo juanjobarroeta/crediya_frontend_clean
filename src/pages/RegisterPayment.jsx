@@ -264,71 +264,329 @@ const RegisterPayment = () => {
       tempDiv.style.left = '-9999px';
       tempDiv.style.top = '-9999px';
       tempDiv.style.backgroundColor = '#ffffff';
-      tempDiv.style.color = '#000000';
-      tempDiv.style.padding = '32px';
-      tempDiv.style.maxWidth = '400px';
+      tempDiv.style.color = '#1a1a1a';
+      tempDiv.style.padding = '40px';
+      tempDiv.style.maxWidth = '500px';
       tempDiv.style.margin = '0 auto';
-      tempDiv.style.fontFamily = 'Arial, sans-serif';
+      tempDiv.style.fontFamily = 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif';
       tempDiv.style.fontSize = '14px';
-      tempDiv.style.lineHeight = '1.4';
+      tempDiv.style.lineHeight = '1.6';
+      tempDiv.style.boxShadow = '0 4px 20px rgba(0,0,0,0.1)';
+      tempDiv.style.borderRadius = '12px';
       
-      // Create the receipt HTML content
+      // Create the receipt HTML content with enhanced styling
       tempDiv.innerHTML = `
-        <!-- Header -->
-        <div style="text-align: center; border-bottom: 2px solid #ccc; padding-bottom: 16px; margin-bottom: 16px;">
-          <h1 style="font-size: 24px; font-weight: bold; color: #333; margin: 0 0 8px 0;">CrediYa</h1>
-          <p style="color: #666; margin: 0 0 4px 0;">Recibo de Pago</p>
-          <p style="font-size: 12px; color: #999; margin: 0 0 4px 0;">Fecha: ${receiptData.payment_date}</p>
-          <p style="font-size: 12px; color: #999; margin: 0 0 4px 0;">Hora: ${receiptData.payment_time}</p>
-          <p style="font-size: 12px; color: #999; margin: 0;">Recibo #: ${receiptData.receipt_number}</p>
+        <!-- Header with gradient background -->
+        <div style="
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          color: white;
+          padding: 24px;
+          border-radius: 12px 12px 0 0;
+          margin: -40px -40px 24px -40px;
+          text-align: center;
+          position: relative;
+          overflow: hidden;
+        ">
+          <!-- Decorative elements -->
+          <div style="
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            width: 80px;
+            height: 80px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+          "></div>
+          <div style="
+            position: absolute;
+            bottom: -30px;
+            left: -30px;
+            width: 60px;
+            height: 60px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 50%;
+          "></div>
+          
+          <h1 style="
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0 0 8px 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          ">CrediYa</h1>
+          <p style="
+            font-size: 16px;
+            margin: 0 0 12px 0;
+            opacity: 0.95;
+            font-weight: 500;
+          ">Recibo de Pago</p>
+          <div style="
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 16px;
+          ">
+            <span>Fecha: ${receiptData.payment_date}</span>
+            <span>Hora: ${receiptData.payment_time}</span>
+          </div>
+          <p style="
+            font-size: 11px;
+            margin: 8px 0 0 0;
+            opacity: 0.8;
+            font-family: 'Courier New', monospace;
+          ">Recibo #: ${receiptData.receipt_number}</p>
         </div>
 
-        <!-- Customer Info -->
-        <div style="margin-bottom: 16px;">
-          <h2 style="font-size: 18px; font-weight: 600; margin: 0 0 8px 0;">Información del Cliente</h2>
-          <p style="margin: 4px 0;"><strong>Nombre:</strong> ${receiptData.customer_name}</p>
-          <p style="margin: 4px 0;"><strong>Teléfono:</strong> ${receiptData.customer_phone}</p>
-          <p style="margin: 4px 0;"><strong>Dirección:</strong> ${receiptData.customer_address}</p>
-        </div>
-
-        <!-- Loan Info -->
-        <div style="margin-bottom: 16px;">
-          <h2 style="font-size: 18px; font-weight: 600; margin: 0 0 8px 0;">Información del Préstamo</h2>
-          <p style="margin: 4px 0;"><strong>Préstamo #:</strong> ${receiptData.loan_id}</p>
-          <p style="margin: 4px 0;"><strong>Semana:</strong> ${receiptData.installment_week}</p>
-        </div>
-
-        <!-- Payment Details -->
-        <div style="margin-bottom: 16px;">
-          <h2 style="font-size: 18px; font-weight: 600; margin: 0 0 8px 0;">Detalles del Pago</h2>
-          <p style="margin: 4px 0;"><strong>Método de Pago:</strong> ${receiptData.payment_method}</p>
-          <p style="margin: 4px 0;"><strong>Monto Total:</strong> $${parseFloat(receiptData.total_amount).toFixed(2)}</p>
-        </div>
-
-        ${receiptData.payment_breakdown && receiptData.payment_breakdown.length > 0 ? `
-        <!-- Payment Breakdown -->
-        <div style="margin-bottom: 16px;">
-          <h2 style="font-size: 18px; font-weight: 600; margin: 0 0 8px 0;">Desglose del Pago</h2>
-          <div style="border: 1px solid #ccc; border-radius: 4px; padding: 8px;">
-            ${receiptData.payment_breakdown.map(component => `
-              <div style="display: flex; justify-content: space-between; padding: 4px 0;">
-                <span style="text-transform: capitalize;">
-                  ${component.type === 'capital' ? 'Capital' :
-                    component.type === 'interest' ? 'Interés' :
-                    component.type === 'penalty' ? 'Penalidad' : component.type}:
-                </span>
-                <span>$${parseFloat(component.amount || 0).toFixed(2)}</span>
+        <!-- Content sections with cards -->
+        <div style="display: grid; gap: 20px;">
+          <!-- Customer Info Card -->
+          <div style="
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            position: relative;
+          ">
+            <div style="
+              position: absolute;
+              top: -8px;
+              left: 16px;
+              background: #10b981;
+              color: white;
+              padding: 4px 12px;
+              border-radius: 12px;
+              font-size: 11px;
+              font-weight: 600;
+            ">👤 Cliente</div>
+            <h2 style="
+              font-size: 16px;
+              font-weight: 600;
+              margin: 8px 0 12px 0;
+              color: #1e293b;
+            ">Información del Cliente</h2>
+            <div style="display: grid; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 500; color: #64748b;">Nombre:</span>
+                <span style="font-weight: 600; color: #1e293b;">${receiptData.customer_name}</span>
               </div>
-            `).join('')}
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 500; color: #64748b;">Teléfono:</span>
+                <span style="font-weight: 600; color: #1e293b;">${receiptData.customer_phone}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 500; color: #64748b;">Dirección:</span>
+                <span style="font-weight: 600; color: #1e293b;">${receiptData.customer_address}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Loan Info Card -->
+          <div style="
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            position: relative;
+          ">
+            <div style="
+              position: absolute;
+              top: -8px;
+              left: 16px;
+              background: #3b82f6;
+              color: white;
+              padding: 4px 12px;
+              border-radius: 12px;
+              font-size: 11px;
+              font-weight: 600;
+            ">📋 Préstamo</div>
+            <h2 style="
+              font-size: 16px;
+              font-weight: 600;
+              margin: 8px 0 12px 0;
+              color: #1e293b;
+            ">Información del Préstamo</h2>
+            <div style="display: grid; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 500; color: #64748b;">Préstamo #:</span>
+                <span style="font-weight: 600; color: #1e293b;">${receiptData.loan_id}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 500; color: #64748b;">Semana:</span>
+                <span style="font-weight: 600; color: #1e293b;">${receiptData.installment_week}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Payment Details Card -->
+          <div style="
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            position: relative;
+          ">
+            <div style="
+              position: absolute;
+              top: -8px;
+              left: 16px;
+              background: #f59e0b;
+              color: white;
+              padding: 4px 12px;
+              border-radius: 12px;
+              font-size: 11px;
+              font-weight: 600;
+            ">💰 Pago</div>
+            <h2 style="
+              font-size: 16px;
+              font-weight: 600;
+              margin: 8px 0 12px 0;
+              color: #1e293b;
+            ">Detalles del Pago</h2>
+            <div style="display: grid; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 500; color: #64748b;">Método:</span>
+                <span style="font-weight: 600; color: #1e293b; text-transform: capitalize;">${receiptData.payment_method}</span>
+              </div>
+              <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                background: #10b981;
+                color: white;
+                padding: 8px 12px;
+                border-radius: 6px;
+                margin-top: 8px;
+              ">
+                <span style="font-weight: 600;">Monto Total:</span>
+                <span style="font-weight: 700; font-size: 16px;">$${parseFloat(receiptData.total_amount).toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+
+          ${receiptData.payment_breakdown && receiptData.payment_breakdown.length > 0 ? `
+          <!-- Payment Breakdown Card -->
+          <div style="
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            position: relative;
+          ">
+            <div style="
+              position: absolute;
+              top: -8px;
+              left: 16px;
+              background: #8b5cf6;
+              color: white;
+              padding: 4px 12px;
+              border-radius: 12px;
+              font-size: 11px;
+              font-weight: 600;
+            ">📊 Desglose</div>
+            <h2 style="
+              font-size: 16px;
+              font-weight: 600;
+              margin: 8px 0 12px 0;
+              color: #1e293b;
+            ">Desglose del Pago</h2>
+            <div style="
+              background: white;
+              border: 1px solid #e2e8f0;
+              border-radius: 6px;
+              overflow: hidden;
+            ">
+              ${receiptData.payment_breakdown.map((component, index) => `
+                <div style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  padding: 12px 16px;
+                  ${index !== receiptData.payment_breakdown.length - 1 ? 'border-bottom: 1px solid #f1f5f9;' : ''}
+                  background: ${index % 2 === 0 ? '#fafafa' : 'white'};
+                ">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="
+                      font-size: 16px;
+                      ${component.type === 'capital' ? 'color: #10b981;' :
+                        component.type === 'interest' ? 'color: #f59e0b;' :
+                        'color: #ef4444;'}
+                    ">
+                      ${component.type === 'capital' ? '💰' :
+                        component.type === 'interest' ? '📈' :
+                        '⚠️'}
+                    </span>
+                    <span style="
+                      font-weight: 500;
+                      color: #374151;
+                      text-transform: capitalize;
+                    ">
+                      ${component.type === 'capital' ? 'Capital' :
+                        component.type === 'interest' ? 'Interés' :
+                        component.type === 'penalty' ? 'Penalidad' : component.type}
+                    </span>
+                  </div>
+                  <span style="
+                    font-weight: 600;
+                    color: #1e293b;
+                    font-size: 15px;
+                  ">$${parseFloat(component.amount || 0).toFixed(2)}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          ` : ''}
+
+          <!-- Remaining Balance Card -->
+          <div style="
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 1px solid #fbbf24;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+          ">
+            <h3 style="
+              font-size: 14px;
+              font-weight: 600;
+              color: #92400e;
+              margin: 0 0 8px 0;
+            ">Saldo Restante</h3>
+            <p style="
+              font-size: 20px;
+              font-weight: 700;
+              color: #92400e;
+              margin: 0;
+            ">$${parseFloat(receiptData.remaining_balance).toFixed(2)}</p>
           </div>
         </div>
-        ` : ''}
 
         <!-- Footer -->
-        <div style="text-align: center; border-top: 2px solid #ccc; padding-top: 16px; margin-top: 16px;">
-          <p style="font-size: 14px; color: #666; margin: 0 0 8px 0;">Gracias por su pago</p>
-          <p style="font-size: 14px; color: #666; margin: 0 0 8px 0;">Saldo Restante: $${parseFloat(receiptData.remaining_balance).toFixed(2)}</p>
-          <p style="font-size: 10px; color: #999; margin: 8px 0 0 0;">Este es un recibo oficial de CrediYa</p>
+        <div style="
+          text-align: center;
+          margin-top: 24px;
+          padding-top: 20px;
+          border-top: 2px solid #e2e8f0;
+        ">
+          <p style="
+            font-size: 16px;
+            color: #10b981;
+            margin: 0 0 8px 0;
+            font-weight: 600;
+          ">✅ Gracias por su pago</p>
+          <p style="
+            font-size: 12px;
+            color: #64748b;
+            margin: 0 0 12px 0;
+          ">Este es un recibo oficial de CrediYa</p>
+          <div style="
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            font-size: 10px;
+            color: #94a3b8;
+          ">
+            <span>📧 info@crediya.com</span>
+            <span>📞 +52 55 1234 5678</span>
+          </div>
         </div>
       `;
 
