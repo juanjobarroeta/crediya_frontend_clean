@@ -1197,19 +1197,7 @@ const RegisterPayment = () => {
                                    </tr>
                                  )}
                                  
-                                 {/* Debug info - remove this later */}
-                                 {!payment.components || payment.components.length === 0 && (
-                                   <tr className="border-t border-gray-600 bg-gray-900">
-                                     <td className="px-3 py-2"></td>
-                                     <td className="px-3 py-2 text-sm text-gray-400">
-                                       └─ ⚠️ Sin desglose disponible
-                                     </td>
-                                     <td className="px-3 py-2"></td>
-                                     <td className="px-3 py-2 text-right text-sm text-white">
-                                       ${parseFloat(payment.total_amount || payment.amount || 0).toFixed(2)}
-                                     </td>
-                                   </tr>
-                                 )}
+
                                </React.Fragment>
                              ))}
                            </tbody>
