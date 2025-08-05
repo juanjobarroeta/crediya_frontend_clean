@@ -146,17 +146,18 @@ const Dashboard = () => {
 
   const fetchCashflow = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/dashboard/cashflow-summary?period=${cashflowPeriod}`, {
+      const res = await axios.get(`${API_BASE_URL}/dashboard/cashflow?period=${cashflowPeriod}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setMetrics(prev => ({
         ...prev,
-        totalCollectedToday: res.data.totalCollected,
-        totalDisbursedToday: res.data.totalDisbursed,
-        netCashFlowToday: res.data.netCashFlow
+        totalCollected: res.data.total_collected,
+        totalDisbursed: res.data.total_disbursed,
+        netCashFlow: res.data.net_cashflow,
+        cashflowPeriod: res.data.period
       }));
     } catch (err) {
-      console.error("Error fetching filtered cashflow:", err);
+      console.error("Error fetching cashflow:", err);
     }
   };
 
@@ -398,21 +399,21 @@ const Dashboard = () => {
                 {[
                   {
                     label: "Total Cobrado",
-                    value: `$${(metrics.totalCollectedToday || 0).toLocaleString()}`,
+                    value: `$${(metrics.totalCollected || 0).toLocaleString()}`,
                     icon: "📈",
                     color: "text-green-400",
                   },
                   {
                     label: "Total Prestado",
-                    value: `$${(metrics.totalDisbursedToday || 0).toLocaleString()}`,
+                    value: `$${(metrics.totalDisbursed || 0).toLocaleString()}`,
                     icon: "📉",
                     color: "text-blue-400",
                   },
                   {
                     label: "Flujo Neto",
-                    value: `$${Math.abs(metrics.netCashFlowToday || 0).toLocaleString()}`,
-                    icon: metrics.netCashFlowToday >= 0 ? "✅" : "❌",
-                    color: metrics.netCashFlowToday >= 0 ? "text-green-400" : "text-red-400",
+                    value: `$${Math.abs(metrics.netCashFlow || 0).toLocaleString()}`,
+                    icon: metrics.netCashFlow >= 0 ? "✅" : "❌",
+                    color: metrics.netCashFlow >= 0 ? "text-green-400" : "text-red-400",
                   },
                 ].map((item) => (
                   <div key={item.label} className="text-center">

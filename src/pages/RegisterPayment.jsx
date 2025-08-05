@@ -116,6 +116,7 @@ const RegisterPayment = () => {
       setPaymentHistory(paymentsWithAmounts);
       
       const breakdownsData = breakdownsRes.data?.payment_breakdown || [];
+      console.log("🔍 Payment breakdowns data:", breakdownsData);
       setPaymentBreakdowns(Array.isArray(breakdownsData) ? breakdownsData : []);
       
       setMovements(
@@ -1430,49 +1431,40 @@ const RegisterPayment = () => {
                            <tbody>
                              {paymentBreakdowns.map((payment, idx) => (
                                <React.Fragment key={idx}>
-                                 {/* Main payment row */}
-                                 <tr className="border-t border-lime-400 bg-gray-700">
-                                   <td className="px-3 py-2 text-white font-medium">
-                                     {new Date(payment.payment_date).toLocaleDateString()}
-                                   </td>
-                                   <td className="px-3 py-2 text-white font-bold">Pago Total</td>
-                                   <td className="px-3 py-2 text-white">Semana {payment.installment_week}</td>
-                                   <td className="px-3 py-2 text-right text-white font-bold">
-                                     ${parseFloat(payment.total_amount || 0).toFixed(2)}
-                                   </td>
-                                 </tr>
-                                 {/* Component breakdown rows */}
+                                 {/* Component breakdown rows - show each component as main row */}
                                  {payment.components?.map((component, compIdx) => (
-                                   <tr key={`${idx}-${compIdx}`} className="border-t border-gray-600 bg-gray-900">
-                                     <td className="px-3 py-2"></td>
-                                     <td className="px-3 py-2 text-sm text-gray-400">
-                                       └─ {component.type === 'capital' ? '💰 Capital' :
-                                           component.type === 'interest' ? '📈 Interés' :
-                                           component.type === 'penalty' ? '⚠️ Penalidad' :
-                                           component.type}
+                                   <tr key={`${idx}-${compIdx}`} className="border-t border-gray-600 bg-gray-700">
+                                     <td className="px-3 py-2 text-white font-medium">
+                                       {new Date(payment.payment_date).toLocaleDateString()}
                                      </td>
-                                     <td className="px-3 py-2"></td>
-                                     <td className="px-3 py-2 text-right text-sm text-white">
+                                     <td className="px-3 py-2 text-white font-bold">
+                                       {component.type === 'capital' ? '💰 Capital' :
+                                        component.type === 'interest' ? '📈 Interés' :
+                                        component.type === 'penalty' ? '⚠️ Penalidad' :
+                                        component.type}
+                                     </td>
+                                     <td className="px-3 py-2 text-white">Semana {payment.installment_week}</td>
+                                     <td className="px-3 py-2 text-right text-white font-bold">
                                        ${parseFloat(component.amount || 0).toFixed(2)}
                                      </td>
                                    </tr>
                                  ))}
                                  
-                                 {/* Summary row */}
-                                 {payment.components && payment.components.length > 0 && (
+                                 {/* Show "Pago Total" as summary row */}
+                                 {payment.components && payment.components.length > 1 && (
                                    <tr className="border-t-2 border-lime-400 bg-gray-800">
-                                     <td className="px-3 py-2"></td>
-                                     <td className="px-3 py-2 text-sm font-bold text-lime-400">
-                                       📊 Resumen
+                                     <td className="px-3 py-2 text-white font-medium">
+                                       {new Date(payment.payment_date).toLocaleDateString()}
                                      </td>
-                                     <td className="px-3 py-2"></td>
-                                     <td className="px-3 py-2 text-right text-sm font-bold text-lime-400">
-                                       Capital: ${payment.components.find(c => c.type === 'capital')?.amount || 0} | 
-                                       Interés: ${payment.components.find(c => c.type === 'interest')?.amount || 0} | 
-                                       Penalidad: ${payment.components.find(c => c.type === 'penalty')?.amount || 0}
+                                     <td className="px-3 py-2 text-white font-bold">📊 Pago Total</td>
+                                     <td className="px-3 py-2 text-white">Semana {payment.installment_week}</td>
+                                     <td className="px-3 py-2 text-right text-white font-bold">
+                                       ${parseFloat(payment.total_amount || 0).toFixed(2)}
                                      </td>
                                    </tr>
                                  )}
+                                 
+
                                  
 
                                </React.Fragment>

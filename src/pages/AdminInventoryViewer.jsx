@@ -1,190 +1,732 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
-import Layout from "../components/Layout";
 import { API_BASE_URL } from "../utils/constants";
+import Layout from "../components/Layout";
+import { Line, Bar, Doughnut } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from "chart.js";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 const AdminInventoryViewer = () => {
-  const [items, setItems] = useState([]);
-  const [filtered, setFiltered] = useState([]);
-  const [store, setStore] = useState("all");
-  const [status, setStatus] = useState("all");
-  const [selectedItems, setSelectedItems] = useState([]);
-  const [targetStore, setTargetStore] = useState("");
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [selectedStore, setSelectedStore] = useState("all");
+  const [viewMode, setViewMode] = useState("table"); // table, grid, analytics
+  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferTarget, setTransferTarget] = useState("");
+  const [newProduct, setNewProduct] = useState({
+    category: "",
+    brand: "",
+    model: "",
+    color: "",
+    imei: "",
+    serial: "",
+    purchase_price: "",
+    sale_price: "",
+    status: "in_stock",
+    store: "atlixco",
+    ram: "",
+    storage: ""
+  });
 
-  useEffect(() => {
-    const fetchItems = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/inventory-items`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-        setItems(res.data || []);
-        setFiltered(res.data || []);
-      } catch (err) {
-        console.error("Error fetching inventory items:", err);
-      }
-    };
-    fetchItems();
-  }, []);
+  const token = localStorage.getItem("token");
 
-  useEffect(() => {
-    let filtered = [...items];
-    if (store !== "all") filtered = filtered.filter(item => item.store === store);
-    if (status !== "all") filtered = filtered.filter(item => item.status === status);
-    setFiltered(filtered);
-  }, [store, status, items]);
-
-  const toggleItemSelection = (id) => {
-    setSelectedItems(prev =>
-      prev.includes(id) ? prev.filter(itemId => itemId !== id) : [...prev, id]
-    );
-  };
-
-  const handleTransfer = async () => {
-    if (!targetStore || selectedItems.length === 0) return;
+  const fetchProducts = async () => {
     try {
-      await axios.patch(
-        `${API_BASE_URL}/inventory-items/transfer`,
-        {
-          item_ids: selectedItems,
-          new_store: targetStore,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-      window.location.reload();
+      setLoading(true);
+      const res = await axios.get(`${API_BASE_URL}/inventory-items`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setProducts(res.data || []);
     } catch (err) {
-      console.error("Error transferring items:", err);
+      console.error("Error fetching products:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  // Filtered products based on search and filters
+  const filteredProducts = useMemo(() => {
+    return products.filter(product => {
+      const matchesSearch = 
+        product.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.model?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.color?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
+      const matchesStatus = selectedStatus === "all" || product.status === selectedStatus;
+      const matchesStore = selectedStore === "all" || product.store === selectedStore;
+      
+      return matchesSearch && matchesCategory && matchesStatus && matchesStore;
+    });
+  }, [products, searchTerm, selectedCategory, selectedStatus, selectedStore]);
+
+  // Analytics data
+  const analyticsData = useMemo(() => {
+    const categories = {};
+    const brands = {};
+    const statuses = {};
+    const stores = {};
+    let totalValue = 0;
+    let totalCost = 0;
+
+    products.forEach(product => {
+      // Categories
+      categories[product.category] = (categories[product.category] || 0) + 1;
+      
+      // Brands
+      brands[product.brand] = (brands[product.brand] || 0) + 1;
+      
+      // Statuses
+      statuses[product.status] = (statuses[product.status] || 0) + 1;
+      
+      // Stores
+      stores[product.store] = (stores[product.store] || 0) + 1;
+      
+      // Values
+      totalValue += parseFloat(product.sale_price || 0);
+      totalCost += parseFloat(product.purchase_price || 0);
+    });
+
+    return {
+      categories,
+      brands,
+      statuses,
+      stores,
+      totalValue,
+      totalCost,
+      totalItems: products.length,
+      profit: totalValue - totalCost
+    };
+  }, [products]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (Object.values(newProduct).some((val) => val === "")) {
+      alert("Todos los campos son requeridos.");
+      return;
+    }
+    
+    try {
+      await axios.post(`${API_BASE_URL}/inventory-items`, newProduct, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNewProduct({
+        category: "",
+        brand: "",
+        model: "",
+        color: "",
+        imei: "",
+        serial: "",
+        purchase_price: "",
+        sale_price: "",
+        status: "in_stock",
+        store: "atlixco",
+        ram: "",
+        storage: ""
+      });
+      setShowAddModal(false);
+      fetchProducts();
+    } catch (err) {
+      console.error("Error adding product:", err);
+      alert("Error al agregar producto.");
+    }
+  };
+
+  const handleTransfer = async () => {
+    if (!transferTarget || selectedProducts.length === 0) {
+      alert("Seleccione productos y destino para transferir.");
+      return;
+    }
+    
+    try {
+      await axios.post(`${API_BASE_URL}/inventory-items/transfer`, {
+        product_ids: selectedProducts,
+        target_store: transferTarget
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setSelectedProducts([]);
+      setTransferTarget("");
+      setShowTransferModal(false);
+      fetchProducts();
+      alert("Productos transferidos exitosamente.");
+    } catch (err) {
+      console.error("Error transferring products:", err);
+      alert("Error al transferir productos.");
+    }
+  };
+
+  const handleSelectProduct = (productId) => {
+    setSelectedProducts(prev => 
+      prev.includes(productId) 
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedProducts.length === filteredProducts.length) {
+      setSelectedProducts([]);
+    } else {
+      setSelectedProducts(filteredProducts.map(p => p.id));
+    }
+  };
+
+  // Chart data
+  const chartData = useMemo(() => ({
+    categoryDistribution: {
+      labels: Object.keys(analyticsData.categories),
+      datasets: [{
+        data: Object.values(analyticsData.categories),
+        backgroundColor: [
+          "rgba(34, 197, 94, 0.8)",
+          "rgba(59, 130, 246, 0.8)",
+          "rgba(168, 85, 247, 0.8)",
+          "rgba(239, 68, 68, 0.8)",
+          "rgba(245, 158, 11, 0.8)"
+        ],
+        borderWidth: 2,
+        borderColor: "#1f2937"
+      }]
+    },
+    statusDistribution: {
+      labels: Object.keys(analyticsData.statuses),
+      datasets: [{
+        data: Object.values(analyticsData.statuses),
+        backgroundColor: [
+          "rgba(34, 197, 94, 0.8)",
+          "rgba(245, 158, 11, 0.8)",
+          "rgba(239, 68, 68, 0.8)"
+        ],
+        borderWidth: 2,
+        borderColor: "#1f2937"
+      }]
+    },
+    storeDistribution: {
+      labels: Object.keys(analyticsData.stores),
+      datasets: [{
+        label: "Productos por Sucursal",
+        data: Object.values(analyticsData.stores),
+        backgroundColor: "rgba(59, 130, 246, 0.8)",
+        borderColor: "rgba(59, 130, 246, 1)",
+        borderWidth: 2
+      }]
+    }
+  }), [analyticsData]);
+
+  const uniqueCategories = [...new Set(products.map(p => p.category))];
+  const uniqueStores = [...new Set(products.map(p => p.store))];
+
   return (
     <Layout>
-    <div className="px-6 py-6 max-w-6xl mx-auto">
-      <h2 className="text-xl font-semibold mb-6 text-white">Inventario General</h2>
+      <div className="min-h-screen bg-gray-900 text-white">
+        {/* Header */}
+        <div className="bg-black border-b border-gray-700 px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-lime-400">📦 Inventario General</h1>
+              <p className="text-gray-400">Gestión avanzada de inventario y análisis</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="bg-lime-500 hover:bg-lime-600 text-black px-4 py-2 rounded-lg font-medium transition-colors"
+              >
+                ➕ Agregar Producto
+              </button>
+              <button
+                onClick={() => setViewMode(viewMode === "table" ? "grid" : "table")}
+                className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition-colors"
+              >
+                {viewMode === "table" ? "📊 Vista Cuadrícula" : "📋 Vista Tabla"}
+              </button>
+            </div>
+          </div>
+        </div>
 
-      <div className="row mb-3">
-        <div className="col-md-4">
-          <label className="form-label text-white">Sucursal</label>
-          <select className="form-select bg-gray-900 text-white border border-gray-600" value={store} onChange={(e) => setStore(e.target.value)}>
-            <option value="all">Todas</option>
-            <option value="atlixco">Atlixco</option>
-            <option value="cholula">Cholula</option>
-            <option value="chipilo">Chipilo</option>
-          </select>
-        </div>
-        <div className="col-md-4">
-          <label className="form-label text-white">Estatus</label>
-          <select className="form-select bg-gray-900 text-white border border-gray-600" value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="all">Todos</option>
-            <option value="in_stock">Disponible</option>
-            <option value="reserved">Reservado</option>
-            <option value="sold">Vendido</option>
-            <option value="repossessed">Reposeído</option>
-            <option value="assigned">Asignado</option>
-            <option value="pending_admin_approval">Por aprobar admin</option>
-            <option value="approved_by_admin">Aprobado por admin</option>
-            <option value="paid_by_treasury">Pagado por tesorería</option>
-            <option value="pending_reception">Pendiente de recepción</option>
-            <option value="delivered">Entregado</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="row mb-3">
-        <div className="col-md-4">
-          <label className="form-label text-white">Transferir seleccionados a:</label>
-          <select
-            className="form-select bg-gray-900 text-white border border-gray-600"
-            value={targetStore}
-            onChange={(e) => setTargetStore(e.target.value)}
-          >
-            <option value="">Selecciona sucursal</option>
-            <option value="atlixco">Atlixco</option>
-            <option value="cholula">Cholula</option>
-            <option value="chipilo">Chipilo</option>
-          </select>
-        </div>
-        <div className="col-md-2 d-flex align-items-end">
-          <button
-            className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold px-4 py-2 rounded disabled:opacity-50"
-            onClick={handleTransfer}
-            disabled={!targetStore || selectedItems.length === 0}
-          >
-            Transferir
-          </button>
-        </div>
-      </div>
-
-      <div className="bg-black border-t-4 border-lime-500 rounded-md overflow-x-auto">
-        <table className="min-w-full text-sm text-white">
-          <thead className="bg-lime-500 text-black">
-            <tr>
-              <th>✓</th>
-              <th>Categoría</th>
-              <th>Marca</th>
-              <th>Modelo</th>
-              <th>Color</th>
-              <th>IMEI</th>
-              <th>RAM</th>
-              <th>Almacenamiento</th>
-              <th>Status</th>
-              <th>Sucursal</th>
-              <th>Detalles</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((item) => (
-              <tr
-                key={item.id}
-                className={`border-t border-gray-700 hover:bg-gray-800 ${
-                  item.status === 'in_stock' ? 'bg-green-900/30' :
-                  item.status === 'reserved' ? 'bg-yellow-900/30' :
-                  item.status === 'sold' ? 'bg-red-900/30' :
-                  item.status === 'repossessed' ? 'bg-purple-900/30' :
-                  item.status === 'assigned' ? 'bg-blue-900/30' :
-                  item.status === 'pending_admin_approval' ? 'bg-orange-900/30' :
-                  item.status === 'approved_by_admin' ? 'bg-orange-800/30' :
-                  item.status === 'paid_by_treasury' ? 'bg-orange-700/30' :
-                  item.status === 'pending_reception' ? 'bg-gray-800/30' :
-                  item.status === 'delivered' ? 'bg-red-800/30' :
-                  ''
+        {/* Navigation Tabs */}
+        <div className="px-6 py-4 border-b border-gray-700">
+          <div className="flex space-x-1">
+            {[
+              { id: "overview", label: "📊 Resumen", icon: "📊" },
+              { id: "inventory", label: "📦 Inventario", icon: "📦" },
+              { id: "analytics", label: "📈 Análisis", icon: "📈" },
+              { id: "transfers", label: "🔄 Transferencias", icon: "🔄" }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  activeTab === tab.id
+                    ? "bg-lime-500 text-black"
+                    : "bg-gray-700 hover:bg-gray-600 text-gray-300"
                 }`}
               >
-                <td>
-                  <input
-                    type="checkbox"
-                    checked={selectedItems.includes(item.id)}
-                    onChange={() => toggleItemSelection(item.id)}
-                  />
-                </td>
-                <td>{item.category}</td>
-                <td>{item.brand}</td>
-                <td>{item.model}</td>
-                <td>{item.color}</td>
-                <td>{item.imei || "—"}</td>
-                <td>{item.ram}</td>
-                <td>{item.storage}</td>
-                <td>{item.status}</td>
-                <td>{item.store}</td>
-                <td>
-                  <a
-                    href={`/inventory/${item.id}`}
-                    className="text-lime-400 underline hover:text-lime-300"
-                  >
-                    Ver detalles
-                  </a>
-                </td>
-              </tr>
+                {tab.icon} {tab.label}
+              </button>
             ))}
-          </tbody>
-        </table>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="px-6 py-4 bg-gray-800 border-b border-gray-700">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <input
+              type="text"
+              placeholder="🔍 Buscar productos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400"
+            />
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+            >
+              <option value="all">📂 Todas las categorías</option>
+              {uniqueCategories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+            >
+              <option value="all">📊 Todos los estados</option>
+              <option value="in_stock">✅ En stock</option>
+              <option value="assigned">📋 Asignado</option>
+              <option value="sold">💰 Vendido</option>
+            </select>
+            <select
+              value={selectedStore}
+              onChange={(e) => setSelectedStore(e.target.value)}
+              className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+            >
+              <option value="all">🏪 Todas las sucursales</option>
+              {uniqueStores.map(store => (
+                <option key={store} value={store}>{store}</option>
+              ))}
+            </select>
+            <button
+              onClick={() => setShowTransferModal(true)}
+              disabled={selectedProducts.length === 0}
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed px-4 py-2 rounded-lg font-medium transition-colors"
+            >
+              🔄 Transferir ({selectedProducts.length})
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="px-6 py-6">
+          {activeTab === "overview" && (
+            <div className="space-y-6">
+              {/* Quick Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {[
+                  {
+                    label: "Total Productos",
+                    value: analyticsData.totalItems,
+                    icon: "📦",
+                    color: "text-blue-400"
+                  },
+                  {
+                    label: "Valor Total",
+                    value: `$${analyticsData.totalValue.toLocaleString()}`,
+                    icon: "💰",
+                    color: "text-green-400"
+                  },
+                  {
+                    label: "Costo Total",
+                    value: `$${analyticsData.totalCost.toLocaleString()}`,
+                    icon: "💸",
+                    color: "text-red-400"
+                  },
+                  {
+                    label: "Margen de Ganancia",
+                    value: `$${analyticsData.profit.toLocaleString()}`,
+                    icon: "📈",
+                    color: "text-lime-400"
+                  }
+                ].map((stat, idx) => (
+                  <div key={idx} className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-gray-400 text-sm">{stat.label}</p>
+                        <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                      </div>
+                      <div className="text-3xl">{stat.icon}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Charts */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold mb-4">📊 Distribución por Categoría</h3>
+                  <Doughnut
+                    data={chartData.categoryDistribution}
+                    options={{
+                      responsive: true,
+                      plugins: {
+                        legend: {
+                          position: "bottom",
+                          labels: { color: "white" }
+                        }
+                      }
+                    }}
+                  />
+                </div>
+                <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold mb-4">📈 Distribución por Estado</h3>
+                  <Doughnut
+                    data={chartData.statusDistribution}
+                    options={{
+                      responsive: true,
+                      plugins: {
+                        legend: {
+                          position: "bottom",
+                          labels: { color: "white" }
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "inventory" && (
+            <div className="space-y-6">
+              {viewMode === "table" ? (
+                <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full">
+                      <thead className="bg-gray-700">
+                        <tr>
+                          <th className="px-4 py-3 text-left">
+                            <input
+                              type="checkbox"
+                              checked={selectedProducts.length === filteredProducts.length && filteredProducts.length > 0}
+                              onChange={handleSelectAll}
+                              className="rounded border-gray-600"
+                            />
+                          </th>
+                          <th className="px-4 py-3 text-left text-lime-400">Categoría</th>
+                          <th className="px-4 py-3 text-left text-lime-400">Marca</th>
+                          <th className="px-4 py-3 text-left text-lime-400">Modelo</th>
+                          <th className="px-4 py-3 text-left text-lime-400">Color</th>
+                          <th className="px-4 py-3 text-left text-lime-400">IMEI</th>
+                          <th className="px-4 py-3 text-left text-lime-400">RAM</th>
+                          <th className="px-4 py-3 text-left text-lime-400">Almacenamiento</th>
+                          <th className="px-4 py-3 text-left text-lime-400">Estado</th>
+                          <th className="px-4 py-3 text-left text-lime-400">Sucursal</th>
+                          <th className="px-4 py-3 text-left text-lime-400">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredProducts.map((product, idx) => (
+                          <tr key={product.id || idx} className="border-t border-gray-700 hover:bg-gray-700 transition-colors">
+                            <td className="px-4 py-3">
+                              <input
+                                type="checkbox"
+                                checked={selectedProducts.includes(product.id)}
+                                onChange={() => handleSelectProduct(product.id)}
+                                className="rounded border-gray-600"
+                              />
+                            </td>
+                            <td className="px-4 py-3">{product.category}</td>
+                            <td className="px-4 py-3 font-medium">{product.brand}</td>
+                            <td className="px-4 py-3">{product.model}</td>
+                            <td className="px-4 py-3">{product.color}</td>
+                            <td className="px-4 py-3 font-mono text-sm">{product.imei || "-"}</td>
+                            <td className="px-4 py-3">{product.ram || "-"}</td>
+                            <td className="px-4 py-3">{product.storage || "-"}</td>
+                            <td className="px-4 py-3">
+                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                product.status === 'in_stock' ? 'bg-green-600 text-white' :
+                                product.status === 'assigned' ? 'bg-yellow-500 text-black' :
+                                'bg-red-500 text-white'
+                              }`}>
+                                {product.status === 'in_stock' ? '✅ En Stock' :
+                                 product.status === 'assigned' ? '📋 Asignado' :
+                                 '💰 Vendido'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">{product.store}</td>
+                            <td className="px-4 py-3">
+                              <button className="text-blue-400 hover:text-blue-300 text-sm">
+                                Ver detalles
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {filteredProducts.map((product, idx) => (
+                    <div key={product.id || idx} className="bg-gray-800 border border-gray-700 rounded-lg p-4 hover:border-lime-500 transition-colors">
+                      <div className="flex items-center justify-between mb-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedProducts.includes(product.id)}
+                          onChange={() => handleSelectProduct(product.id)}
+                          className="rounded border-gray-600"
+                        />
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                          product.status === 'in_stock' ? 'bg-green-600 text-white' :
+                          product.status === 'assigned' ? 'bg-yellow-500 text-black' :
+                          'bg-red-500 text-white'
+                        }`}>
+                          {product.status === 'in_stock' ? '✅' :
+                           product.status === 'assigned' ? '📋' : '💰'}
+                        </span>
+                      </div>
+                      <h3 className="font-semibold text-lg mb-2">{product.brand} {product.model}</h3>
+                      <div className="space-y-1 text-sm text-gray-300">
+                        <p><span className="text-gray-400">Categoría:</span> {product.category}</p>
+                        <p><span className="text-gray-400">Color:</span> {product.color}</p>
+                        <p><span className="text-gray-400">RAM:</span> {product.ram || "-"}</p>
+                        <p><span className="text-gray-400">Almacenamiento:</span> {product.storage || "-"}</p>
+                        <p><span className="text-gray-400">Sucursal:</span> {product.store}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === "analytics" && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold mb-4">🏪 Productos por Sucursal</h3>
+                  <Bar
+                    data={chartData.storeDistribution}
+                    options={{
+                      responsive: true,
+                      plugins: {
+                        legend: {
+                          labels: { color: "white" }
+                        }
+                      },
+                      scales: {
+                        y: {
+                          ticks: { color: "white" },
+                          grid: { color: "rgba(255,255,255,0.1)" }
+                        },
+                        x: {
+                          ticks: { color: "white" },
+                          grid: { color: "rgba(255,255,255,0.1)" }
+                        }
+                      }
+                    }}
+                  />
+                </div>
+                <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold mb-4">📊 Estadísticas Detalladas</h3>
+                  <div className="space-y-4">
+                    {Object.entries(analyticsData.brands).map(([brand, count]) => (
+                      <div key={brand} className="flex justify-between items-center">
+                        <span className="text-gray-300">{brand}</span>
+                        <span className="text-lime-400 font-semibold">{count} productos</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "transfers" && (
+            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+              <h3 className="text-lg font-semibold mb-4">🔄 Historial de Transferencias</h3>
+              <p className="text-gray-400">Funcionalidad de transferencias entre sucursales próximamente...</p>
+            </div>
+          )}
+        </div>
+
+        {/* Add Product Modal */}
+        {showAddModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-2xl">
+              <h2 className="text-xl font-semibold mb-4">➕ Agregar Nuevo Producto</h2>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <input
+                    name="category"
+                    placeholder="Categoría"
+                    value={newProduct.category}
+                    onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
+                    className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+                  />
+                  <input
+                    name="brand"
+                    placeholder="Marca"
+                    value={newProduct.brand}
+                    onChange={(e) => setNewProduct({...newProduct, brand: e.target.value})}
+                    className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+                  />
+                  <input
+                    name="model"
+                    placeholder="Modelo"
+                    value={newProduct.model}
+                    onChange={(e) => setNewProduct({...newProduct, model: e.target.value})}
+                    className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+                  />
+                  <input
+                    name="color"
+                    placeholder="Color"
+                    value={newProduct.color}
+                    onChange={(e) => setNewProduct({...newProduct, color: e.target.value})}
+                    className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+                  />
+                  <input
+                    name="imei"
+                    placeholder="IMEI"
+                    value={newProduct.imei}
+                    onChange={(e) => setNewProduct({...newProduct, imei: e.target.value})}
+                    className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+                  />
+                  <input
+                    name="serial"
+                    placeholder="Número de Serie"
+                    value={newProduct.serial}
+                    onChange={(e) => setNewProduct({...newProduct, serial: e.target.value})}
+                    className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+                  />
+                  <input
+                    name="purchase_price"
+                    placeholder="Costo"
+                    type="number"
+                    value={newProduct.purchase_price}
+                    onChange={(e) => setNewProduct({...newProduct, purchase_price: e.target.value})}
+                    className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+                  />
+                  <input
+                    name="sale_price"
+                    placeholder="Precio de Venta"
+                    type="number"
+                    value={newProduct.sale_price}
+                    onChange={(e) => setNewProduct({...newProduct, sale_price: e.target.value})}
+                    className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+                  />
+                  <input
+                    name="ram"
+                    placeholder="RAM"
+                    value={newProduct.ram}
+                    onChange={(e) => setNewProduct({...newProduct, ram: e.target.value})}
+                    className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+                  />
+                  <input
+                    name="storage"
+                    placeholder="Almacenamiento"
+                    value={newProduct.storage}
+                    onChange={(e) => setNewProduct({...newProduct, storage: e.target.value})}
+                    className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    className="bg-lime-500 hover:bg-lime-600 text-black px-4 py-2 rounded-lg font-medium"
+                  >
+                    ✅ Agregar Producto
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded-lg font-medium"
+                  >
+                    ❌ Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Transfer Modal */}
+        {showTransferModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-md">
+              <h2 className="text-xl font-semibold mb-4">🔄 Transferir Productos</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Sucursal Destino:</label>
+                  <select
+                    value={transferTarget}
+                    onChange={(e) => setTransferTarget(e.target.value)}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+                  >
+                    <option value="">Selecciona sucursal</option>
+                    {uniqueStores.map(store => (
+                      <option key={store} value={store}>{store}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleTransfer}
+                    disabled={!transferTarget}
+                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed px-4 py-2 rounded-lg font-medium"
+                  >
+                    ✅ Transferir
+                  </button>
+                  <button
+                    onClick={() => setShowTransferModal(false)}
+                    className="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded-lg font-medium"
+                  >
+                    ❌ Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
     </Layout>
   );
 };

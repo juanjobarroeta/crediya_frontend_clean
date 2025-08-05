@@ -117,13 +117,71 @@ const LoansDashboard = () => {
   // Calculate loan statistics
   const loanStats = useMemo(() => {
     const total = loans.length;
-    const active = loans.filter(l => l.status === 'active').length;
-    const overdue = loans.filter(l => l.status === 'overdue').length;
-    const completed = loans.filter(l => l.status === 'completed').length;
+    
+    // Get delivered/approved loans (potential active loans)
+    const deliveredOrApprovedLoans = loans.filter(loan => 
+      loan.status === 'delivered' || loan.status === 'approved'
+    );
+    
+    console.log('🔍 Debug: All loans:', loans);
+    console.log('🔍 Debug: Delivered/Approved loans:', deliveredOrApprovedLoans);
+    
+    // Calculate total amounts
     const totalAmount = loans.reduce((sum, loan) => sum + parseFloat(loan.amount || 0), 0);
-    const overdueAmount = loans
-      .filter(l => l.status === 'overdue')
+    
+    // Simplified logic: Check each loan individually
+    const overdueLoans = [];
+    const activeLoans = [];
+    
+    deliveredOrApprovedLoans.forEach(loan => {
+      const remainingBalance = parseFloat(loan.remaining_balance || 0);
+      const totalPaid = parseFloat(loan.amount || 0) - remainingBalance;
+      
+      console.log(`🔍 Debug: Loan #${loan.id} - ${loan.customer_name}:`);
+      console.log(`  Amount: ${loan.amount}, Remaining: ${remainingBalance}, Paid: ${totalPaid}`);
+      console.log(`  Created: ${loan.created_at}`);
+      
+      // Simple rule: If no payments made and has remaining balance, it's overdue
+      if (remainingBalance > 0 && totalPaid <= 0) {
+        console.log(`  → OVERDUE (no payments made)`);
+        overdueLoans.push(loan);
+      } else if (remainingBalance > 0 && totalPaid > 0) {
+        // Check if behind schedule
+        const loanDate = new Date(loan.created_at);
+        const now = new Date();
+        const weeksElapsed = Math.floor((now - loanDate) / (7 * 24 * 60 * 60 * 1000));
+        const expectedPayments = weeksElapsed * (parseFloat(loan.amount || 0) / 52);
+        
+        console.log(`  → Weeks elapsed: ${weeksElapsed}, Expected: ${expectedPayments.toFixed(2)}, Actual: ${totalPaid.toFixed(2)}`);
+        
+        // Alternative logic: If loan has significant remaining balance and low progress, consider it overdue
+        const progressPercentage = (totalPaid / parseFloat(loan.amount || 1)) * 100;
+        const isLowProgress = progressPercentage < 20; // Less than 20% progress
+        const isSignificantBalance = remainingBalance > parseFloat(loan.amount || 0) * 0.5; // More than 50% remaining
+        
+        if (expectedPayments > totalPaid || (isLowProgress && isSignificantBalance)) {
+          console.log(`  → OVERDUE (behind schedule or low progress)`);
+          overdueLoans.push(loan);
+        } else {
+          console.log(`  → ACTIVE (on schedule)`);
+          activeLoans.push(loan);
+        }
+      } else {
+        console.log(`  → ACTIVE (paid off or no remaining balance)`);
+        activeLoans.push(loan);
+      }
+    });
+    
+    const active = activeLoans.length;
+    const overdue = overdueLoans.length;
+    const completed = loans.filter(l => l.status === 'completed').length;
+    
+    // Calculate overdue amount for Tasa de Morosidad
+    const totalOverdueAmount = overdueLoans
       .reduce((sum, loan) => sum + parseFloat(loan.remaining_balance || 0), 0);
+
+    console.log('🔍 Debug: Final counts - Active:', active, 'Overdue:', overdue);
+    console.log('🔍 Debug: Total overdue amount:', totalOverdueAmount, 'Total amount:', totalAmount);
 
     return {
       total,
@@ -131,8 +189,9 @@ const LoansDashboard = () => {
       overdue,
       completed,
       totalAmount,
-      overdueAmount,
-      collectionRate: total > 0 ? ((total - overdue) / total * 100).toFixed(1) : 0
+      overdueAmount: totalOverdueAmount,
+      // Tasa de Morosidad = (Total overdue money / Total money lent) * 100
+      collectionRate: totalAmount > 0 ? ((totalOverdueAmount / totalAmount) * 100).toFixed(1) : 0
     };
   }, [loans]);
 
@@ -276,7 +335,7 @@ const LoansDashboard = () => {
           <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-lg p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-purple-200 text-sm">Tasa de Cobro</p>
+                <p className="text-purple-200 text-sm">Tasa de Morosidad</p>
                 <p className="text-white text-2xl font-bold">{loanStats.collectionRate}%</p>
               </div>
               <div className="text-purple-200 text-3xl">📈</div>
@@ -337,22 +396,22 @@ const LoansDashboard = () => {
             </div>
 
             {/* Date Range */}
-            <div>
+            <div className="min-w-0">
               <label className="block text-lime-400 text-sm font-medium mb-2">
                 📅 Rango de Fechas
               </label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 min-w-0">
                 <input
                   type="date"
                   value={dateRange.start}
                   onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                  className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white focus:border-lime-400 focus:outline-none"
+                  className="flex-1 min-w-0 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white focus:border-lime-400 focus:outline-none text-sm"
                 />
                 <input
                   type="date"
                   value={dateRange.end}
                   onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                  className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white focus:border-lime-400 focus:outline-none"
+                  className="flex-1 min-w-0 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white focus:border-lime-400 focus:outline-none text-sm"
                 />
               </div>
             </div>
@@ -442,7 +501,7 @@ const LoansDashboard = () => {
                     💰 Pagar
                   </Link>
                   <Link
-                    to={`/loan-details/${loan.id}`}
+                    to={`/loans/${loan.id}/details`}
                     className="flex-1 bg-gray-600 hover:bg-gray-700 text-white text-center py-2 px-3 rounded text-sm transition-colors"
                   >
                     📋 Detalles
@@ -544,7 +603,7 @@ const LoansDashboard = () => {
                             Pagar
                           </Link>
                           <Link
-                            to={`/loan-details/${loan.id}`}
+                            to={`/loans/${loan.id}/details`}
                             className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-xs transition-colors"
                           >
                             Ver

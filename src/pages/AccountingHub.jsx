@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
+import { Link } from "react-router-dom";
 import Layout from "../components/Layout";
 import { API_BASE_URL } from "../utils/constants";
 import {
@@ -682,30 +683,30 @@ const AccountingHub = () => {
                   <div className="bg-gray-900 rounded-lg p-4">
                     <h3 className="text-lime-400 font-semibold mb-4">Reportes Disponibles</h3>
                     <div className="space-y-3">
-                      <a
-                        href="/balance-sheet"
+                      <Link
+                        to="/balance-sheet"
                         className="block bg-blue-600 hover:bg-blue-700 text-white p-3 rounded transition-colors"
                       >
                         📊 Balance General
-                      </a>
-                      <a
-                        href="/income-statement"
+                      </Link>
+                      <Link
+                        to="/income-statement"
                         className="block bg-green-600 hover:bg-green-700 text-white p-3 rounded transition-colors"
                       >
                         📈 Estado de Resultados
-                      </a>
-                      <a
-                        href="/account-balances"
+                      </Link>
+                      <Link
+                        to="/admin/account-balances"
                         className="block bg-purple-600 hover:bg-purple-700 text-white p-3 rounded transition-colors"
                       >
                         📋 Movimientos por Cuenta
-                      </a>
-                      <a
-                        href="/treasury"
+                      </Link>
+                      <Link
+                        to="/admin/tesoreria"
                         className="block bg-orange-600 hover:bg-orange-700 text-white p-3 rounded transition-colors"
                       >
                         💰 Tesorería
-                      </a>
+                      </Link>
                     </div>
                   </div>
                   <div className="bg-gray-900 rounded-lg p-4">

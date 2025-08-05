@@ -5,6 +5,9 @@
         },
         {
             "path": "../crediya-backend"
+        },
+        {
+            "path": "../Documents/CrediYa/Inventario"
         }
     ]
 }
