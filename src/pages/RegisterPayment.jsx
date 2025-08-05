@@ -245,7 +245,7 @@ const RegisterPayment = () => {
         customer_address: selectedCustomer?.address || selectedCustomer?.customer_address || "",
         loan_id: selectedLoan?.id || "",
         payment_amount: payment.amount,
-        payment_method: payment.payment_method,
+        payment_method: payment.payment_method || payment.method || "Efectivo",
         payment_date: new Date(payment.payment_date).toLocaleDateString(),
         payment_time: new Date(payment.payment_date).toLocaleTimeString(),
         receipt_number: `REC-${Date.now()}`,
@@ -258,74 +258,93 @@ const RegisterPayment = () => {
         installment_week: payment.installment_week || "N/A"
       };
 
-      // Create a temporary receipt element
-      const tempReceiptRef = React.createRef();
-      const receiptElement = (
-        <div ref={tempReceiptRef} className="bg-white text-black p-8 max-w-md mx-auto">
-          {/* Header */}
-          <div className="text-center border-b-2 border-gray-300 pb-4 mb-4">
-            <h1 className="text-2xl font-bold text-gray-800">CrediYa</h1>
-            <p className="text-gray-600">Recibo de Pago</p>
-            <p className="text-sm text-gray-500">Fecha: {receiptData.payment_date}</p>
-            <p className="text-sm text-gray-500">Hora: {receiptData.payment_time}</p>
-            <p className="text-sm text-gray-500">Recibo #: {receiptData.receipt_number}</p>
-          </div>
+      // Create a temporary div element and append it to the document
+      const tempDiv = document.createElement('div');
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.top = '-9999px';
+      tempDiv.style.backgroundColor = '#ffffff';
+      tempDiv.style.color = '#000000';
+      tempDiv.style.padding = '32px';
+      tempDiv.style.maxWidth = '400px';
+      tempDiv.style.margin = '0 auto';
+      tempDiv.style.fontFamily = 'Arial, sans-serif';
+      tempDiv.style.fontSize = '14px';
+      tempDiv.style.lineHeight = '1.4';
+      
+      // Create the receipt HTML content
+      tempDiv.innerHTML = `
+        <!-- Header -->
+        <div style="text-align: center; border-bottom: 2px solid #ccc; padding-bottom: 16px; margin-bottom: 16px;">
+          <h1 style="font-size: 24px; font-weight: bold; color: #333; margin: 0 0 8px 0;">CrediYa</h1>
+          <p style="color: #666; margin: 0 0 4px 0;">Recibo de Pago</p>
+          <p style="font-size: 12px; color: #999; margin: 0 0 4px 0;">Fecha: ${receiptData.payment_date}</p>
+          <p style="font-size: 12px; color: #999; margin: 0 0 4px 0;">Hora: ${receiptData.payment_time}</p>
+          <p style="font-size: 12px; color: #999; margin: 0;">Recibo #: ${receiptData.receipt_number}</p>
+        </div>
 
-          {/* Customer Info */}
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold mb-2">Información del Cliente</h2>
-            <p><strong>Nombre:</strong> {receiptData.customer_name}</p>
-            <p><strong>Teléfono:</strong> {receiptData.customer_phone}</p>
-            <p><strong>Dirección:</strong> {receiptData.customer_address}</p>
-          </div>
+        <!-- Customer Info -->
+        <div style="margin-bottom: 16px;">
+          <h2 style="font-size: 18px; font-weight: 600; margin: 0 0 8px 0;">Información del Cliente</h2>
+          <p style="margin: 4px 0;"><strong>Nombre:</strong> ${receiptData.customer_name}</p>
+          <p style="margin: 4px 0;"><strong>Teléfono:</strong> ${receiptData.customer_phone}</p>
+          <p style="margin: 4px 0;"><strong>Dirección:</strong> ${receiptData.customer_address}</p>
+        </div>
 
-          {/* Loan Info */}
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold mb-2">Información del Préstamo</h2>
-            <p><strong>Préstamo #:</strong> {receiptData.loan_id}</p>
-            <p><strong>Semana:</strong> {receiptData.installment_week}</p>
-          </div>
+        <!-- Loan Info -->
+        <div style="margin-bottom: 16px;">
+          <h2 style="font-size: 18px; font-weight: 600; margin: 0 0 8px 0;">Información del Préstamo</h2>
+          <p style="margin: 4px 0;"><strong>Préstamo #:</strong> ${receiptData.loan_id}</p>
+          <p style="margin: 4px 0;"><strong>Semana:</strong> ${receiptData.installment_week}</p>
+        </div>
 
-          {/* Payment Details */}
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold mb-2">Detalles del Pago</h2>
-            <p><strong>Método de Pago:</strong> {receiptData.payment_method}</p>
-            <p><strong>Monto Total:</strong> ${parseFloat(receiptData.total_amount).toFixed(2)}</p>
-          </div>
+        <!-- Payment Details -->
+        <div style="margin-bottom: 16px;">
+          <h2 style="font-size: 18px; font-weight: 600; margin: 0 0 8px 0;">Detalles del Pago</h2>
+          <p style="margin: 4px 0;"><strong>Método de Pago:</strong> ${receiptData.payment_method}</p>
+          <p style="margin: 4px 0;"><strong>Monto Total:</strong> $${parseFloat(receiptData.total_amount).toFixed(2)}</p>
+        </div>
 
-          {/* Payment Breakdown */}
-          {receiptData.payment_breakdown && receiptData.payment_breakdown.length > 0 && (
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold mb-2">Desglose del Pago</h2>
-              <div className="border border-gray-300 rounded p-2">
-                {receiptData.payment_breakdown.map((component, idx) => (
-                  <div key={idx} className="flex justify-between py-1">
-                    <span className="capitalize">
-                      {component.type === 'capital' ? 'Capital' :
-                       component.type === 'interest' ? 'Interés' :
-                       component.type === 'penalty' ? 'Penalidad' : component.type}:
-                    </span>
-                    <span>${parseFloat(component.amount || 0).toFixed(2)}</span>
-                  </div>
-                ))}
+        ${receiptData.payment_breakdown && receiptData.payment_breakdown.length > 0 ? `
+        <!-- Payment Breakdown -->
+        <div style="margin-bottom: 16px;">
+          <h2 style="font-size: 18px; font-weight: 600; margin: 0 0 8px 0;">Desglose del Pago</h2>
+          <div style="border: 1px solid #ccc; border-radius: 4px; padding: 8px;">
+            ${receiptData.payment_breakdown.map(component => `
+              <div style="display: flex; justify-content: space-between; padding: 4px 0;">
+                <span style="text-transform: capitalize;">
+                  ${component.type === 'capital' ? 'Capital' :
+                    component.type === 'interest' ? 'Interés' :
+                    component.type === 'penalty' ? 'Penalidad' : component.type}:
+                </span>
+                <span>$${parseFloat(component.amount || 0).toFixed(2)}</span>
               </div>
-            </div>
-          )}
-
-          {/* Footer */}
-          <div className="text-center border-t-2 border-gray-300 pt-4 mt-4">
-            <p className="text-sm text-gray-600">Gracias por su pago</p>
-            <p className="text-sm text-gray-600">Saldo Restante: ${parseFloat(receiptData.remaining_balance).toFixed(2)}</p>
-            <p className="text-xs text-gray-500 mt-2">Este es un recibo oficial de CrediYa</p>
+            `).join('')}
           </div>
         </div>
-      );
+        ` : ''}
+
+        <!-- Footer -->
+        <div style="text-align: center; border-top: 2px solid #ccc; padding-top: 16px; margin-top: 16px;">
+          <p style="font-size: 14px; color: #666; margin: 0 0 8px 0;">Gracias por su pago</p>
+          <p style="font-size: 14px; color: #666; margin: 0 0 8px 0;">Saldo Restante: $${parseFloat(receiptData.remaining_balance).toFixed(2)}</p>
+          <p style="font-size: 10px; color: #999; margin: 8px 0 0 0;">Este es un recibo oficial de CrediYa</p>
+        </div>
+      `;
+
+      // Append to document temporarily
+      document.body.appendChild(tempDiv);
 
       // Generate PDF
-      const canvas = await html2canvas(tempReceiptRef.current, {
+      const canvas = await html2canvas(tempDiv, {
         backgroundColor: "#ffffff",
         scale: 2,
+        useCORS: true,
+        allowTaint: true,
       });
+      
+      // Remove the temporary element
+      document.body.removeChild(tempDiv);
       
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "mm", "a4");
@@ -346,7 +365,7 @@ const RegisterPayment = () => {
         heightLeft -= pageHeight;
       }
       
-      pdf.save(`recibo-pago-${receiptData.customer_name}-${receiptData.payment_date.replace(/\//g, '-')}.pdf`);
+      pdf.save(`recibo-pago-${receiptData.customer_name.replace(/[^a-zA-Z0-9]/g, '-')}-${receiptData.payment_date.replace(/\//g, '-')}.pdf`);
     } catch (error) {
       console.error("Error generating payment receipt PDF:", error);
     }
