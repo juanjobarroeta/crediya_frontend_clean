@@ -8,6 +8,7 @@ const sectionList = [
     label: "Créditos",
     color: "from-green-500 to-emerald-600",
     links: [
+      { href: "/loans", label: "Dashboard de Préstamos", icon: "📊" },
       { href: "/loan-quotes", label: "Cotizador", icon: "📊" },
       { href: "/register-payment", label: "Registrar Pago", icon: "💰" },
       { href: "/create-loan", label: "Crear Préstamo", icon: "➕" },

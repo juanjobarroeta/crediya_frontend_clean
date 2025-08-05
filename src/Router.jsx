@@ -34,6 +34,7 @@ import LoanRequest from "./pages/LoanRequest";
 import InvestigationsDashboard from "./pages/InvestigationsDashboard";
 import InvestigationStepper from "./pages/InvestigationStepper";
 import OverdueLoans from "./pages/OverdueLoans";
+import LoansDashboard from "./pages/LoansDashboard";
 import AccountingAdmin from "./pages/AccountingAdmin";
 import LoanDetails from "./pages/LoanDetails";
 import LoanApplicationDetails from "./components/LoanApplicationDetails";
@@ -98,6 +99,7 @@ const AppRouter = () => (
       <Route path="/registro" element={<PublicRegister />} />
       <Route path="/admin/promotions" element={<AdminRoute><AdminPromotions /></AdminRoute>} />
       <Route path="/admin/expenses" element={<AdminRoute><AdminExpenses /></AdminRoute>} />
+      <Route path="/loans" element={<ProtectedRoute><LoansDashboard /></ProtectedRoute>} />
       <Route path="/admin/budgets" element={<AdminRoute><BudgetManagement /></AdminRoute>} />
       <Route path="/admin/profit" element={<AdminRoute><ProfitSummary /></AdminRoute>} />
       <Route path="/admin/balance-sheet" element={<AdminRoute><BalanceSheet /></AdminRoute>} />
