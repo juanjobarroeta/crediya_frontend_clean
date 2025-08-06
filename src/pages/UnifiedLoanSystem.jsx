@@ -291,8 +291,19 @@ const UnifiedLoanSystem = () => {
     return Object.keys(errors).length === 0;
   };
 
-  const nextStep = () => {
+  const nextStep = async () => {
     if (validateStep(currentStep)) {
+      // Save loan before proceeding to step 3 (approval)
+      if (currentStep === 2 && !loan_id) {
+        const savedLoanId = await saveLoan();
+        if (!savedLoanId) {
+          alert("Error: No se pudo guardar el préstamo. Intente nuevamente.");
+          return;
+        }
+        // Navigate to the saved loan URL
+        navigate(`/loans/unified/${savedLoanId}`);
+        return;
+      }
       setCurrentStep(prev => Math.min(prev + 1, steps.length));
     }
   };
@@ -317,20 +328,28 @@ const UnifiedLoanSystem = () => {
       
       if (response.data.success) {
         const newLoanId = response.data.loan_id || loan_id;
-        if (!loan_id) {
-          navigate(`/loans/unified/${newLoanId}`);
-        }
+        console.log("✅ Loan saved with ID:", newLoanId);
         return newLoanId;
+      } else {
+        console.error("❌ Loan save failed:", response.data);
+        return null;
       }
     } catch (error) {
       console.error("Error saving loan:", error);
-      alert("Error al guardar el préstamo");
+      const errorMsg = error.response?.data?.message || "Error al guardar el préstamo";
+      alert(`❌ ${errorMsg}`);
+      return null;
     } finally {
       setIsLoading(false);
     }
   };
 
   const approveLoan = async () => {
+    if (!loan_id) {
+      alert("❌ Error: No se ha guardado el préstamo. No se puede aprobar.");
+      return;
+    }
+    
     setIsLoading(true);
     try {
       await axios.put(`${API_BASE_URL}/loans/${loan_id}/approve`, {
@@ -351,6 +370,11 @@ const UnifiedLoanSystem = () => {
   };
 
   const generateContract = async () => {
+    if (!loan_id) {
+      alert("❌ Error: No se ha guardado el préstamo. Regrese al paso anterior y guarde el préstamo.");
+      return;
+    }
+    
     setIsLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/contracts/${loan_id}/generate`, {
@@ -371,13 +395,19 @@ const UnifiedLoanSystem = () => {
       nextStep();
     } catch (error) {
       console.error("Error generating contract:", error);
-      alert("Error al generar el contrato");
+      const errorMsg = error.response?.data?.message || "Error al generar el contrato";
+      alert(`❌ ${errorMsg}`);
     } finally {
       setIsLoading(false);
     }
   };
 
   const deliverLoan = async () => {
+    if (!loan_id) {
+      alert("❌ Error: No se ha guardado el préstamo. No se puede entregar.");
+      return;
+    }
+    
     setIsLoading(true);
     try {
       const response = await axios.put(`${API_BASE_URL}/loans/${loan_id}/deliver`, {}, {
@@ -385,7 +415,10 @@ const UnifiedLoanSystem = () => {
       });
       
       setLoanData(prev => ({ ...prev, status: "delivered" }));
-      alert(`✅ ${response.data.message || 'Préstamo entregado exitosamente'}\n\n📊 El inventario y las cuentas de clientes han sido actualizados en el libro mayor.`);
+      const downPaymentMsg = response.data.down_payment_received > 0 
+        ? `\n💰 Enganche registrado: $${response.data.down_payment_received.toLocaleString()}`
+        : '';
+      alert(`✅ ${response.data.message || 'Préstamo entregado exitosamente'}${downPaymentMsg}\n\n📊 El inventario y las cuentas de clientes han sido actualizados en el libro mayor.`);
       navigate("/loans");
     } catch (error) {
       console.error("Error delivering loan:", error);
