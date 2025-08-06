@@ -41,6 +41,17 @@ const LoansDashboard = () => {
   const [selectedLoan, setSelectedLoan] = useState(null);
   const [showLoanDetails, setShowLoanDetails] = useState(false);
   const [analyticsData, setAnalyticsData] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+
+  // Get user role from localStorage
+  useEffect(() => {
+    try {
+      const user = JSON.parse(localStorage.getItem("user"));
+      setUserRole(user?.role || 'user');
+    } catch (error) {
+      setUserRole('user');
+    }
+  }, []);
   
   const token = localStorage.getItem("token");
 
@@ -506,6 +517,15 @@ const LoansDashboard = () => {
                   >
                     📋 Detalles
                   </Link>
+                  {userRole === 'admin' && parseFloat(loan.remaining_balance || 0) > 0 && (
+                    <Link
+                      to={`/loans/${loan.id}/resolution`}
+                      className="flex-1 bg-orange-600 hover:bg-orange-700 text-white text-center py-2 px-3 rounded text-sm transition-colors"
+                      title="Resolver préstamo"
+                    >
+                      ⚖️
+                    </Link>
+                  )}
                 </div>
 
                 {/* Overdue Warning */}
@@ -608,6 +628,15 @@ const LoansDashboard = () => {
                           >
                             Ver
                           </Link>
+                          {userRole === 'admin' && parseFloat(loan.remaining_balance || 0) > 0 && (
+                            <Link
+                              to={`/loans/${loan.id}/resolution`}
+                              className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded text-xs transition-colors"
+                              title="Resolver"
+                            >
+                              ⚖️
+                            </Link>
+                          )}
                         </div>
                       </td>
                     </tr>

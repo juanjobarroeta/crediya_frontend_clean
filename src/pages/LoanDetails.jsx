@@ -36,7 +36,18 @@ const LoanDetails = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [chartData, setChartData] = useState(null);
+  const [userRole, setUserRole] = useState(null);
   const token = localStorage.getItem("token");
+
+  // Get user role from localStorage or token
+  useEffect(() => {
+    try {
+      const user = JSON.parse(localStorage.getItem("user"));
+      setUserRole(user?.role || 'user');
+    } catch (error) {
+      setUserRole('user');
+    }
+  }, []);
 
   useEffect(() => {
     const fetchLoanDetails = async () => {
@@ -178,6 +189,14 @@ const LoanDetails = () => {
                 >
                   💰 Registrar Pago
                 </Link>
+                {userRole === 'admin' && (parseFloat(totals?.pendingCapital || 0) + parseFloat(totals?.pendingInterest || 0)) > 0 && (
+                  <Link
+                    to={`/loans/${loan.id}/resolution`}
+                    className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+                  >
+                    ⚖️ Resolver Préstamo
+                  </Link>
+                )}
                 <Link
                   to="/loans"
                   className="bg-gray-700 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors"

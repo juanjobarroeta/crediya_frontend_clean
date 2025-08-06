@@ -37,6 +37,7 @@ import OverdueLoans from "./pages/OverdueLoans";
 import LoansDashboard from "./pages/LoansDashboard";
 import AccountingAdmin from "./pages/AccountingAdmin";
 import LoanDetails from "./pages/LoanDetails";
+import LoanResolution from "./pages/LoanResolution";
 import LoanApplicationDetails from "./components/LoanApplicationDetails";
 import CollectionsDashboard from "./pages/CollectionsDashboard";
 import ProductProfile from "./pages/ProductProfile";
@@ -95,6 +96,7 @@ const AppRouter = () => (
       <Route path="/register-payment" element={<ProtectedRoute><RegisterPayment /></ProtectedRoute>} />
       <Route path="/loans/:id/statement" element={<ProtectedRoute><LoanStatement /></ProtectedRoute>} />
       <Route path="/loans/:loan_id/details" element={<ProtectedRoute><LoanDetails /></ProtectedRoute>} />
+      <Route path="/loans/:loan_id/resolution" element={<AdminRoute><LoanResolution /></AdminRoute>} />
       <Route path="/crm" element={<ProtectedRoute><CustomerDirectory /></ProtectedRoute>} />
       <Route path="/registro" element={<PublicRegister />} />
       <Route path="/admin/promotions" element={<AdminRoute><AdminPromotions /></AdminRoute>} />
