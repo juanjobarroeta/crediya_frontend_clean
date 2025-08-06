@@ -46,6 +46,13 @@ const IncomeStatement = () => {
   const [comparisonMode, setComparisonMode] = useState(false);
   const [comparisonData, setComparisonData] = useState(null);
   const [timeRange, setTimeRange] = useState("month");
+  
+  // Period closing states
+  const [closures, setClosures] = useState([]);
+  const [periodValidation, setPeriodValidation] = useState(null);
+  const [closingPeriod, setClosingPeriod] = useState(false);
+  const [closeConfirmation, setCloseConfirmation] = useState(false);
+  
   const token = localStorage.getItem("token");
 
   // Initialize with current month and year
@@ -285,6 +292,64 @@ const IncomeStatement = () => {
       setExportLoading(false);
     }
   };
+
+  // Period closing functions
+  const loadClosures = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/accounting/closures`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setClosures(response.data);
+    } catch (err) {
+      console.error("Error loading closures:", err);
+    }
+  }, [token]);
+
+  const validatePeriod = useCallback(async (startDate, endDate) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/accounting/period-validation`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { period_start: startDate, period_end: endDate }
+      });
+      setPeriodValidation(response.data);
+      return response.data;
+    } catch (err) {
+      console.error("Error validating period:", err);
+      setPeriodValidation(null);
+      return null;
+    }
+  }, [token]);
+
+  const closePeriod = async (startDate, endDate, notes = "") => {
+    try {
+      setClosingPeriod(true);
+      const response = await axios.post(`${API_BASE_URL}/accounting/close-period`, {
+        period_start: startDate,
+        period_end: endDate,
+        notes
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      alert(`Period closed successfully!\n\nSummary:\n• Revenue: $${response.data.summary.total_revenue.toLocaleString()}\n• Expenses: $${response.data.summary.total_expenses.toLocaleString()}\n• Net Income: $${response.data.summary.net_income.toLocaleString()}`);
+      
+      // Reload closures and reset validation
+      loadClosures();
+      setPeriodValidation(null);
+      setCloseConfirmation(false);
+      
+    } catch (err) {
+      console.error("Error closing period:", err);
+      alert(`Error closing period: ${err.response?.data?.message || err.message}`);
+    } finally {
+      setClosingPeriod(false);
+    }
+  };
+
+  // Load closures when component mounts
+  useEffect(() => {
+    loadClosures();
+  }, [loadClosures]);
 
   const getPeriodLabel = () => {
     const monthNames = [
@@ -539,6 +604,7 @@ const IncomeStatement = () => {
             { id: "analytics", label: "📈 Análisis", icon: "📈" },
             { id: "details", label: "📋 Detalles", icon: "📋" },
             { id: "charts", label: "📊 Gráficos", icon: "📊" },
+            { id: "close", label: "🔒 Cerrar Período", icon: "🔒" },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -929,6 +995,183 @@ const IncomeStatement = () => {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Close Period Tab */}
+        {activeTab === "close" && (
+          <div className="space-y-6">
+            {/* Period Selection */}
+            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+              <h3 className="text-lg font-semibold text-white mb-4">🔒 Cerrar Período Contable</h3>
+              <p className="text-gray-400 mb-6">
+                El cierre de período transfiere los resultados del estado de resultados a utilidades retenidas 
+                y prepara el sistema para el siguiente período contable.
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div>
+                  <label className="block text-gray-300 font-medium mb-2">Fecha Inicio</label>
+                  <input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 font-medium mb-2">Fecha Final</label>
+                  <input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <button
+                    onClick={() => validatePeriod(customStartDate, customEndDate)}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors"
+                  >
+                    🔍 Validar Período
+                  </button>
+                </div>
+              </div>
+
+              {/* Validation Results */}
+              {periodValidation && (
+                <div className="mb-6">
+                  {periodValidation.is_already_closed ? (
+                    <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+                      <h4 className="text-red-400 font-semibold mb-2">❌ Período Ya Cerrado</h4>
+                      <p className="text-gray-300">
+                        Este período ya fue cerrado el {new Date(periodValidation.existing_closure.created_at).toLocaleDateString()}.
+                      </p>
+                    </div>
+                  ) : periodValidation.validation_passed ? (
+                    <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
+                      <h4 className="text-green-400 font-semibold mb-2">✅ Período Listo para Cerrar</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-white">{periodValidation.entries_count}</div>
+                          <div className="text-gray-400 text-sm">Asientos Contables</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-green-400">0</div>
+                          <div className="text-gray-400 text-sm">Errores Detectados</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-green-400">✓</div>
+                          <div className="text-gray-400 text-sm">Listo para Cerrar</div>
+                        </div>
+                      </div>
+                      
+                      <button
+                        onClick={() => setCloseConfirmation(true)}
+                        className="w-full mt-4 bg-orange-600 hover:bg-orange-700 text-white py-3 px-4 rounded-lg font-medium transition-colors"
+                      >
+                        🔒 Proceder al Cierre
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4">
+                      <h4 className="text-yellow-400 font-semibold mb-2">⚠️ Advertencias Detectadas</h4>
+                      {periodValidation.warnings.map((warning, index) => (
+                        <p key={index} className="text-gray-300 mb-2">• {warning}</p>
+                      ))}
+                      <p className="text-gray-400 text-sm">
+                        Puedes proceder con el cierre, pero revisa las advertencias primero.
+                      </p>
+                      
+                      <button
+                        onClick={() => setCloseConfirmation(true)}
+                        className="w-full mt-4 bg-yellow-600 hover:bg-yellow-700 text-white py-3 px-4 rounded-lg font-medium transition-colors"
+                      >
+                        ⚠️ Cerrar con Advertencias
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Confirmation Modal */}
+              {closeConfirmation && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 border border-gray-700">
+                    <h3 className="text-xl font-bold text-white mb-4">🔒 Confirmar Cierre de Período</h3>
+                    <p className="text-gray-300 mb-4">
+                      ¿Estás seguro de que deseas cerrar el período del {customStartDate} al {customEndDate}?
+                    </p>
+                    <p className="text-yellow-400 text-sm mb-6">
+                      ⚠️ Esta acción no se puede deshacer. Se crearán asientos de cierre y 
+                      se transferirán los resultados a utilidades retenidas.
+                    </p>
+                    
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setCloseConfirmation(false)}
+                        className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={() => closePeriod(customStartDate, customEndDate)}
+                        disabled={closingPeriod}
+                        className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        {closingPeriod ? "Cerrando..." : "🔒 Cerrar Período"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Previous Closures */}
+            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+              <h3 className="text-lg font-semibold text-white mb-4">📋 Historial de Cierres</h3>
+              
+              {closures.length === 0 ? (
+                <p className="text-gray-400 text-center py-8">No hay períodos cerrados anteriormente.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-700">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-gray-300">Período</th>
+                        <th className="px-4 py-3 text-right text-gray-300">Ingresos</th>
+                        <th className="px-4 py-3 text-right text-gray-300">Gastos</th>
+                        <th className="px-4 py-3 text-right text-gray-300">Utilidad Neta</th>
+                        <th className="px-4 py-3 text-left text-gray-300">Fecha Cierre</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-600">
+                      {closures.map((closure, index) => (
+                        <tr key={index} className="hover:bg-gray-700/50">
+                          <td className="px-4 py-3 text-white">
+                            {new Date(closure.period_start).toLocaleDateString()} - {new Date(closure.period_end).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3 text-right text-green-400 font-medium">
+                            ${parseFloat(closure.total_revenue || 0).toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-right text-red-400 font-medium">
+                            ${parseFloat(closure.total_expenses || 0).toLocaleString()}
+                          </td>
+                          <td className={`px-4 py-3 text-right font-bold ${
+                            parseFloat(closure.net_income || 0) >= 0 ? 'text-green-400' : 'text-red-400'
+                          }`}>
+                            ${parseFloat(closure.net_income || 0).toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-gray-300">
+                            {new Date(closure.created_at).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
