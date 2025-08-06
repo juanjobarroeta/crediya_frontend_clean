@@ -400,9 +400,9 @@ const LoansDashboard = () => {
                 className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-lime-400 focus:outline-none"
               >
                 <option value="all">Todas las Tiendas</option>
-                <option value="1">Tienda Principal</option>
-                <option value="2">Sucursal Norte</option>
-                <option value="3">Sucursal Sur</option>
+                <option value="1">Atlixco</option>
+                <option value="2">Chipilo</option>
+                <option value="3">Cholula</option>
               </select>
             </div>
 

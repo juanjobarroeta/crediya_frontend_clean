@@ -33,7 +33,7 @@ const UnifiedLoanSystem = () => {
     // Financial Terms
     amount: "",
     interest_rate: "",
-    term_months: "",
+    term_weeks: "",
     down_payment: "",
     monthly_payment: "",
     
@@ -90,7 +90,7 @@ const UnifiedLoanSystem = () => {
       title: "Generación de Contrato",
       icon: "📄",
       description: "Creación del documento legal",
-      requiredRole: "admin"
+      requiredRole: "user"
     },
     {
       id: 5,
@@ -111,10 +111,10 @@ const UnifiedLoanSystem = () => {
 
   // Real-time calculations
   useEffect(() => {
-    if (loanData.amount && loanData.interest_rate && loanData.term_months) {
+    if (loanData.amount && loanData.interest_rate && loanData.term_weeks) {
       calculateLoanTerms();
     }
-  }, [loanData.amount, loanData.interest_rate, loanData.term_months, loanData.down_payment]);
+  }, [loanData.amount, loanData.interest_rate, loanData.term_weeks, loanData.down_payment]);
 
   const loadInitialData = async () => {
     setIsLoading(true);
@@ -135,11 +135,11 @@ const UnifiedLoanSystem = () => {
       setProducts(productsRes.data?.filter(p => p.status === "in_stock") || []);
       setFinancialProducts(financialRes.data || []);
       
-      // Mock stores data
+      // Real stores data
       setStores([
-        { id: 1, name: "Tienda Principal", location: "Centro" },
-        { id: 2, name: "Sucursal Norte", location: "Norte" },
-        { id: 3, name: "Sucursal Sur", location: "Sur" }
+        { id: 1, name: "Atlixco", location: "Atlixco, Puebla" },
+        { id: 2, name: "Chipilo", location: "Chipilo, Puebla" },
+        { id: 3, name: "Cholula", location: "Cholula, Puebla" }
       ]);
     } catch (error) {
       console.error("Error loading data:", error);
@@ -170,22 +170,22 @@ const UnifiedLoanSystem = () => {
 
   const calculateLoanTerms = useCallback(() => {
     const principal = parseFloat(loanData.amount) || 0;
-    const rate = parseFloat(loanData.interest_rate) / 100 / 12 || 0;
-    const months = parseInt(loanData.term_months) || 0;
+    const weeklyRate = parseFloat(loanData.interest_rate) / 100 / 52 || 0; // Weekly rate
+    const weeks = parseInt(loanData.term_weeks) || 0;
     const downPayment = parseFloat(loanData.down_payment) || 0;
     
-    if (principal <= 0 || months <= 0) return;
+    if (principal <= 0 || weeks <= 0) return;
     
     const loanAmount = principal - downPayment;
     
-    let monthlyPayment = 0;
+    let weeklyPayment = 0;
     let totalInterest = 0;
     
-    if (rate > 0) {
-      monthlyPayment = (loanAmount * rate * Math.pow(1 + rate, months)) / (Math.pow(1 + rate, months) - 1);
-      totalInterest = (monthlyPayment * months) - loanAmount;
+    if (weeklyRate > 0) {
+      weeklyPayment = (loanAmount * weeklyRate * Math.pow(1 + weeklyRate, weeks)) / (Math.pow(1 + weeklyRate, weeks) - 1);
+      totalInterest = (weeklyPayment * weeks) - loanAmount;
     } else {
-      monthlyPayment = loanAmount / months;
+      weeklyPayment = loanAmount / weeks;
       totalInterest = 0;
     }
     
@@ -195,14 +195,14 @@ const UnifiedLoanSystem = () => {
     const amortizationTable = [];
     let balance = loanAmount;
     
-    for (let month = 1; month <= months; month++) {
-      const interestPayment = balance * rate;
-      const principalPayment = monthlyPayment - interestPayment;
+    for (let week = 1; week <= weeks; week++) {
+      const interestPayment = balance * weeklyRate;
+      const principalPayment = weeklyPayment - interestPayment;
       balance -= principalPayment;
       
       amortizationTable.push({
-        month,
-        payment: monthlyPayment,
+        week,
+        payment: weeklyPayment,
         principal: principalPayment,
         interest: interestPayment,
         balance: Math.max(0, balance)
@@ -211,7 +211,7 @@ const UnifiedLoanSystem = () => {
     
     setCalculations({
       totalAmount: principal,
-      monthlyPayment,
+      weeklyPayment,
       totalInterest,
       totalPayable,
       amortizationTable
@@ -220,9 +220,9 @@ const UnifiedLoanSystem = () => {
     // Update loan data with calculated payment
     setLoanData(prev => ({
       ...prev,
-      monthly_payment: monthlyPayment.toFixed(2)
+      weekly_payment: weeklyPayment.toFixed(2)
     }));
-  }, [loanData.amount, loanData.interest_rate, loanData.term_months, loanData.down_payment]);
+  }, [loanData.amount, loanData.interest_rate, loanData.term_weeks, loanData.down_payment]);
 
   const handleInputChange = (field, value) => {
     setLoanData(prev => ({ ...prev, [field]: value }));
@@ -236,10 +236,12 @@ const UnifiedLoanSystem = () => {
     if (field === "financial_product_id" && value) {
       const product = financialProducts.find(p => p.id === parseInt(value));
       if (product) {
+        // Convert months to weeks if financial product is in months
+        const weeks = product.term_months ? product.term_months * 4 : product.term_weeks || 12;
         setLoanData(prev => ({
           ...prev,
           interest_rate: product.interest_rate,
-          term_months: product.term_months
+          term_weeks: weeks
         }));
       }
     }
@@ -274,7 +276,7 @@ const UnifiedLoanSystem = () => {
       case 2:
         if (!loanData.amount) errors.amount = "Ingrese el monto del préstamo";
         if (!loanData.interest_rate) errors.interest_rate = "Ingrese la tasa de interés";
-        if (!loanData.term_months) errors.term_months = "Ingrese el plazo en meses";
+        if (!loanData.term_weeks) errors.term_weeks = "Ingrese el plazo en semanas";
         if (!loanData.financial_product_id) errors.financial_product_id = "Seleccione un producto financiero";
         break;
         
@@ -377,18 +379,17 @@ const UnifiedLoanSystem = () => {
   const deliverLoan = async () => {
     setIsLoading(true);
     try {
-      await axios.put(`${API_BASE_URL}/loans/${loan_id}/deliver`, {
-        delivery_date: new Date().toISOString().split('T')[0]
-      }, {
+      const response = await axios.put(`${API_BASE_URL}/loans/${loan_id}/deliver`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       setLoanData(prev => ({ ...prev, status: "delivered" }));
-      alert("✅ Préstamo entregado exitosamente");
+      alert(`✅ ${response.data.message || 'Préstamo entregado exitosamente'}\n\n📊 El inventario y las cuentas de clientes han sido actualizados en el libro mayor.`);
       navigate("/loans");
     } catch (error) {
       console.error("Error delivering loan:", error);
-      alert("Error al entregar el préstamo");
+      const errorMsg = error.response?.data?.message || "Error al entregar el préstamo";
+      alert(`❌ ${errorMsg}`);
     } finally {
       setIsLoading(false);
     }
@@ -628,7 +629,7 @@ const UnifiedLoanSystem = () => {
                           <option value="">Seleccionar producto financiero</option>
                           {financialProducts.map(fp => (
                             <option key={fp.id} value={fp.id}>
-                              {fp.name} - {fp.interest_rate}% por {fp.term_months} meses
+                              {fp.name} - {fp.interest_rate}% por {fp.term_months ? fp.term_months * 4 : fp.term_weeks || 12} semanas
                             </option>
                           ))}
                         </select>
@@ -696,30 +697,90 @@ const UnifiedLoanSystem = () => {
                       </div>
 
                       <div>
-                        <label className="block text-gray-300 font-medium mb-2">Plazo en Meses *</label>
+                        <label className="block text-gray-300 font-medium mb-2">Plazo en Semanas *</label>
                         <input
                           type="number"
-                          value={loanData.term_months}
-                          onChange={(e) => handleInputChange("term_months", e.target.value)}
+                          value={loanData.term_weeks}
+                          onChange={(e) => handleInputChange("term_weeks", e.target.value)}
                           className={`w-full p-3 bg-gray-700 border rounded-lg text-white focus:outline-none transition-colors ${
-                            validationErrors.term_months ? 'border-red-500' : 'border-gray-600 focus:border-lime-400'
+                            validationErrors.term_weeks ? 'border-red-500' : 'border-gray-600 focus:border-lime-400'
                           }`}
                           placeholder="12"
                           min="1"
-                          max="60"
+                          max="104"
                         />
-                        {validationErrors.term_months && (
-                          <p className="text-red-400 text-sm mt-1">{validationErrors.term_months}</p>
+                        {validationErrors.term_weeks && (
+                          <p className="text-red-400 text-sm mt-1">{validationErrors.term_weeks}</p>
                         )}
                       </div>
 
                       <div>
-                        <label className="block text-gray-300 font-medium mb-2">Pago Mensual (Calculado)</label>
+                        <label className="block text-gray-300 font-medium mb-2">Pago Semanal (Calculado)</label>
                         <div className="p-3 bg-gray-900 border border-gray-600 rounded-lg text-lime-400 font-bold text-lg">
-                          ${parseFloat(calculations.monthlyPayment || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                          ${parseFloat(calculations.weeklyPayment || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                         </div>
                       </div>
                     </div>
+
+                    {/* Amortization Table */}
+                    {calculations.amortizationTable.length > 0 && (
+                      <div className="mt-8">
+                        <h3 className="text-lg font-semibold text-lime-400 mb-4">📊 Tabla de Amortización</h3>
+                        <div className="bg-gray-900 rounded-lg border border-gray-700 max-h-64 overflow-y-auto">
+                          <table className="w-full text-sm">
+                            <thead className="sticky top-0 bg-gray-800">
+                              <tr>
+                                <th className="px-4 py-3 text-left text-gray-300">Semana</th>
+                                <th className="px-4 py-3 text-right text-gray-300">Pago</th>
+                                <th className="px-4 py-3 text-right text-gray-300">Capital</th>
+                                <th className="px-4 py-3 text-right text-gray-300">Interés</th>
+                                <th className="px-4 py-3 text-right text-gray-300">Saldo</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-700">
+                              {calculations.amortizationTable.map((row, index) => (
+                                <tr key={index} className="hover:bg-gray-800/50">
+                                  <td className="px-4 py-2 text-white">{row.week}</td>
+                                  <td className="px-4 py-2 text-right text-lime-400 font-medium">
+                                    ${row.payment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                  </td>
+                                  <td className="px-4 py-2 text-right text-blue-400">
+                                    ${row.principal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                  </td>
+                                  <td className="px-4 py-2 text-right text-orange-400">
+                                    ${row.interest.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                  </td>
+                                  <td className="px-4 py-2 text-right text-white">
+                                    ${row.balance.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                          <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 text-center">
+                            <div className="text-lg font-bold text-lime-400">
+                              ${parseFloat(calculations.totalPayable || 0).toLocaleString('es-MX')}
+                            </div>
+                            <div className="text-gray-400 text-sm">Total a Pagar</div>
+                          </div>
+                          <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 text-center">
+                            <div className="text-lg font-bold text-orange-400">
+                              ${parseFloat(calculations.totalInterest || 0).toLocaleString('es-MX')}
+                            </div>
+                            <div className="text-gray-400 text-sm">Total Intereses</div>
+                          </div>
+                          <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 text-center">
+                            <div className="text-lg font-bold text-white">
+                              {loanData.term_weeks} semanas
+                            </div>
+                            <div className="text-gray-400 text-sm">Plazo Total</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -756,11 +817,11 @@ const UnifiedLoanSystem = () => {
                             </div>
                             <div>
                               <span className="text-gray-400">Plazo:</span>
-                              <span className="text-white ml-2">{loanData.term_months} meses</span>
+                              <span className="text-white ml-2">{loanData.term_weeks} semanas</span>
                             </div>
                             <div>
-                              <span className="text-gray-400">Pago Mensual:</span>
-                              <span className="text-white ml-2">${parseFloat(calculations.monthlyPayment || 0).toLocaleString()}</span>
+                              <span className="text-gray-400">Pago Semanal:</span>
+                              <span className="text-white ml-2">${parseFloat(calculations.weeklyPayment || 0).toLocaleString()}</span>
                             </div>
                           </div>
                         </div>
@@ -906,6 +967,18 @@ const UnifiedLoanSystem = () => {
                             <span className="text-green-400 ml-2 font-semibold">Generado</span>
                           </div>
                         </div>
+                        
+                        <div className="mt-4 p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                          <h4 className="text-blue-400 font-semibold text-sm mb-2">📊 Impacto Contable</h4>
+                          <p className="text-gray-300 text-xs">
+                            Al confirmar la entrega, el sistema automáticamente:
+                          </p>
+                          <ul className="text-gray-300 text-xs mt-2 space-y-1">
+                            <li>• <span className="text-lime-400">Debita</span> la cuenta del cliente (aumenta cuentas por cobrar)</li>
+                            <li>• <span className="text-orange-400">Acredita</span> el inventario (reduce valor en almacén)</li>
+                            <li>• Actualiza automáticamente el libro mayor contable</li>
+                          </ul>
+                        </div>
                       </div>
 
                       <div>
@@ -996,8 +1069,8 @@ const UnifiedLoanSystem = () => {
                     <span className="text-lime-400 font-semibold">${(parseFloat(loanData.amount || 0) - parseFloat(loanData.down_payment || 0)).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Pago Mensual:</span>
-                    <span className="text-lime-400 font-bold text-lg">${parseFloat(calculations.monthlyPayment || 0).toLocaleString()}</span>
+                    <span className="text-gray-400">Pago Semanal:</span>
+                    <span className="text-lime-400 font-bold text-lg">${parseFloat(calculations.weeklyPayment || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Total a Pagar:</span>
