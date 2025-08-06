@@ -35,7 +35,7 @@ import InvestigationsDashboard from "./pages/InvestigationsDashboard";
 import InvestigationStepper from "./pages/InvestigationStepper";
 import OverdueLoans from "./pages/OverdueLoans";
 import LoansDashboard from "./pages/LoansDashboard";
-import AccountingAdmin from "./pages/AccountingAdmin";
+
 import LoanDetails from "./pages/LoanDetails";
 import LoanResolution from "./pages/LoanResolution";
 import LoanApplicationDetails from "./components/LoanApplicationDetails";
@@ -92,7 +92,7 @@ const AppRouter = () => (
         }
       />
       <Route path="/accounting" element={<AdminRoute><AccountingEntries /></AdminRoute>} />
-      <Route path="/admin/accounting" element={<AdminRoute><AccountingAdmin /></AdminRoute>} />
+
       <Route path="/register-payment" element={<ProtectedRoute><RegisterPayment /></ProtectedRoute>} />
       <Route path="/loans/:id/statement" element={<ProtectedRoute><LoanStatement /></ProtectedRoute>} />
       <Route path="/loans/:loan_id/details" element={<ProtectedRoute><LoanDetails /></ProtectedRoute>} />

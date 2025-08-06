@@ -41,7 +41,7 @@ const sectionList = [
       { href: "/admin/tesoreria", label: "Tesorería", icon: "🏦" },
       { href: "/accounting", label: "Asientos Contables", icon: "📝" },
       { href: "/admin/account-balances", label: "Movimientos por Cuenta", icon: "📊" },
-      { href: "/admin/accounting", label: "Cierres Contables", icon: "🔒" },
+      
     ],
   },
   {
