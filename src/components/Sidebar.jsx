@@ -86,7 +86,7 @@ const sectionList = [
     color: "from-yellow-500 to-amber-600",
     links: [
       { href: "/admin/inventory", label: "Admin Inventario", icon: "📋" },
-      { href: "/warehouse/reception", label: "Recepción", icon: "📥" },
+      
       { href: "/admin/assign-imei", label: "Asignar IMEI", icon: "📱" },
     ],
   },

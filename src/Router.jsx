@@ -25,7 +25,7 @@ import AdminManualEntry from "./pages/AdminManualEntry";
 import Tesoreria from "./pages/Tesorería";
 import ReclassifyPayment from "./pages/ReclassifyPayment";
 import IncomeStatement from "./pages/IncomeStatement";
-import RecepcionInventario from "./pages/RecepcionInventario";
+
 import AssignIMEI from "./pages/AssignIMEI";
 import GenerateContract from "./pages/GenerateContract";
 import LoanQuotes from "./pages/LoanQuotes";
@@ -135,7 +135,7 @@ const AppRouter = () => (
       />
       <Route path="/admin/manual-entry" element={<AdminRoute><AdminManualEntry /></AdminRoute>} />
       <Route path="/admin/tesoreria" element={<AdminRoute><Tesoreria /></AdminRoute>} />
-      <Route path="/warehouse/reception" element={<ProtectedRoute><RecepcionInventario /></ProtectedRoute>} />
+
       <Route
         path="/income-statement"
         element={
