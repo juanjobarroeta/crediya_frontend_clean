@@ -517,6 +517,13 @@ const LoansDashboard = () => {
                   >
                     📋 Detalles
                   </Link>
+                  <Link
+                    to={`/loans/unified/${loan.id}`}
+                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-center py-2 px-3 rounded text-sm transition-colors"
+                    title="Sistema Unificado S.O.A."
+                  >
+                    🚀
+                  </Link>
                   {userRole === 'admin' && parseFloat(loan.remaining_balance || 0) > 0 && (
                     <Link
                       to={`/loans/${loan.id}/resolution`}
@@ -627,6 +634,13 @@ const LoansDashboard = () => {
                             className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-xs transition-colors"
                           >
                             Ver
+                          </Link>
+                          <Link
+                            to={`/loans/unified/${loan.id}`}
+                            className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-xs transition-colors"
+                            title="S.O.A."
+                          >
+                            🚀
                           </Link>
                           {userRole === 'admin' && parseFloat(loan.remaining_balance || 0) > 0 && (
                             <Link
