@@ -333,7 +333,7 @@ const UnifiedLoanSystem = () => {
   const approveLoan = async () => {
     setIsLoading(true);
     try {
-      await axios.put(`${API_BASE_URL}/admin/loans/${loan_id}/approve`, {
+      await axios.put(`${API_BASE_URL}/loans/${loan_id}/approve`, {
         approval_notes: loanData.approval_notes
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -343,7 +343,8 @@ const UnifiedLoanSystem = () => {
       nextStep();
     } catch (error) {
       console.error("Error approving loan:", error);
-      alert("Error al aprobar el préstamo");
+      const errorMsg = error.response?.data?.message || "Error al aprobar el préstamo";
+      alert(`❌ ${errorMsg}`);
     } finally {
       setIsLoading(false);
     }
@@ -534,11 +535,11 @@ const UnifiedLoanSystem = () => {
                             }`}
                           >
                             <option value="">Seleccionar producto</option>
-                            {products.map(product => (
-                              <option key={product.id} value={product.id}>
-                                {product.brand} {product.model} - ${product.sale_price} (Stock: {product.quantity})
-                              </option>
-                            ))}
+                                                      {products.map(product => (
+                            <option key={product.id} value={product.id}>
+                              ID:{product.id} - {product.brand} {product.model} - ${product.sale_price} (Stock: {product.quantity}) {product.imei ? `- IMEI: ${product.imei}` : ''}
+                            </option>
+                          ))}
                           </select>
                           {validationErrors.product_id && (
                             <p className="text-red-400 text-sm mt-1">{validationErrors.product_id}</p>
@@ -981,14 +982,30 @@ const UnifiedLoanSystem = () => {
                         </div>
                       </div>
 
-                      <div>
-                        <label className="block text-gray-300 font-medium mb-2">Fecha de Entrega</label>
-                        <input
-                          type="date"
-                          value={loanData.delivery_date}
-                          onChange={(e) => handleInputChange("delivery_date", e.target.value)}
-                          className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-lime-400 focus:outline-none transition-colors"
-                        />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-gray-300 font-medium mb-2">Fecha de Entrega</label>
+                          <input
+                            type="date"
+                            value={loanData.delivery_date}
+                            onChange={(e) => handleInputChange("delivery_date", e.target.value)}
+                            className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-lime-400 focus:outline-none transition-colors"
+                          />
+                        </div>
+
+                        {parseFloat(loanData.down_payment || 0) > 0 && (
+                          <div>
+                            <label className="block text-gray-300 font-medium mb-2">Enganche a Recibir</label>
+                            <div className="p-3 bg-green-900/20 border border-green-500/30 rounded-lg">
+                              <div className="text-lg font-bold text-green-400">
+                                ${parseFloat(loanData.down_payment || 0).toLocaleString('es-MX')}
+                              </div>
+                              <div className="text-gray-400 text-sm">
+                                Se registrará al entregar el producto
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4">
