@@ -337,7 +337,14 @@ const UnifiedLoanSystem = () => {
     } catch (error) {
       console.error("Error saving loan:", error);
       const errorMsg = error.response?.data?.message || "Error al guardar el préstamo";
-      alert(`❌ ${errorMsg}`);
+      
+      // If it's an inventory error, refresh the product list
+      if (errorMsg.includes("inventory") || errorMsg.includes("not available") || errorMsg.includes("assigned")) {
+        alert(`❌ ${errorMsg}\n\n🔄 Actualizando lista de productos disponibles...`);
+        await loadInitialData(); // Refresh product list
+      } else {
+        alert(`❌ ${errorMsg}`);
+      }
       return null;
     } finally {
       setIsLoading(false);
@@ -567,12 +574,15 @@ const UnifiedLoanSystem = () => {
                               validationErrors.product_id ? 'border-red-500' : 'border-gray-600 focus:border-lime-400'
                             }`}
                           >
-                            <option value="">Seleccionar producto</option>
-                                                      {products.map(product => (
-                            <option key={product.id} value={product.id}>
-                              ID:{product.id} - {product.brand} {product.model} - ${product.sale_price} (Stock: {product.quantity}) {product.imei ? `- IMEI: ${product.imei}` : ''}
-                            </option>
-                          ))}
+                                          <option value="">Seleccionar producto</option>
+              {products.length === 0 && (
+                <option disabled>No hay productos disponibles</option>
+              )}
+              {products.map(product => (
+                <option key={product.id} value={product.id}>
+                  ID:{product.id} - {product.brand} {product.model} - ${product.sale_price} (Stock: {product.quantity}) {product.imei ? `- IMEI: ${product.imei}` : ''} ✅
+                </option>
+              ))}
                           </select>
                           {validationErrors.product_id && (
                             <p className="text-red-400 text-sm mt-1">{validationErrors.product_id}</p>
