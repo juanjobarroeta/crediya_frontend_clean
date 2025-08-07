@@ -58,16 +58,18 @@ const LoanResolution = () => {
         
         // Pre-populate forms with recommended values
         if (loanResponse.data.resolutionOptions.settlement.available) {
+          const recommendedAmount = loanResponse.data.resolutionOptions.settlement.recommended_amount;
           setSettlementForm(prev => ({
             ...prev,
-            settlement_amount: loanResponse.data.resolutionOptions.settlement.recommended_amount.toFixed(2)
+            settlement_amount: recommendedAmount ? parseFloat(recommendedAmount).toFixed(2) : '0.00'
           }));
         }
         
         if (loanResponse.data.resolutionOptions.repossession.available) {
+          const estimatedRecovery = loanResponse.data.resolutionOptions.repossession.estimated_recovery;
           setRepossessionForm(prev => ({
             ...prev,
-            estimated_resale_value: loanResponse.data.resolutionOptions.repossession.estimated_recovery.toFixed(2),
+            estimated_resale_value: estimatedRecovery ? parseFloat(estimatedRecovery).toFixed(2) : '0.00',
             new_condition: loanData?.loan?.condition || 'usado'
           }));
         }
