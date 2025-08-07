@@ -196,19 +196,19 @@ const LoanResolution = () => {
           <h2 className="text-xl font-bold text-white mb-4">Resumen del Préstamo</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-400">${loan.amount?.toFixed(2)}</div>
+              <div className="text-2xl font-bold text-blue-400">${loan.amount ? parseFloat(loan.amount).toFixed(2) : '0.00'}</div>
               <div className="text-gray-400 text-sm">Monto Original</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-400">${summary.total_paid?.toFixed(2)}</div>
+              <div className="text-2xl font-bold text-green-400">${summary.total_paid ? parseFloat(summary.total_paid).toFixed(2) : '0.00'}</div>
               <div className="text-gray-400 text-sm">Total Pagado</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-red-400">${summary.remaining_balance?.toFixed(2)}</div>
+              <div className="text-2xl font-bold text-red-400">${summary.remaining_balance ? parseFloat(summary.remaining_balance).toFixed(2) : '0.00'}</div>
               <div className="text-gray-400 text-sm">Saldo Pendiente</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-400">{summary.payment_progress?.toFixed(1)}%</div>
+              <div className="text-2xl font-bold text-yellow-400">{summary.payment_progress ? parseFloat(summary.payment_progress).toFixed(1) : '0.0'}%</div>
               <div className="text-gray-400 text-sm">Progreso</div>
             </div>
           </div>
@@ -217,7 +217,7 @@ const LoanResolution = () => {
             <div className="mt-4 p-4 bg-gray-700 rounded-lg">
               <h3 className="text-white font-semibold mb-2">Producto Garantía</h3>
               <p className="text-gray-300">{loan.brand} {loan.model} - IMEI: {loan.imei}</p>
-              <p className="text-gray-400">Condición: {loan.condition} • Valor estimado: ${loan.estimated_value?.toFixed(2)}</p>
+              <p className="text-gray-400">Condición: {loan.condition} • Valor estimado: ${loan.estimated_value ? parseFloat(loan.estimated_value).toFixed(2) : '0.00'}</p>
             </div>
           )}
         </div>
@@ -289,9 +289,9 @@ const LoanResolution = () => {
                         Acepta un pago menor al saldo total para cerrar el préstamo.
                       </p>
                       <div className="text-sm text-gray-400">
-                        <p>• Recomendado: ${resolutionOptions.settlement.recommended_amount?.toFixed(2)}</p>
-                        <p>• Mínimo: ${resolutionOptions.settlement.minimum_amount?.toFixed(2)}</p>
-                        <p>• Máximo: ${resolutionOptions.settlement.maximum_amount?.toFixed(2)}</p>
+                        <p>• Recomendado: ${resolutionOptions.settlement.recommended_amount ? parseFloat(resolutionOptions.settlement.recommended_amount).toFixed(2) : '0.00'}</p>
+                        <p>• Mínimo: ${resolutionOptions.settlement.minimum_amount ? parseFloat(resolutionOptions.settlement.minimum_amount).toFixed(2) : '0.00'}</p>
+                        <p>• Máximo: ${resolutionOptions.settlement.maximum_amount ? parseFloat(resolutionOptions.settlement.maximum_amount).toFixed(2) : '0.00'}</p>
                       </div>
                     </div>
                   )}
@@ -304,8 +304,8 @@ const LoanResolution = () => {
                         Recupera el producto garantía y aplica su valor al saldo pendiente.
                       </p>
                       <div className="text-sm text-gray-400">
-                        <p>• Valor estimado: ${resolutionOptions.repossession.estimated_recovery?.toFixed(2)}</p>
-                        <p>• Pérdida neta: ${resolutionOptions.repossession.net_loss?.toFixed(2)}</p>
+                        <p>• Valor estimado: ${resolutionOptions.repossession.estimated_recovery ? parseFloat(resolutionOptions.repossession.estimated_recovery).toFixed(2) : '0.00'}</p>
+                        <p>• Pérdida neta: ${resolutionOptions.repossession.net_loss ? parseFloat(resolutionOptions.repossession.net_loss).toFixed(2) : '0.00'}</p>
                       </div>
                     </div>
                   )}
@@ -318,7 +318,7 @@ const LoanResolution = () => {
                         Cancela completamente el saldo pendiente como pérdida irrecuperable.
                       </p>
                       <div className="text-sm text-gray-400">
-                        <p>• Monto a dar de baja: ${resolutionOptions.writeOff.amount?.toFixed(2)}</p>
+                        <p>• Monto a dar de baja: ${resolutionOptions.writeOff.amount ? parseFloat(resolutionOptions.writeOff.amount).toFixed(2) : '0.00'}</p>
                         {resolutionOptions.writeOff.recommended && (
                           <p className="text-yellow-400">• Recomendado para este caso</p>
                         )}
@@ -394,8 +394,8 @@ const LoanResolution = () => {
                       placeholder="0.00"
                     />
                     <div className="text-sm text-gray-400 mt-1">
-                      Rango: ${resolutionOptions.settlement.minimum_amount?.toFixed(2)} - 
-                      ${resolutionOptions.settlement.maximum_amount?.toFixed(2)}
+                      Rango: ${resolutionOptions.settlement.minimum_amount ? parseFloat(resolutionOptions.settlement.minimum_amount).toFixed(2) : '0.00'} - 
+                      ${resolutionOptions.settlement.maximum_amount ? parseFloat(resolutionOptions.settlement.maximum_amount).toFixed(2) : '0.00'}
                     </div>
                   </div>
 
@@ -462,7 +462,7 @@ const LoanResolution = () => {
                       <div className="space-y-1 text-sm">
                         <div className="flex justify-between">
                           <span className="text-gray-400">Saldo actual:</span>
-                          <span className="text-white">${summary.remaining_balance?.toFixed(2)}</span>
+                          <span className="text-white">${summary.remaining_balance ? parseFloat(summary.remaining_balance).toFixed(2) : '0.00'}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Pago de liquidación:</span>
@@ -518,7 +518,7 @@ const LoanResolution = () => {
                       placeholder="0.00"
                     />
                     <div className="text-sm text-gray-400 mt-1">
-                      Valor original: ${loan.estimated_value?.toFixed(2)}
+                      Valor original: ${loan.estimated_value ? parseFloat(loan.estimated_value).toFixed(2) : '0.00'}
                     </div>
                   </div>
 
@@ -586,7 +586,7 @@ const LoanResolution = () => {
                       <div className="space-y-1 text-sm">
                         <div className="flex justify-between">
                           <span className="text-gray-400">Saldo pendiente:</span>
-                          <span className="text-white">${summary.remaining_balance?.toFixed(2)}</span>
+                          <span className="text-white">${summary.remaining_balance ? parseFloat(summary.remaining_balance).toFixed(2) : '0.00'}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Valor de reventa:</span>
@@ -699,15 +699,15 @@ const LoanResolution = () => {
                     <div className="space-y-1 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-400">Monto original:</span>
-                        <span className="text-white">${loan.amount?.toFixed(2)}</span>
+                        <span className="text-white">${loan.amount ? parseFloat(loan.amount).toFixed(2) : '0.00'}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-400">Total pagado:</span>
-                        <span className="text-green-400">${summary.total_paid?.toFixed(2)}</span>
+                        <span className="text-green-400">${summary.total_paid ? parseFloat(summary.total_paid).toFixed(2) : '0.00'}</span>
                       </div>
                       <div className="flex justify-between border-t border-gray-600 pt-1">
                         <span className="text-gray-400">Monto a dar de baja:</span>
-                        <span className="text-red-400 font-semibold">${summary.remaining_balance?.toFixed(2)}</span>
+                        <span className="text-red-400 font-semibold">${summary.remaining_balance ? parseFloat(summary.remaining_balance).toFixed(2) : '0.00'}</span>
                       </div>
                     </div>
                   </div>
