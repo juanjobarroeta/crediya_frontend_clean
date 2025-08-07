@@ -163,7 +163,7 @@ const LoansDashboard = () => {
         const weeksElapsed = Math.floor((now - loanDate) / (7 * 24 * 60 * 60 * 1000));
         const expectedPayments = weeksElapsed * (parseFloat(loan.amount || 0) / 52);
         
-        console.log(`  → Weeks elapsed: ${weeksElapsed}, Expected: ${expectedPayments.toFixed(2)}, Actual: ${totalPaid.toFixed(2)}`);
+        console.log(`  → Weeks elapsed: ${weeksElapsed}, Expected: ${(expectedPayments || 0).toFixed(2)}, Actual: ${(totalPaid || 0).toFixed(2)}`);
         
         // Alternative logic: If loan has significant remaining balance and low progress, consider it overdue
         const progressPercentage = (totalPaid / parseFloat(loan.amount || 1)) * 100;
@@ -202,7 +202,7 @@ const LoansDashboard = () => {
       totalAmount,
       overdueAmount: totalOverdueAmount,
       // Tasa de Morosidad = (Total overdue money / Total money lent) * 100
-      collectionRate: totalAmount > 0 ? ((totalOverdueAmount / totalAmount) * 100).toFixed(1) : 0
+      collectionRate: totalAmount > 0 ? ((totalOverdueAmount / totalAmount) * 100).toFixed(1) : '0.0'
     };
   }, [loans]);
 
@@ -277,7 +277,7 @@ const LoansDashboard = () => {
   const getPaymentProgress = (loan) => {
     const total = parseFloat(loan.amount || 0);
     const paid = parseFloat(loan.total_paid || 0);
-    return total > 0 ? (paid / total * 100).toFixed(1) : 0;
+    return total > 0 ? (paid / total * 100).toFixed(1) : '0.0';
   };
 
   return (
