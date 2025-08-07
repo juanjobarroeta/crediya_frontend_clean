@@ -158,16 +158,22 @@ const AdminInventoryViewer = () => {
 
   // IMEI Assignment Functions
   const handleImeiAssignmentChange = async (value) => {
-    // Format IMEI as user types (add spaces every 3 digits)
-    const formatted = value.replace(/\D/g, '').replace(/(\d{3})(?=\d)/g, '$1 ').trim();
+    // Remove all non-digits first
+    const digitsOnly = value.replace(/\D/g, '');
+    
+    // Limit to 15 digits
+    const limitedDigits = digitsOnly.slice(0, 15);
+    
+    // Format with spaces every 3 digits
+    const formatted = limitedDigits.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
     
     setImeiAssignmentValue(formatted);
     
-    if (value.replace(/\s/g, '').length === 15) {
-      const validation = validateIMEI(value);
+    if (limitedDigits.length === 15) {
+      const validation = validateIMEI(limitedDigits);
       
       if (validation.isValid) {
-        const isDuplicate = await checkIMEIDuplicate(value);
+        const isDuplicate = await checkIMEIDuplicate(limitedDigits);
         if (isDuplicate) {
           setImeiAssignmentValidation({ 
             isValid: false, 
@@ -872,7 +878,7 @@ const AdminInventoryViewer = () => {
                       placeholder="IMEI (15 dígitos) - ej: 123 456 789 012 345"
                       value={newProduct.imei}
                       onChange={(e) => handleIMEIChange(e.target.value)}
-                      maxLength={17} // 15 digits + 2 spaces
+                      maxLength={19} // Allow for 15 digits + 4 spaces (format: 123 456 789 012 345)
                       className={`bg-gray-700 border rounded-lg px-3 py-2 text-white w-full font-mono ${
                         imeiValidation.message ? 
                           (imeiValidation.isValid ? 'border-green-500' : 'border-red-500') : 
@@ -1193,7 +1199,7 @@ const AdminInventoryViewer = () => {
                   type="text"
                   value={imeiAssignmentValue}
                   onChange={(e) => handleImeiAssignmentChange(e.target.value)}
-                  maxLength={17} // 15 digits + 2 spaces
+                  maxLength={19} // Allow for 15 digits + 4 spaces (format: 123 456 789 012 345)
                   placeholder="123 456 789 012 345"
                   className={`w-full p-3 bg-gray-700 border rounded-lg text-white font-mono ${
                     imeiAssignmentValidation.message ? 

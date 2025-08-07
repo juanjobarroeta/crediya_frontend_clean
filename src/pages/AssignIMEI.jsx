@@ -93,16 +93,22 @@ const AssignIMEI = () => {
   };
 
   const handleChange = async (id, value) => {
-    // Format IMEI as user types (add spaces every 3 digits)
-    const formatted = value.replace(/\D/g, '').replace(/(\d{3})(?=\d)/g, '$1 ').trim();
+    // Remove all non-digits first
+    const digitsOnly = value.replace(/\D/g, '');
+    
+    // Limit to 15 digits
+    const limitedDigits = digitsOnly.slice(0, 15);
+    
+    // Format with spaces every 3 digits
+    const formatted = limitedDigits.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
     
     setEditing(prev => ({ ...prev, [id]: formatted }));
     
-    if (value.replace(/\s/g, '').length === 15) {
-      const validation = validateIMEI(value);
+    if (limitedDigits.length === 15) {
+      const validation = validateIMEI(limitedDigits);
       
       if (validation.isValid) {
-        const isDuplicate = await checkIMEIDuplicate(value);
+        const isDuplicate = await checkIMEIDuplicate(limitedDigits);
         if (isDuplicate) {
           setValidation(prev => ({ 
             ...prev, 
@@ -409,7 +415,7 @@ const AssignIMEI = () => {
                               type="text"
                               value={editing[item.id] || ""}
                               onChange={(e) => handleChange(item.id, e.target.value)}
-                              maxLength={17}
+                              maxLength={19}
                               placeholder="123 456 789 012 345"
                               className={`w-full bg-gray-700 border rounded px-3 py-2 text-white font-mono text-sm ${
                                 validation[item.id]?.message ? 
@@ -512,7 +518,7 @@ const AssignIMEI = () => {
                           type="text"
                           value={editing[item.id] || ""}
                           onChange={(e) => handleChange(item.id, e.target.value)}
-                          maxLength={17}
+                                                     maxLength={19}
                           placeholder="123 456 789 012 345"
                           className={`w-full bg-gray-700 border rounded px-3 py-2 text-white font-mono text-sm ${
                             validation[item.id]?.message ? 
