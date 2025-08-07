@@ -43,6 +43,7 @@ const AdminInventoryViewer = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [transferTarget, setTransferTarget] = useState("");
+  const [selectedProductDetails, setSelectedProductDetails] = useState(null);
   const [newProduct, setNewProduct] = useState({
     category: "",
     brand: "",
@@ -57,8 +58,97 @@ const AdminInventoryViewer = () => {
     ram: "",
     storage: ""
   });
+  const [imeiValidation, setImeiValidation] = useState({ isValid: false, message: "", isDuplicate: false });
 
   const token = localStorage.getItem("token");
+
+  // IMEI Validation Functions
+  const validateIMEI = (imei) => {
+    // Remove any spaces or hyphens
+    const cleanIMEI = imei.replace(/[\s-]/g, '');
+    
+    // Check if it's exactly 15 digits
+    if (!/^\d{15}$/.test(cleanIMEI)) {
+      return { isValid: false, message: "IMEI debe tener exactamente 15 dígitos" };
+    }
+
+    // Luhn algorithm validation for IMEI
+    const luhnCheck = (imei) => {
+      let sum = 0;
+      let shouldDouble = false;
+      
+      for (let i = imei.length - 1; i >= 0; i--) {
+        let digit = parseInt(imei[i]);
+        
+        if (shouldDouble) {
+          digit *= 2;
+          if (digit > 9) digit -= 9;
+        }
+        
+        sum += digit;
+        shouldDouble = !shouldDouble;
+      }
+      
+      return sum % 10 === 0;
+    };
+
+    if (!luhnCheck(cleanIMEI)) {
+      return { isValid: false, message: "IMEI no es válido (falló verificación Luhn)" };
+    }
+
+    return { isValid: true, message: "✅ IMEI válido" };
+  };
+
+  const checkIMEIDuplicate = async (imei) => {
+    if (!imei || imei.length < 15) return false;
+    
+    try {
+      const cleanIMEI = imei.replace(/[\s-]/g, '');
+      const response = await axios.get(`${API_BASE_URL}/inventory-items/check-imei/${cleanIMEI}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data.exists;
+    } catch (error) {
+      console.error("Error checking IMEI duplicate:", error);
+      return false;
+    }
+  };
+
+  const handleIMEIChange = async (value) => {
+    // Format IMEI as user types (add spaces every 3 digits)
+    const formatted = value.replace(/\D/g, '').replace(/(\d{3})(?=\d)/g, '$1 ').trim();
+    
+    setNewProduct({ ...newProduct, imei: formatted });
+    
+    if (value.replace(/\s/g, '').length === 15) {
+      const validation = validateIMEI(value);
+      
+      if (validation.isValid) {
+        const isDuplicate = await checkIMEIDuplicate(value);
+        if (isDuplicate) {
+          setImeiValidation({ 
+            isValid: false, 
+            message: "❌ Este IMEI ya existe en el inventario", 
+            isDuplicate: true 
+          });
+        } else {
+          setImeiValidation({ 
+            isValid: true, 
+            message: validation.message, 
+            isDuplicate: false 
+          });
+        }
+      } else {
+        setImeiValidation({ 
+          isValid: false, 
+          message: validation.message, 
+          isDuplicate: false 
+        });
+      }
+    } else {
+      setImeiValidation({ isValid: false, message: "", isDuplicate: false });
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -136,15 +226,38 @@ const AdminInventoryViewer = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Basic validation
     if (Object.values(newProduct).some((val) => val === "")) {
       alert("Todos los campos son requeridos.");
       return;
     }
     
+    // IMEI validation for phones
+    if (newProduct.category.toLowerCase() === 'teléfono' || newProduct.category.toLowerCase() === 'telefono') {
+      if (!newProduct.imei) {
+        alert("❌ IMEI es requerido para teléfonos.");
+        return;
+      }
+      
+      if (!imeiValidation.isValid) {
+        alert("❌ El IMEI ingresado no es válido. Verifique el formato y que no esté duplicado.");
+        return;
+      }
+    }
+    
     try {
-      await axios.post(`${API_BASE_URL}/inventory-items`, newProduct, {
+      // Clean IMEI before sending (remove spaces)
+      const productToSubmit = {
+        ...newProduct,
+        imei: newProduct.imei.replace(/\s/g, '')
+      };
+      
+      await axios.post(`${API_BASE_URL}/inventory-items`, productToSubmit, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      // Reset form
       setNewProduct({
         category: "",
         brand: "",
@@ -159,11 +272,14 @@ const AdminInventoryViewer = () => {
         ram: "",
         storage: ""
       });
+      setImeiValidation({ isValid: false, message: "", isDuplicate: false });
       setShowAddModal(false);
       fetchProducts();
+      alert("✅ Producto agregado exitosamente.");
     } catch (err) {
       console.error("Error adding product:", err);
-      alert("Error al agregar producto.");
+      const errorMsg = err.response?.data?.message || "Error al agregar producto.";
+      alert(`❌ ${errorMsg}`);
     }
   };
 
@@ -450,6 +566,7 @@ const AdminInventoryViewer = () => {
                               className="rounded border-gray-600"
                             />
                           </th>
+                          <th className="px-4 py-3 text-left text-lime-400">ID</th>
                           <th className="px-4 py-3 text-left text-lime-400">Categoría</th>
                           <th className="px-4 py-3 text-left text-lime-400">Marca</th>
                           <th className="px-4 py-3 text-left text-lime-400">Modelo</th>
@@ -473,6 +590,9 @@ const AdminInventoryViewer = () => {
                                 className="rounded border-gray-600"
                               />
                             </td>
+                            <td className="px-4 py-3">
+                              <span className="font-mono text-lime-400 font-bold">#{product.id}</span>
+                            </td>
                             <td className="px-4 py-3">{product.category}</td>
                             <td className="px-4 py-3 font-medium">{product.brand}</td>
                             <td className="px-4 py-3">{product.model}</td>
@@ -493,8 +613,11 @@ const AdminInventoryViewer = () => {
                             </td>
                             <td className="px-4 py-3">{product.store}</td>
                             <td className="px-4 py-3">
-                              <button className="text-blue-400 hover:text-blue-300 text-sm">
-                                Ver detalles
+                              <button 
+                                onClick={() => setSelectedProductDetails(product)}
+                                className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20 px-2 py-1 rounded text-sm transition-colors"
+                              >
+                                👁️ Ver detalles
                               </button>
                             </td>
                           </tr>
@@ -508,12 +631,15 @@ const AdminInventoryViewer = () => {
                   {filteredProducts.map((product, idx) => (
                     <div key={product.id || idx} className="bg-gray-800 border border-gray-700 rounded-lg p-4 hover:border-lime-500 transition-colors">
                       <div className="flex items-center justify-between mb-3">
-                        <input
-                          type="checkbox"
-                          checked={selectedProducts.includes(product.id)}
-                          onChange={() => handleSelectProduct(product.id)}
-                          className="rounded border-gray-600"
-                        />
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedProducts.includes(product.id)}
+                            onChange={() => handleSelectProduct(product.id)}
+                            className="rounded border-gray-600"
+                          />
+                          <span className="font-mono text-lime-400 font-bold text-sm">#{product.id}</span>
+                        </div>
                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                           product.status === 'in_stock' ? 'bg-green-600 text-white' :
                           product.status === 'assigned' ? 'bg-yellow-500 text-black' :
@@ -524,13 +650,20 @@ const AdminInventoryViewer = () => {
                         </span>
                       </div>
                       <h3 className="font-semibold text-lg mb-2">{product.brand} {product.model}</h3>
-                      <div className="space-y-1 text-sm text-gray-300">
+                      <div className="space-y-1 text-sm text-gray-300 mb-4">
                         <p><span className="text-gray-400">Categoría:</span> {product.category}</p>
                         <p><span className="text-gray-400">Color:</span> {product.color}</p>
                         <p><span className="text-gray-400">RAM:</span> {product.ram || "-"}</p>
                         <p><span className="text-gray-400">Almacenamiento:</span> {product.storage || "-"}</p>
                         <p><span className="text-gray-400">Sucursal:</span> {product.store}</p>
+                        <p><span className="text-gray-400">IMEI:</span> {product.imei || "-"}</p>
                       </div>
+                      <button
+                        onClick={() => setSelectedProductDetails(product)}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors"
+                      >
+                        👁️ Ver Detalles
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -623,13 +756,25 @@ const AdminInventoryViewer = () => {
                     onChange={(e) => setNewProduct({...newProduct, color: e.target.value})}
                     className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
                   />
-                  <input
-                    name="imei"
-                    placeholder="IMEI"
-                    value={newProduct.imei}
-                    onChange={(e) => setNewProduct({...newProduct, imei: e.target.value})}
-                    className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
-                  />
+                  <div className="space-y-2">
+                    <input
+                      name="imei"
+                      placeholder="IMEI (15 dígitos) - ej: 123 456 789 012 345"
+                      value={newProduct.imei}
+                      onChange={(e) => handleIMEIChange(e.target.value)}
+                      maxLength={17} // 15 digits + 2 spaces
+                      className={`bg-gray-700 border rounded-lg px-3 py-2 text-white w-full font-mono ${
+                        imeiValidation.message ? 
+                          (imeiValidation.isValid ? 'border-green-500' : 'border-red-500') : 
+                          'border-gray-600'
+                      }`}
+                    />
+                    {imeiValidation.message && (
+                      <p className={`text-sm ${imeiValidation.isValid ? 'text-green-400' : 'text-red-400'}`}>
+                        {imeiValidation.message}
+                      </p>
+                    )}
+                  </div>
                   <input
                     name="serial"
                     placeholder="Número de Serie"
@@ -671,7 +816,16 @@ const AdminInventoryViewer = () => {
                 <div className="flex gap-3">
                   <button
                     type="submit"
-                    className="bg-lime-500 hover:bg-lime-600 text-black px-4 py-2 rounded-lg font-medium"
+                    disabled={
+                      (newProduct.category.toLowerCase() === 'teléfono' || newProduct.category.toLowerCase() === 'telefono') && 
+                      (!imeiValidation.isValid || imeiValidation.isDuplicate)
+                    }
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      (newProduct.category.toLowerCase() === 'teléfono' || newProduct.category.toLowerCase() === 'telefono') && 
+                      (!imeiValidation.isValid || imeiValidation.isDuplicate)
+                        ? 'bg-gray-500 cursor-not-allowed text-gray-300'
+                        : 'bg-lime-500 hover:bg-lime-600 text-black'
+                    }`}
                   >
                     ✅ Agregar Producto
                   </button>
@@ -722,6 +876,181 @@ const AdminInventoryViewer = () => {
                     ❌ Cancelar
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Product Details Modal */}
+        {selectedProductDetails && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-semibold text-white">
+                  📱 Detalles del Producto #{selectedProductDetails.id}
+                </h2>
+                <button
+                  onClick={() => setSelectedProductDetails(null)}
+                  className="text-gray-400 hover:text-white text-2xl font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Basic Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-lime-400 border-b border-gray-600 pb-2">
+                    📋 Información Básica
+                  </h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-gray-400 text-sm">ID del Producto:</label>
+                      <div className="text-white font-mono text-lg">#{selectedProductDetails.id}</div>
+                    </div>
+                    <div>
+                      <label className="text-gray-400 text-sm">Categoría:</label>
+                      <div className="text-white">{selectedProductDetails.category}</div>
+                    </div>
+                    <div>
+                      <label className="text-gray-400 text-sm">Marca:</label>
+                      <div className="text-white font-semibold">{selectedProductDetails.brand}</div>
+                    </div>
+                    <div>
+                      <label className="text-gray-400 text-sm">Modelo:</label>
+                      <div className="text-white">{selectedProductDetails.model}</div>
+                    </div>
+                    <div>
+                      <label className="text-gray-400 text-sm">Color:</label>
+                      <div className="text-white">{selectedProductDetails.color}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Technical Specifications */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-lime-400 border-b border-gray-600 pb-2">
+                    ⚙️ Especificaciones
+                  </h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-gray-400 text-sm">IMEI:</label>
+                      <div className="text-white font-mono">{selectedProductDetails.imei || "No disponible"}</div>
+                    </div>
+                    <div>
+                      <label className="text-gray-400 text-sm">RAM:</label>
+                      <div className="text-white">{selectedProductDetails.ram || "No especificado"}</div>
+                    </div>
+                    <div>
+                      <label className="text-gray-400 text-sm">Almacenamiento:</label>
+                      <div className="text-white">{selectedProductDetails.storage || "No especificado"}</div>
+                    </div>
+                    <div>
+                      <label className="text-gray-400 text-sm">Estado:</label>
+                      <div>
+                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                          selectedProductDetails.status === 'in_stock' ? 'bg-green-600 text-white' :
+                          selectedProductDetails.status === 'assigned' ? 'bg-yellow-500 text-black' :
+                          'bg-red-500 text-white'
+                        }`}>
+                          {selectedProductDetails.status === 'in_stock' ? '✅ En Stock' :
+                           selectedProductDetails.status === 'assigned' ? '📋 Asignado' :
+                           '💰 Vendido'}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-gray-400 text-sm">Sucursal:</label>
+                      <div className="text-white">{selectedProductDetails.store}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Financial Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-lime-400 border-b border-gray-600 pb-2">
+                    💰 Información Financiera
+                  </h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-gray-400 text-sm">Precio de Compra:</label>
+                      <div className="text-green-400 font-semibold text-lg">
+                        ${parseFloat(selectedProductDetails.purchase_price || 0).toLocaleString()}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-gray-400 text-sm">Precio de Venta:</label>
+                      <div className="text-lime-400 font-bold text-xl">
+                        ${parseFloat(selectedProductDetails.sale_price || 0).toLocaleString()}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-gray-400 text-sm">Margen de Ganancia:</label>
+                      <div className="text-blue-400 font-semibold">
+                        ${(parseFloat(selectedProductDetails.sale_price || 0) - parseFloat(selectedProductDetails.purchase_price || 0)).toLocaleString()}
+                        {selectedProductDetails.purchase_price > 0 && (
+                          <span className="text-sm ml-2">
+                            ({(((selectedProductDetails.sale_price - selectedProductDetails.purchase_price) / selectedProductDetails.purchase_price) * 100).toFixed(1)}%)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dates and History */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-lime-400 border-b border-gray-600 pb-2">
+                    📅 Fechas y Historial
+                  </h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-gray-400 text-sm">Fecha de Registro:</label>
+                      <div className="text-white">
+                        {selectedProductDetails.created_at ? 
+                          new Date(selectedProductDetails.created_at).toLocaleDateString('es-MX', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          }) : 
+                          "No disponible"
+                        }
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-gray-400 text-sm">Última Actualización:</label>
+                      <div className="text-white">
+                        {selectedProductDetails.updated_at ? 
+                          new Date(selectedProductDetails.updated_at).toLocaleDateString('es-MX', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          }) : 
+                          "No disponible"
+                        }
+                      </div>
+                    </div>
+                    {selectedProductDetails.quantity && (
+                      <div>
+                        <label className="text-gray-400 text-sm">Cantidad en Stock:</label>
+                        <div className="text-white font-semibold">{selectedProductDetails.quantity} unidades</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end mt-6 pt-4 border-t border-gray-600">
+                <button
+                  onClick={() => setSelectedProductDetails(null)}
+                  className="bg-gray-600 hover:bg-gray-500 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                >
+                  ✕ Cerrar
+                </button>
               </div>
             </div>
           </div>
