@@ -384,7 +384,8 @@ const UnifiedLoanSystem = () => {
     
     setIsLoading(true);
     try {
-      const response = await axios.get(`${API_BASE_URL}/contracts/${loan_id}/generate`, {
+      // Generate PDF contract (recommended)
+      const response = await axios.get(`${API_BASE_URL}/contracts/${loan_id}/generate-pdf`, {
         headers: { Authorization: `Bearer ${token}` },
         responseType: 'blob'
       });
@@ -392,10 +393,18 @@ const UnifiedLoanSystem = () => {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `contrato-${loan_id}.docx`);
+      link.setAttribute('download', `contrato-prestamo-${loan_id}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
+      
+      // Update loan status
+      await axios.put(`${API_BASE_URL}/loans/${loan_id}/status`, {
+        status: "contract_generated",
+        notes: "Contrato PDF generado exitosamente"
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       
       setLoanData(prev => ({ ...prev, status: "contract_generated" }));
       setGeneratedContract(url);
