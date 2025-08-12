@@ -105,7 +105,7 @@ const Header = () => {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <header className="w-full bg-gradient-to-r from-gray-900 to-black text-white px-6 py-4 rounded-tl-3xl rounded-tr-3xl shadow-lg border-b border-gray-800">
+    <header className="w-full bg-gradient-to-r from-gray-900 to-black text-white px-6 py-4 rounded-tl-3xl rounded-tr-3xl shadow-lg border-b border-gray-800 relative z-50">
       <div className="flex items-center justify-between">
         {/* Left Section - Breadcrumbs & Search */}
         <div className="flex items-center gap-6">
@@ -190,27 +190,27 @@ const Header = () => {
         </div>
 
         {/* Right Section - Actions & User */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 relative z-50">
           {/* Quick Actions */}
           <div className="flex items-center gap-2">
-            <Link
-              to="/create-loan"
-              className="bg-gradient-to-r from-crediyaGreen to-emerald-500 hover:from-emerald-500 hover:to-crediyaGreen text-black font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+            <button
+              onClick={() => window.location.href = "/create-loan"}
+              className="bg-gradient-to-r from-crediyaGreen to-emerald-500 hover:from-emerald-500 hover:to-crediyaGreen text-black font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 cursor-pointer"
             >
               💳 Nuevo Préstamo
-            </Link>
-            <Link
-              to="/register-payment"
-              className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+            </button>
+            <button
+              onClick={() => window.location.href = "/register-payment"}
+              className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 cursor-pointer"
             >
               💰 Registrar Pago
-            </Link>
-            <Link
-              to="/loan-quotes"
-              className="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-violet-500 hover:to-purple-500 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+            </button>
+            <button
+              onClick={() => window.location.href = "/loan-quotes"}
+              className="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-violet-500 hover:to-purple-500 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 cursor-pointer"
             >
               📊 Cotizar
-            </Link>
+            </button>
           </div>
 
           {/* Notifications */}
