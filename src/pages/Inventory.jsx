@@ -42,6 +42,8 @@ const Inventory = () => {
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
   const [transferTarget, setTransferTarget] = useState("");
   const [newProduct, setNewProduct] = useState({
     category: "",
@@ -493,7 +495,13 @@ const Inventory = () => {
                             </td>
                             <td className="px-4 py-3">{product.store}</td>
                             <td className="px-4 py-3">
-                              <button className="text-blue-400 hover:text-blue-300 text-sm">
+                              <button 
+                                onClick={() => {
+                                  setSelectedItem(product);
+                                  setShowDetailsModal(true);
+                                }}
+                                className="text-blue-400 hover:text-blue-300 text-sm"
+                              >
                                 Ver detalles
                               </button>
                             </td>
@@ -722,6 +730,104 @@ const Inventory = () => {
                     ❌ Cancelar
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Item Details Modal */}
+        {showDetailsModal && selectedItem && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-2xl">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-lime-400">📦 Detalles del Producto</h2>
+                <button
+                  onClick={() => setShowDetailsModal(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Categoría</label>
+                    <p className="text-white">{selectedItem.category || "No especificada"}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Marca</label>
+                    <p className="text-white font-semibold">{selectedItem.brand || "No especificada"}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Modelo</label>
+                    <p className="text-white">{selectedItem.model || "No especificado"}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Color</label>
+                    <p className="text-white">{selectedItem.color || "No especificado"}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">IMEI</label>
+                    <p className="text-white font-mono text-sm">{selectedItem.imei || "No asignado"}</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">RAM</label>
+                    <p className="text-white">{selectedItem.ram || "No especificada"}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Almacenamiento</label>
+                    <p className="text-white">{selectedItem.storage || "No especificado"}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Precio de Compra</label>
+                    <p className="text-white">${parseFloat(selectedItem.purchase_price || 0).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Precio de Venta</label>
+                    <p className="text-white">${parseFloat(selectedItem.sale_price || 0).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Estado</label>
+                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                      selectedItem.status === 'in_stock' ? 'bg-green-600 text-white' :
+                      selectedItem.status === 'assigned' ? 'bg-yellow-500 text-black' :
+                      'bg-red-500 text-white'
+                    }`}>
+                      {selectedItem.status === 'in_stock' ? '✅ En Stock' :
+                       selectedItem.status === 'assigned' ? '📋 Asignado' :
+                       '💰 Vendido'}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Sucursal</label>
+                    <p className="text-white">{selectedItem.store || "No especificada"}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-6 p-4 bg-gray-700 rounded-lg">
+                <h3 className="font-semibold text-lime-400 mb-2">📅 Información de Registro</h3>
+                <p className="text-sm text-gray-300">
+                  Creado: {selectedItem.created_at ? new Date(selectedItem.created_at).toLocaleString() : "No disponible"}
+                </p>
+                {selectedItem.inventory_request_id && (
+                  <p className="text-sm text-gray-300">
+                    ID de Solicitud: {selectedItem.inventory_request_id}
+                  </p>
+                )}
+              </div>
+              
+              <div className="flex justify-end mt-6">
+                <button
+                  onClick={() => setShowDetailsModal(false)}
+                  className="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded-lg font-medium"
+                >
+                  Cerrar
+                </button>
               </div>
             </div>
           </div>
