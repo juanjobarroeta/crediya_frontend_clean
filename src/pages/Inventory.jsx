@@ -45,6 +45,9 @@ const Inventory = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [transferTarget, setTransferTarget] = useState("");
+  const [editingIMEI, setEditingIMEI] = useState({});
+  const [imeiValidation, setImeiValidation] = useState({});
+  const [savingIMEI, setSavingIMEI] = useState({});
   const [newProduct, setNewProduct] = useState({
     category: "",
     brand: "",
@@ -61,6 +64,101 @@ const Inventory = () => {
   });
 
   const token = localStorage.getItem("token");
+
+  // IMEI validation function
+  const validateIMEI = (imei) => {
+    const imeiRegex = /^\d{15}$/;
+    if (!imeiRegex.test(imei)) {
+      return { valid: false, message: "IMEI debe tener 15 dígitos" };
+    }
+    
+    // Luhn algorithm validation
+    const digits = imei.split('').map(Number);
+    let sum = 0;
+    
+    for (let i = 0; i < 14; i++) {
+      let digit = digits[i];
+      if (i % 2 === 1) {
+        digit *= 2;
+        if (digit > 9) digit -= 9;
+      }
+      sum += digit;
+    }
+    
+    const checkDigit = (10 - (sum % 10)) % 10;
+    const isValid = checkDigit === digits[14];
+    
+    return {
+      valid: isValid,
+      message: isValid ? "IMEI válido" : "IMEI inválido"
+    };
+  };
+
+  // Handle IMEI input change
+  const handleIMEIChange = async (productId, value) => {
+    setEditingIMEI(prev => ({ ...prev, [productId]: value }));
+    
+    if (value.length === 15) {
+      // Validate IMEI format
+      const validation = validateIMEI(value);
+      setImeiValidation(prev => ({ ...prev, [productId]: validation }));
+      
+      // Check for duplicates
+      if (validation.valid) {
+        try {
+          const response = await axios.get(`${API_BASE_URL}/inventory-items/check-imei/${value}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          if (response.data.exists) {
+            setImeiValidation(prev => ({ 
+              ...prev, 
+              [productId]: { valid: false, message: "IMEI ya existe en inventario" }
+            }));
+          }
+        } catch (err) {
+          console.error("Error checking IMEI:", err);
+        }
+      }
+    } else {
+      setImeiValidation(prev => ({ ...prev, [productId]: null }));
+    }
+  };
+
+  // Save IMEI
+  const saveIMEI = async (productId) => {
+    const imei = editingIMEI[productId];
+    const validation = imeiValidation[productId];
+    
+    if (!validation || !validation.valid) {
+      alert("Por favor ingresa un IMEI válido");
+      return;
+    }
+
+    setSavingIMEI(prev => ({ ...prev, [productId]: true }));
+    
+    try {
+      await axios.put(`${API_BASE_URL}/inventory-items/${productId}/imei`, { imei }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Update the product in the local state
+      setProducts(prev => prev.map(p => 
+        p.id === productId ? { ...p, imei } : p
+      ));
+      
+      // Clear editing state
+      setEditingIMEI(prev => ({ ...prev, [productId]: undefined }));
+      setImeiValidation(prev => ({ ...prev, [productId]: null }));
+      
+      alert("✅ IMEI asignado correctamente");
+    } catch (err) {
+      console.error("Error saving IMEI:", err);
+      alert("❌ Error al guardar IMEI");
+    } finally {
+      setSavingIMEI(prev => ({ ...prev, [productId]: false }));
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -479,7 +577,36 @@ const Inventory = () => {
                             <td className="px-4 py-3 font-medium">{product.brand}</td>
                             <td className="px-4 py-3">{product.model}</td>
                             <td className="px-4 py-3">{product.color}</td>
-                            <td className="px-4 py-3 font-mono text-sm">{product.imei || "-"}</td>
+                            <td className="px-4 py-3">
+                              {product.imei ? (
+                                <span className="font-mono text-sm text-green-400">{product.imei}</span>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="text"
+                                    placeholder="Ingresa IMEI"
+                                    value={editingIMEI[product.id] || ""}
+                                    onChange={(e) => handleIMEIChange(product.id, e.target.value)}
+                                    className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs font-mono w-32 focus:border-lime-500 focus:outline-none"
+                                    maxLength={15}
+                                  />
+                                  {editingIMEI[product.id] && (
+                                    <button
+                                      onClick={() => saveIMEI(product.id)}
+                                      disabled={savingIMEI[product.id] || !imeiValidation[product.id]?.valid}
+                                      className="bg-lime-500 hover:bg-lime-600 disabled:bg-gray-600 text-black px-2 py-1 rounded text-xs font-medium transition-colors"
+                                    >
+                                      {savingIMEI[product.id] ? "💾" : "✓"}
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                              {imeiValidation[product.id] && (
+                                <div className={`text-xs mt-1 ${imeiValidation[product.id].valid ? 'text-green-400' : 'text-red-400'}`}>
+                                  {imeiValidation[product.id].message}
+                                </div>
+                              )}
+                            </td>
                             <td className="px-4 py-3">{product.ram || "-"}</td>
                             <td className="px-4 py-3">{product.storage || "-"}</td>
                             <td className="px-4 py-3">
@@ -538,6 +665,37 @@ const Inventory = () => {
                         <p><span className="text-gray-400">RAM:</span> {product.ram || "-"}</p>
                         <p><span className="text-gray-400">Almacenamiento:</span> {product.storage || "-"}</p>
                         <p><span className="text-gray-400">Sucursal:</span> {product.store}</p>
+                        <div>
+                          <span className="text-gray-400">IMEI:</span>{" "}
+                          {product.imei ? (
+                            <span className="font-mono text-green-400">{product.imei}</span>
+                          ) : (
+                            <div className="mt-1">
+                              <input
+                                type="text"
+                                placeholder="Ingresa IMEI"
+                                value={editingIMEI[product.id] || ""}
+                                onChange={(e) => handleIMEIChange(product.id, e.target.value)}
+                                className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs font-mono w-full focus:border-lime-500 focus:outline-none"
+                                maxLength={15}
+                              />
+                              {editingIMEI[product.id] && (
+                                <button
+                                  onClick={() => saveIMEI(product.id)}
+                                  disabled={savingIMEI[product.id] || !imeiValidation[product.id]?.valid}
+                                  className="bg-lime-500 hover:bg-lime-600 disabled:bg-gray-600 text-black px-2 py-1 rounded text-xs font-medium transition-colors mt-1 w-full"
+                                >
+                                  {savingIMEI[product.id] ? "💾 Guardando..." : "✓ Guardar IMEI"}
+                                </button>
+                              )}
+                              {imeiValidation[product.id] && (
+                                <div className={`text-xs mt-1 ${imeiValidation[product.id].valid ? 'text-green-400' : 'text-red-400'}`}>
+                                  {imeiValidation[product.id].message}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                       
                       {/* Action Button */}
