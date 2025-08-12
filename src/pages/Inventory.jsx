@@ -532,13 +532,24 @@ const Inventory = () => {
                         </span>
                       </div>
                       <h3 className="font-semibold text-lg mb-2">{product.brand} {product.model}</h3>
-                      <div className="space-y-1 text-sm text-gray-300">
+                      <div className="space-y-1 text-sm text-gray-300 mb-4">
                         <p><span className="text-gray-400">Categoría:</span> {product.category}</p>
                         <p><span className="text-gray-400">Color:</span> {product.color}</p>
                         <p><span className="text-gray-400">RAM:</span> {product.ram || "-"}</p>
                         <p><span className="text-gray-400">Almacenamiento:</span> {product.storage || "-"}</p>
                         <p><span className="text-gray-400">Sucursal:</span> {product.store}</p>
                       </div>
+                      
+                      {/* Action Button */}
+                      <button
+                        onClick={() => {
+                          setSelectedItem(product);
+                          setShowDetailsModal(true);
+                        }}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        Ver detalles
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -821,7 +832,20 @@ const Inventory = () => {
                 )}
               </div>
               
-              <div className="flex justify-end mt-6">
+              <div className="flex justify-between items-center mt-6">
+                <div>
+                  {!selectedItem.imei && (
+                    <button
+                      onClick={() => {
+                        // Navigate to assign IMEI for this specific item
+                        window.location.href = `/admin/assign-imei?item_id=${selectedItem.id}`;
+                      }}
+                      className="bg-lime-500 hover:bg-lime-600 text-black px-4 py-2 rounded-lg font-medium mr-3"
+                    >
+                      📱 Asignar IMEI
+                    </button>
+                  )}
+                </div>
                 <button
                   onClick={() => setShowDetailsModal(false)}
                   className="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded-lg font-medium"
