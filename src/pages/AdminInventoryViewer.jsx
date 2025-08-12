@@ -30,6 +30,120 @@ ChartJS.register(
   Filler
 );
 
+// Transfer History Component
+const TransferHistory = ({ token }) => {
+  const [transferHistory, setTransferHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTransferHistory = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(`${API_BASE_URL}/inventory-items/transfer-history`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setTransferHistory(response.data || []);
+      } catch (err) {
+        console.error("Error fetching transfer history:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTransferHistory();
+  }, [token]);
+
+  if (loading) {
+    return (
+      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+        <h3 className="text-lg font-semibold mb-4">🔄 Historial de Transferencias</h3>
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-lime-400 mx-auto mb-4"></div>
+          <p className="text-gray-400">Cargando historial...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+      <h3 className="text-lg font-semibold mb-4">🔄 Historial de Transferencias</h3>
+      
+      {transferHistory.length === 0 ? (
+        <div className="text-center py-8">
+          <div className="text-4xl mb-4">📦</div>
+          <p className="text-gray-400">No hay transferencias registradas</p>
+          <p className="text-gray-500 text-sm mt-2">Las transferencias aparecerán aquí una vez que muevas productos entre sucursales</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+            <thead className="bg-gray-700">
+              <tr>
+                <th className="px-4 py-3 text-left text-lime-400">Fecha</th>
+                <th className="px-4 py-3 text-left text-lime-400">Producto</th>
+                <th className="px-4 py-3 text-left text-lime-400">Transferencia</th>
+                <th className="px-4 py-3 text-left text-lime-400">Transferido por</th>
+                <th className="px-4 py-3 text-left text-lime-400">Estado Actual</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transferHistory.map((transfer, idx) => {
+                // Extract from/to info from description
+                const description = transfer.description || "";
+                const fromMatch = description.match(/from (\w+)/);
+                const toMatch = description.match(/to (\w+)/);
+                const fromStore = fromMatch ? fromMatch[1] : "N/A";
+                const toStore = toMatch ? toMatch[1] : "N/A";
+                
+                const formatStoreName = (store) => {
+                  switch(store) {
+                    case 'atlixco': return '🏪 Atlixco';
+                    case 'warehouse': return '📦 Almacén';
+                    case 'puebla': return '🏪 Puebla';
+                    case 'centro': return '🏪 Centro';
+                    case 'online': return '💻 Online';
+                    default: return store;
+                  }
+                };
+
+                return (
+                  <tr key={transfer.id || idx} className="border-t border-gray-700 hover:bg-gray-700 transition-colors">
+                    <td className="px-4 py-3 text-sm">{new Date(transfer.date).toLocaleDateString('es-ES')}</td>
+                    <td className="px-4 py-3">
+                      <div className="font-medium">{transfer.brand} {transfer.model}</div>
+                      <div className="text-xs text-gray-400">ID: {transfer.item_id}</div>
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      <div className="flex items-center gap-2">
+                        <span>{formatStoreName(fromStore)}</span>
+                        <span className="text-gray-400">→</span>
+                        <span>{formatStoreName(toStore)}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-sm">{transfer.transferred_by || "Usuario desconocido"}</td>
+                    <td className="px-4 py-3 text-sm">
+                      <span className="px-2 py-1 bg-green-900 text-green-200 rounded-full text-xs">
+                        {formatStoreName(transfer.current_store)}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          
+          {transferHistory.length >= 100 && (
+            <div className="mt-4 text-center text-sm text-gray-400">
+              Mostrando las últimas 100 transferencias
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const AdminInventoryViewer = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,6 +160,8 @@ const AdminInventoryViewer = () => {
   const [editingIMEI, setEditingIMEI] = useState({});
   const [imeiValidation, setImeiValidation] = useState({});
   const [savingIMEI, setSavingIMEI] = useState({});
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
   const [newProduct, setNewProduct] = useState({
     category: "",
     brand: "",
@@ -350,6 +466,10 @@ const AdminInventoryViewer = () => {
 
   const uniqueCategories = [...new Set(products.map(p => p.category))];
   const uniqueStores = [...new Set(products.map(p => p.store))];
+  
+  // Define all available stores for transfers
+  const allStores = ["atlixco", "warehouse", "puebla", "centro", "online"];
+  const availableStoresForTransfer = allStores;
 
   return (
     <Layout>
@@ -618,9 +738,21 @@ const AdminInventoryViewer = () => {
                                  '💰 Vendido'}
                               </span>
                             </td>
-                            <td className="px-4 py-3">{product.store}</td>
                             <td className="px-4 py-3">
-                              <button className="text-blue-400 hover:text-blue-300 text-sm">
+                              {product.store === 'atlixco' ? '🏪 Atlixco' :
+                               product.store === 'warehouse' ? '📦 Almacén' :
+                               product.store === 'puebla' ? '🏪 Puebla' :
+                               product.store === 'centro' ? '🏪 Centro' :
+                               product.store === 'online' ? '💻 Online' : product.store}
+                            </td>
+                            <td className="px-4 py-3">
+                              <button 
+                                onClick={() => {
+                                  setSelectedItem(product);
+                                  setShowDetailsModal(true);
+                                }}
+                                className="text-blue-400 hover:text-blue-300 text-sm"
+                              >
                                 Ver detalles
                               </button>
                             </td>
@@ -656,7 +788,13 @@ const AdminInventoryViewer = () => {
                         <p><span className="text-gray-400">Color:</span> {product.color}</p>
                         <p><span className="text-gray-400">RAM:</span> {product.ram || "-"}</p>
                         <p><span className="text-gray-400">Almacenamiento:</span> {product.storage || "-"}</p>
-                        <p><span className="text-gray-400">Sucursal:</span> {product.store}</p>
+                        <p><span className="text-gray-400">Sucursal:</span> {
+                          product.store === 'atlixco' ? '🏪 Atlixco' :
+                          product.store === 'warehouse' ? '📦 Almacén' :
+                          product.store === 'puebla' ? '🏪 Puebla' :
+                          product.store === 'centro' ? '🏪 Centro' :
+                          product.store === 'online' ? '💻 Online' : product.store
+                        }</p>
                         <div>
                           <span className="text-gray-400">IMEI:</span>{" "}
                           {product.imei ? (
@@ -739,10 +877,7 @@ const AdminInventoryViewer = () => {
           )}
 
           {activeTab === "transfers" && (
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-4">🔄 Historial de Transferencias</h3>
-              <p className="text-gray-400">Funcionalidad de transferencias entre sucursales próximamente...</p>
-            </div>
+            <TransferHistory token={token} />
           )}
         </div>
 
@@ -860,8 +995,14 @@ const AdminInventoryViewer = () => {
                     className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
                   >
                     <option value="">Selecciona sucursal</option>
-                    {uniqueStores.map(store => (
-                      <option key={store} value={store}>{store}</option>
+                    {availableStoresForTransfer.map(store => (
+                      <option key={store} value={store}>
+                        {store === 'atlixco' ? '🏪 Atlixco' :
+                         store === 'warehouse' ? '📦 Almacén' :
+                         store === 'puebla' ? '🏪 Puebla' :
+                         store === 'centro' ? '🏪 Centro' :
+                         store === 'online' ? '💻 Tienda Online' : store}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -880,6 +1021,107 @@ const AdminInventoryViewer = () => {
                     ❌ Cancelar
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Details Modal */}
+        {showDetailsModal && selectedItem && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-lime-400">📦 Detalles del Producto</h2>
+                <button
+                  onClick={() => setShowDetailsModal(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Categoría</label>
+                    <p className="text-white">{selectedItem.category || "No especificada"}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Marca</label>
+                    <p className="text-white font-semibold">{selectedItem.brand || "No especificada"}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Modelo</label>
+                    <p className="text-white">{selectedItem.model || "No especificado"}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Color</label>
+                    <p className="text-white">{selectedItem.color || "No especificado"}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">IMEI</label>
+                    <p className="text-white font-mono text-sm">{selectedItem.imei || "No asignado"}</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">RAM</label>
+                    <p className="text-white">{selectedItem.ram || "No especificada"}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Almacenamiento</label>
+                    <p className="text-white">{selectedItem.storage || "No especificado"}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Precio de Compra</label>
+                    <p className="text-white">${selectedItem.purchase_price || "0"}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Precio de Venta</label>
+                    <p className="text-white">${selectedItem.sale_price || "0"}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Sucursal</label>
+                    <p className="text-white">{selectedItem.store || "No especificada"}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-6 pt-4 border-t border-gray-600">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Estado</label>
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                      selectedItem.status === 'in_stock' ? 'bg-green-600 text-white' :
+                      selectedItem.status === 'assigned' ? 'bg-yellow-500 text-black' :
+                      selectedItem.status === 'sold' ? 'bg-red-500 text-white' :
+                      'bg-gray-600 text-white'
+                    }`}>
+                      {selectedItem.status === 'in_stock' ? '✅ En Stock' :
+                       selectedItem.status === 'assigned' ? '📋 Asignado' :
+                       selectedItem.status === 'sold' ? '💰 Vendido' :
+                       selectedItem.status}
+                    </span>
+                  </div>
+                  {selectedItem.inventory_request_id && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-400 mb-1">ID de Solicitud</label>
+                      <p className="text-white font-mono text-xs">
+                        ID de Solicitud: {selectedItem.inventory_request_id}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex justify-end mt-6">
+                <button
+                  onClick={() => setShowDetailsModal(false)}
+                  className="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded-lg font-medium"
+                >
+                  Cerrar
+                </button>
               </div>
             </div>
           </div>
