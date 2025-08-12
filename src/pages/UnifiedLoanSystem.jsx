@@ -132,7 +132,7 @@ const UnifiedLoanSystem = () => {
       ]);
 
       setCustomers(customersRes.data || []);
-      setProducts(productsRes.data?.filter(p => p.status === "in_stock") || []);
+      setProducts(productsRes.data?.filter(p => p.status === "in_stock" && p.imei) || []);
       setFinancialProducts(financialRes.data || []);
       
       // Real stores data

@@ -36,7 +36,7 @@ const CreateLoan = () => {
       ]);
 
       setCustomers(cRes.data);
-      setProducts(pRes.data.filter(p => p.status === "in_stock"));
+      setProducts(pRes.data.filter(p => p.status === "in_stock" && p.imei));
       setFinancialProducts(fRes.data);
     } catch (err) {
       console.error("Error loading data:", err);
