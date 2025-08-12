@@ -1115,12 +1115,14 @@ const InventoryRequest = () => {
                         <span className={`px-2 py-1 text-xs rounded-full ${
                           request.status === 'pending' || !request.status ? 'bg-yellow-900 text-yellow-200' :
                           request.status === 'approved' ? 'bg-green-900 text-green-200' :
+                          request.status === 'paid' ? 'bg-purple-900 text-purple-200' :
                           request.status === 'rejected' ? 'bg-red-900 text-red-200' :
                           request.status === 'received' ? 'bg-blue-900 text-blue-200' :
                           'bg-gray-900 text-gray-200'
                         }`}>
                           {request.status === 'pending' || !request.status ? '⏳ Pendiente' :
                            request.status === 'approved' ? '✅ Aprobado' :
+                           request.status === 'paid' ? '💰 Pagado' :
                            request.status === 'rejected' ? '❌ Rechazado' :
                            request.status === 'received' ? '📦 Recibido' :
                            '❓ Desconocido'}
@@ -1131,7 +1133,7 @@ const InventoryRequest = () => {
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex gap-2">
-                          {request.status === 'approved' && (
+                          {request.status === 'paid' && (
                             <button
                               onClick={() => handleReceiveInventory(request.id)}
                               className="text-blue-400 hover:text-blue-300 text-sm"
@@ -1156,11 +1158,82 @@ const InventoryRequest = () => {
           <div className="bg-gray-900 rounded-xl p-6 border border-gray-700">
             <h2 className="text-xl font-bold text-crediyaGreen mb-6">📦 Recepción de Inventario</h2>
             
-            <div className="text-center text-gray-400 py-8">
-              <div className="text-4xl mb-4">📦</div>
-              <div className="text-lg mb-2">Recepción de Inventario</div>
-              <div className="text-sm">Aquí podrás marcar el inventario como recibido</div>
-            </div>
+            {requests.filter(req => req.status === 'paid').length === 0 ? (
+              <div className="text-center text-gray-400 py-8">
+                <div className="text-4xl mb-4">📦</div>
+                <div className="text-lg mb-2">No hay inventario listo para recibir</div>
+                <div className="text-sm">Los productos aparecerán aquí una vez que hayan sido pagados en Tesorería</div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="text-sm text-gray-400 mb-4">
+                  Productos pagados listos para recepción
+                </div>
+                
+                <div className="grid gap-4">
+                  {requests.filter(req => req.status === 'paid').map((request) => (
+                    <div key={request.id} className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="text-lg">
+                              {inventoryCategories.find(c => c.id === request.category)?.icon || '📦'}
+                            </span>
+                            <div>
+                              <h3 className="text-white font-semibold">
+                                {inventoryCategories.find(c => c.id === request.category)?.name || request.category}
+                              </h3>
+                              <p className="text-gray-400 text-sm">Solicitud #{request.id}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div>
+                              <span className="text-gray-400">Monto:</span>
+                              <p className="text-white font-medium">
+                                ${request.amount ? parseFloat(request.amount).toLocaleString() : "0.00"}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="text-gray-400">Proveedor:</span>
+                              <p className="text-white">{request.supplier || "N/A"}</p>
+                            </div>
+                            <div>
+                              <span className="text-gray-400">Entrega esperada:</span>
+                              <p className="text-white">
+                                {request.expected_delivery ? new Date(request.expected_delivery).toLocaleDateString() : "N/A"}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="text-gray-400">Estado:</span>
+                              <span className="bg-purple-900 text-purple-200 px-2 py-1 text-xs rounded-full">
+                                💰 Pagado
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {request.notes && (
+                            <div className="mt-3">
+                              <span className="text-gray-400 text-sm">Notas:</span>
+                              <p className="text-gray-300 text-sm">{request.notes}</p>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="ml-4">
+                          <button
+                            onClick={() => handleReceiveInventory(request.id)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                          >
+                            📦 Marcar como Recibido
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
