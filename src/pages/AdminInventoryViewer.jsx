@@ -98,11 +98,10 @@ const TransferHistory = ({ token }) => {
                 
                 const formatStoreName = (store) => {
                   switch(store) {
+                    case 'chipilo': return '🏪 Chipilo';
                     case 'atlixco': return '🏪 Atlixco';
+                    case 'cholula': return '🏪 Cholula';
                     case 'warehouse': return '📦 Almacén';
-                    case 'puebla': return '🏪 Puebla';
-                    case 'centro': return '🏪 Centro';
-                    case 'online': return '💻 Online';
                     default: return store;
                   }
                 };
@@ -468,7 +467,7 @@ const AdminInventoryViewer = () => {
   const uniqueStores = [...new Set(products.map(p => p.store))];
   
   // Define all available stores for transfers
-  const allStores = ["atlixco", "warehouse", "puebla", "centro", "online"];
+  const allStores = ["chipilo", "atlixco", "cholula", "warehouse"];
   const availableStoresForTransfer = allStores;
 
   return (
@@ -739,11 +738,10 @@ const AdminInventoryViewer = () => {
                               </span>
                             </td>
                             <td className="px-4 py-3">
-                              {product.store === 'atlixco' ? '🏪 Atlixco' :
-                               product.store === 'warehouse' ? '📦 Almacén' :
-                               product.store === 'puebla' ? '🏪 Puebla' :
-                               product.store === 'centro' ? '🏪 Centro' :
-                               product.store === 'online' ? '💻 Online' : product.store}
+                              {product.store === 'chipilo' ? '🏪 Chipilo' :
+                               product.store === 'atlixco' ? '🏪 Atlixco' :
+                               product.store === 'cholula' ? '🏪 Cholula' :
+                               product.store === 'warehouse' ? '📦 Almacén' : product.store}
                             </td>
                             <td className="px-4 py-3">
                               <button 
@@ -789,11 +787,10 @@ const AdminInventoryViewer = () => {
                         <p><span className="text-gray-400">RAM:</span> {product.ram || "-"}</p>
                         <p><span className="text-gray-400">Almacenamiento:</span> {product.storage || "-"}</p>
                         <p><span className="text-gray-400">Sucursal:</span> {
+                          product.store === 'chipilo' ? '🏪 Chipilo' :
                           product.store === 'atlixco' ? '🏪 Atlixco' :
-                          product.store === 'warehouse' ? '📦 Almacén' :
-                          product.store === 'puebla' ? '🏪 Puebla' :
-                          product.store === 'centro' ? '🏪 Centro' :
-                          product.store === 'online' ? '💻 Online' : product.store
+                          product.store === 'cholula' ? '🏪 Cholula' :
+                          product.store === 'warehouse' ? '📦 Almacén' : product.store
                         }</p>
                         <div>
                           <span className="text-gray-400">IMEI:</span>{" "}
@@ -997,11 +994,10 @@ const AdminInventoryViewer = () => {
                     <option value="">Selecciona sucursal</option>
                     {availableStoresForTransfer.map(store => (
                       <option key={store} value={store}>
-                        {store === 'atlixco' ? '🏪 Atlixco' :
-                         store === 'warehouse' ? '📦 Almacén' :
-                         store === 'puebla' ? '🏪 Puebla' :
-                         store === 'centro' ? '🏪 Centro' :
-                         store === 'online' ? '💻 Tienda Online' : store}
+                        {store === 'chipilo' ? '🏪 Chipilo' :
+                         store === 'atlixco' ? '🏪 Atlixco' :
+                         store === 'cholula' ? '🏪 Cholula' :
+                         store === 'warehouse' ? '📦 Almacén' : store}
                       </option>
                     ))}
                   </select>
