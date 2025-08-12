@@ -294,7 +294,10 @@ const Header = () => {
           {/* User Menu */}
           <div className="relative dropdown">
             <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
+              onClick={() => {
+                console.log("User menu clicked, current state:", showUserMenu);
+                setShowUserMenu(!showUserMenu);
+              }}
               className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-800 transition-colors duration-200"
             >
               <div className="w-8 h-8 bg-gradient-to-r from-crediyaGreen to-emerald-500 rounded-full flex items-center justify-center text-black font-semibold">
@@ -308,7 +311,7 @@ const Header = () => {
             </button>
 
             {showUserMenu && createPortal(
-              <div className="fixed top-16 right-6 mt-2 w-64 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-[999999]">
+              <div className="fixed top-16 right-6 mt-2 w-64 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-[999999] pointer-events-auto">
                 <div className="p-4">
                   <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-700">
                     <div className="w-12 h-12 bg-gradient-to-r from-crediyaGreen to-emerald-500 rounded-full flex items-center justify-center text-black font-semibold text-lg">
@@ -352,7 +355,8 @@ const Header = () => {
                     <button
                       onClick={() => {
                         localStorage.removeItem("token");
-                        window.location.href = "/auth";
+                        localStorage.removeItem("user");
+                        window.location.href = "/login";
                         setShowUserMenu(false);
                       }}
                       className="w-full text-left px-3 py-2 rounded hover:bg-red-900 text-red-400 text-sm"
