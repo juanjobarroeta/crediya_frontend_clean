@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 
 const Header = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -27,11 +28,11 @@ const Header = () => {
             break;
           case "d":
             e.preventDefault();
-            window.location.href = "/dashboard";
+            navigate("/dashboard");
             break;
           case "n":
             e.preventDefault();
-            window.location.href = "/create-loan";
+            navigate("/create-loan");
             break;
         }
       }
@@ -44,14 +45,27 @@ const Header = () => {
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (!event.target.closest(".dropdown")) {
+      if (!event.target.closest(".dropdown") && !event.target.closest("[data-dropdown-content]")) {
         setShowNotifications(false);
         setShowUserMenu(false);
+        setShowSearch(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setShowNotifications(false);
+        setShowUserMenu(false);
+        setShowSearch(false);
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, []);
 
   const getBreadcrumbs = () => {
@@ -143,7 +157,12 @@ const Header = () => {
             </button>
             
             {showSearch && createPortal(
-              <div className="fixed top-16 left-6 mt-2 w-96 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-[999999]">
+              <div 
+                className="fixed top-16 left-6 mt-2 w-96 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-[999999]"
+                style={{ pointerEvents: 'auto' }}
+                onClick={(e) => e.stopPropagation()}
+                data-dropdown-content="search"
+              >
                 <div className="p-4">
                   <input
                     ref={searchRef}
@@ -194,19 +213,28 @@ const Header = () => {
           {/* Quick Actions */}
           <div className="flex items-center gap-2">
             <button
-              onClick={() => window.location.href = "/create-loan"}
+              onClick={() => {
+                console.log("Navigating to /create-loan");
+                navigate("/create-loan");
+              }}
               className="bg-gradient-to-r from-crediyaGreen to-emerald-500 hover:from-emerald-500 hover:to-crediyaGreen text-black font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 cursor-pointer"
             >
               💳 Nuevo Préstamo
             </button>
             <button
-              onClick={() => window.location.href = "/register-payment"}
+              onClick={() => {
+                console.log("Navigating to /register-payment");
+                navigate("/register-payment");
+              }}
               className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 cursor-pointer"
             >
               💰 Registrar Pago
             </button>
             <button
-              onClick={() => window.location.href = "/loan-quotes"}
+              onClick={() => {
+                console.log("Navigating to /loan-quotes");
+                navigate("/loan-quotes");
+              }}
               className="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-violet-500 hover:to-purple-500 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 cursor-pointer"
             >
               📊 Cotizar
@@ -228,7 +256,12 @@ const Header = () => {
             </button>
 
             {showNotifications && createPortal(
-              <div className="fixed top-16 right-6 mt-2 w-80 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-[999999]">
+              <div 
+                className="fixed top-16 right-6 mt-2 w-80 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-[999999]"
+                style={{ pointerEvents: 'auto' }}
+                onClick={(e) => e.stopPropagation()}
+                data-dropdown-content="notifications"
+              >
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold">Notificaciones</h3>
@@ -249,11 +282,11 @@ const Header = () => {
                           markNotificationAsRead(notification.id);
                           // Navigate based on notification type
                           if (notification.type === "payment") {
-                            window.location.href = "/register-payment";
+                            navigate("/register-payment");
                           } else if (notification.type === "overdue") {
-                            window.location.href = "/admin/overdue-loans";
+                            navigate("/admin/overdue-loans");
                           } else if (notification.type === "approval") {
-                            window.location.href = "/admin/loans";
+                            navigate("/admin/loans");
                           }
                           setShowNotifications(false);
                         }}
@@ -311,7 +344,12 @@ const Header = () => {
             </button>
 
             {showUserMenu && createPortal(
-              <div className="fixed top-16 right-6 mt-2 w-64 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-[999999] pointer-events-auto">
+              <div 
+                className="fixed top-16 right-6 mt-2 w-64 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-[999999]"
+                style={{ pointerEvents: 'auto' }}
+                onClick={(e) => e.stopPropagation()}
+                data-dropdown-content="user-menu"
+              >
                 <div className="p-4">
                   <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-700">
                     <div className="w-12 h-12 bg-gradient-to-r from-crediyaGreen to-emerald-500 rounded-full flex items-center justify-center text-black font-semibold text-lg">
@@ -326,7 +364,7 @@ const Header = () => {
                   <div className="space-y-2">
                     <button 
                       onClick={() => {
-                        window.location.href = "/customer-profile";
+                        navigate("/customer-profile");
                         setShowUserMenu(false);
                       }}
                       className="w-full text-left px-3 py-2 rounded hover:bg-gray-700 text-sm"
@@ -335,7 +373,7 @@ const Header = () => {
                     </button>
                     <button 
                       onClick={() => {
-                        window.location.href = "/admin/settings";
+                        navigate("/admin/settings");
                         setShowUserMenu(false);
                       }}
                       className="w-full text-left px-3 py-2 rounded hover:bg-gray-700 text-sm"
@@ -354,9 +392,10 @@ const Header = () => {
                     <div className="border-t border-gray-700 my-2"></div>
                     <button
                       onClick={() => {
+                        console.log("Logging out...");
                         localStorage.removeItem("token");
                         localStorage.removeItem("user");
-                        window.location.href = "/login";
+                        navigate("/auth");
                         setShowUserMenu(false);
                       }}
                       className="w-full text-left px-3 py-2 rounded hover:bg-red-900 text-red-400 text-sm"

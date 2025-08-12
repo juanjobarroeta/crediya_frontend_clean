@@ -44,6 +44,9 @@ import CreateUser from "./pages/CreateUser";
 import StoreDashboard from "./pages/StoreDashboard";
 import BudgetManagement from "./pages/BudgetManagement";
 import AccountingHub from "./pages/AccountingHub";
+import UnifiedLoanSystem from "./pages/UnifiedLoanSystem";
+import LoanResolution from "./pages/LoanResolution";
+import LoanStatusManager from "./pages/LoanStatusManager";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -160,6 +163,13 @@ const AppRouter = () => (
         }
       />
       <Route path="/admin/create-user" element={<AdminRoute><CreateUser /></AdminRoute>} />
+      
+      {/* Recovered State-of-the-Art Loan System Routes */}
+      <Route path="/loans/unified" element={<ProtectedRoute><UnifiedLoanSystem /></ProtectedRoute>} />
+      <Route path="/loans/unified/:loan_id" element={<ProtectedRoute><UnifiedLoanSystem /></ProtectedRoute>} />
+      <Route path="/loans/:loan_id/resolution" element={<ProtectedRoute><LoanResolution /></ProtectedRoute>} />
+      <Route path="/loans/:loan_id/status" element={<ProtectedRoute><LoanStatusManager /></ProtectedRoute>} />
+      
       <Route path="*" element={<Navigate to="/auth" replace />} />
     </Routes>
   </Router>

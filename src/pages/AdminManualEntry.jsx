@@ -5,17 +5,6 @@ import Layout from "../components/Layout";
 
 const AdminManualEntry = () => {
   const token = localStorage.getItem("token");
-  
-  // Add logout function to window for debugging
-  React.useEffect(() => {
-    window.forceLogout = () => {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      window.location.href = "/auth";
-    };
-    console.log("🔧 Debug: Use window.forceLogout() in console if logout button doesn't work");
-  }, []);
-  
   const [form, setForm] = useState({
     type: "",
     amount: "",
@@ -91,17 +80,6 @@ const AdminManualEntry = () => {
               <div className="bg-gradient-to-r from-crediyaGreen to-emerald-500 p-2 rounded-lg">
                 <span className="text-2xl">💼</span>
               </div>
-              {/* Quick Logout Button */}
-              <button
-                onClick={() => {
-                  localStorage.removeItem("token");
-                  localStorage.removeItem("user");
-                  window.location.href = "/auth";
-                }}
-                className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
-              >
-                🚪 Cerrar Sesión
-              </button>
             </div>
           </div>
         </div>

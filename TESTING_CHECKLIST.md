@@ -8,7 +8,22 @@
 - [ ] **Login System**: Test login with existing credentials
 - [ ] **Dashboard Access**: Verify main dashboard loads correctly
 
-### **Phase 2: Customer Management Test**
+### **Phase 2: Financial Product Creation Test**
+- [ ] **Navigate to Financial Products**: Access the financial products management section
+- [ ] **Create New Product**: Test the product creation form
+  - [ ] Product title/name
+  - [ ] Interest rate (annual percentage)
+  - [ ] Term in weeks
+  - [ ] Payment frequency (weekly, bi-weekly, monthly)
+  - [ ] Penalty fees
+  - [ ] Down payment requirements
+  - [ ] Product notes/description
+- [ ] **Product Save**: Verify product is saved to database
+- [ ] **Product List**: Check product appears in the products list
+- [ ] **Product Editing**: Test product modification functionality
+- [ ] **Product Deletion**: Test product removal (if applicable)
+
+### **Phase 3: Customer Management Test**
 - [ ] **Create Customer**: Navigate to Customer Creation
 - [ ] **Customer Data**: Fill in complete customer information
   - [ ] Personal details (name, phone, email, address)
@@ -18,20 +33,21 @@
 - [ ] **Customer List**: Check customer appears in directory
 - [ ] **Customer Profile**: Verify all data is displayed correctly
 
-### **Phase 3: Loan Creation & Management Test**
+### **Phase 4: Loan Creation & Management Test**
 - [ ] **Select Customer**: Choose the test customer created
+- [ ] **Select Financial Product**: Choose the financial product created
 - [ ] **Loan Application**: Fill loan application form
   - [ ] Loan amount
-  - [ ] Term (weeks)
-  - [ ] Interest rate
-  - [ ] Payment frequency
-  - [ ] Down payment
+  - [ ] Term (weeks) - should auto-populate from product
+  - [ ] Interest rate - should auto-populate from product
+  - [ ] Payment frequency - should auto-populate from product
+  - [ ] Down payment - should auto-populate from product
 - [ ] **Loan Approval**: Process loan through approval workflow
 - [ ] **Loan Status**: Verify loan status changes correctly
 - [ ] **Installment Generation**: Check loan installments are created
 - [ ] **Loan Details**: Verify all loan information is accurate
 
-### **Phase 4: Inventory Management Test**
+### **Phase 5: Inventory Management Test**
 - [ ] **Inventory Creation**: Create new inventory item
   - [ ] Product details
   - [ ] IMEI assignment (if applicable)
@@ -40,7 +56,7 @@
 - [ ] **Inventory Tracking**: Verify inventory status updates
 - [ ] **Inventory Reports**: Check inventory reports accuracy
 
-### **Phase 5: Payment Processing Test**
+### **Phase 6: Payment Processing Test**
 - [ ] **Payment Registration**: Register a payment for the test loan
   - [ ] Payment amount
   - [ ] Payment date
@@ -49,13 +65,13 @@
 - [ ] **Payment Receipt**: Generate and verify payment receipt
 - [ ] **Payment History**: Check payment appears in loan history
 
-### **Phase 6: Accounting Ledger Test**
+### **Phase 7: Accounting Ledger Test**
 - [ ] **Journal Entries**: Verify payment creates correct journal entries
 - [ ] **Account Balances**: Check account balances update correctly
 - [ ] **Double-Entry**: Verify double-entry bookkeeping is maintained
 - [ ] **Transaction History**: Review transaction log accuracy
 
-### **Phase 7: Financial Reports Test**
+### **Phase 8: Financial Reports Test**
 - [ ] **Income Statement**: Generate income statement for current period
   - [ ] Revenue recognition
   - [ ] Interest income
@@ -68,25 +84,32 @@
 - [ ] **Cash Flow**: Verify cash flow statement accuracy
 - [ ] **Loan Portfolio**: Check loan portfolio summary
 
-### **Phase 8: Collections & Overdue Management Test**
+### **Phase 9: Collections & Overdue Management Test**
 - [ ] **Overdue Detection**: Test overdue loan identification
 - [ ] **Collection Actions**: Test collection workflow
 - [ ] **Penalty Calculation**: Verify penalty fees are calculated
 - [ ] **Collection Reports**: Check collection dashboard accuracy
 
-### **Phase 9: Admin & Reporting Test**
+### **Phase 10: Admin & Reporting Test**
 - [ ] **User Management**: Test admin user creation (if applicable)
 - [ ] **Store Management**: Verify store configuration
 - [ ] **System Reports**: Test various system reports
 - [ ] **Data Export**: Test data export functionality
 
-### **Phase 10: System Integration Test**
+### **Phase 11: System Integration Test**
 - [ ] **Data Consistency**: Verify data consistency across all modules
 - [ ] **Real-time Updates**: Check real-time data updates
 - [ ] **Error Handling**: Test error scenarios and system recovery
 - [ ] **Performance**: Verify system responsiveness
 
 ## 🚨 **Critical Test Scenarios**
+
+### **Financial Product Integration Tests**
+1. **Product Creation**: Verify financial product creation and validation
+2. **Product Selection**: Test product selection in loan applications
+3. **Auto-Population**: Ensure loan forms auto-populate from selected products
+4. **Product Updates**: Test product modification and its impact on existing loans
+5. **Product Validation**: Verify business rules (interest rates, terms, etc.)
 
 ### **Accounting Accuracy Tests**
 1. **Payment Allocation**: Ensure payments correctly reduce loan principal
