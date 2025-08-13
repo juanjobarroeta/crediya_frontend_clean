@@ -178,6 +178,17 @@ const LoanDetails = () => {
                 >
                   💰 Registrar Pago
                 </Link>
+                
+                {/* Loan Resolution Actions */}
+                {(loan.status === 'delivered' || loan.status === 'overdue') && (
+                  <Link
+                    to={`/loans/${loan.id}/resolution`}
+                    className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+                  >
+                    ⚖️ Resolver Préstamo
+                  </Link>
+                )}
+                
                 <Link
                   to="/loans"
                   className="bg-gray-700 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
