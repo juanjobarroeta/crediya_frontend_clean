@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "../utils/constants";
+import useStores from "../hooks/useStores";
 import Layout from "../components/Layout";
 import { Line, Bar, Doughnut } from "react-chartjs-2";
 import {
@@ -96,15 +97,7 @@ const TransferHistory = ({ token }) => {
                 const fromStore = fromMatch ? fromMatch[1] : "N/A";
                 const toStore = toMatch ? toMatch[1] : "N/A";
                 
-                const formatStoreName = (store) => {
-                  switch(store) {
-                    case 'chipilo': return '🏪 Chipilo';
-                    case 'atlixco': return '🏪 Atlixco';
-                    case 'cholula': return '🏪 Cholula';
-                    case 'warehouse': return '📦 Almacén';
-                    default: return store;
-                  }
-                };
+                // formatStoreName is now provided by useStores hook
 
                 return (
                   <tr key={transfer.id || idx} className="border-t border-gray-700 hover:bg-gray-700 transition-colors">
@@ -146,6 +139,7 @@ const TransferHistory = ({ token }) => {
 const AdminInventoryViewer = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { stores, formatStoreName, getFormattedStoreNameById } = useStores();
   const [activeTab, setActiveTab] = useState("overview");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -466,9 +460,8 @@ const AdminInventoryViewer = () => {
   const uniqueCategories = [...new Set(products.map(p => p.category))];
   const uniqueStores = [...new Set(products.map(p => p.store))];
   
-  // Define all available stores for transfers
-  const allStores = ["chipilo", "atlixco", "cholula", "warehouse"];
-  const availableStoresForTransfer = allStores;
+  // Define all available stores for transfers using dynamic stores
+  const availableStoresForTransfer = stores.map(store => store.name.toLowerCase().replace(/\s+/g, '_'));
 
   return (
     <Layout>
@@ -557,8 +550,10 @@ const AdminInventoryViewer = () => {
               className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
             >
               <option value="all">🏪 Todas las sucursales</option>
-              {uniqueStores.map(store => (
-                <option key={store} value={store}>{store}</option>
+              {stores.map(store => (
+                <option key={store.id} value={store.name.toLowerCase().replace(/\s+/g, '_')}>
+                  {formatStoreName(store)}
+                </option>
               ))}
             </select>
             <button
@@ -738,10 +733,7 @@ const AdminInventoryViewer = () => {
                               </span>
                             </td>
                             <td className="px-4 py-3">
-                              {product.store === 'chipilo' ? '🏪 Chipilo' :
-                               product.store === 'atlixco' ? '🏪 Atlixco' :
-                               product.store === 'cholula' ? '🏪 Cholula' :
-                               product.store === 'warehouse' ? '📦 Almacén' : product.store}
+                                                          {formatStoreName(product.store)}
                             </td>
                             <td className="px-4 py-3">
                               <button 
@@ -786,12 +778,7 @@ const AdminInventoryViewer = () => {
                         <p><span className="text-gray-400">Color:</span> {product.color}</p>
                         <p><span className="text-gray-400">RAM:</span> {product.ram || "-"}</p>
                         <p><span className="text-gray-400">Almacenamiento:</span> {product.storage || "-"}</p>
-                        <p><span className="text-gray-400">Sucursal:</span> {
-                          product.store === 'chipilo' ? '🏪 Chipilo' :
-                          product.store === 'atlixco' ? '🏪 Atlixco' :
-                          product.store === 'cholula' ? '🏪 Cholula' :
-                          product.store === 'warehouse' ? '📦 Almacén' : product.store
-                        }</p>
+                        <p><span className="text-gray-400">Sucursal:</span> {formatStoreName(product.store)}</p>
                         <div>
                           <span className="text-gray-400">IMEI:</span>{" "}
                           {product.imei ? (
@@ -994,10 +981,7 @@ const AdminInventoryViewer = () => {
                     <option value="">Selecciona sucursal</option>
                     {availableStoresForTransfer.map(store => (
                       <option key={store} value={store}>
-                        {store === 'chipilo' ? '🏪 Chipilo' :
-                         store === 'atlixco' ? '🏪 Atlixco' :
-                         store === 'cholula' ? '🏪 Cholula' :
-                         store === 'warehouse' ? '📦 Almacén' : store}
+                        {formatStoreName(store)}
                       </option>
                     ))}
                   </select>

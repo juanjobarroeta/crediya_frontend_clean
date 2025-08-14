@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "../utils/constants";
+import useStores from "../hooks/useStores";
 import Layout from "../components/Layout";
 import * as XLSX from 'xlsx';
 
 const InventoryRequest = () => {
   const [activeTab, setActiveTab] = useState("request");
+  const { stores, formatStoreName } = useStores();
   const [loading, setLoading] = useState(false);
   const [requests, setRequests] = useState([]);
   const [pendingApprovals, setPendingApprovals] = useState([]);
@@ -525,9 +527,11 @@ const InventoryRequest = () => {
                         onChange={handleChange}
                         required
                       >
-                        <option value="atlixco">🏢 Atlixco</option>
-                        <option value="cholula">🏢 Cholula</option>
-                        <option value="chipilo">🏢 Chipilo</option>
+                        {stores.map(store => (
+                          <option key={store.id} value={store.name.toLowerCase().replace(/\s+/g, '_')}>
+                            {formatStoreName(store)}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>

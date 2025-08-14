@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "../utils/constants";
+import useStores from "../hooks/useStores";
 import Layout from "../components/Layout";
 
 const AdminManualEntry = () => {
   const token = localStorage.getItem("token");
+  const { stores, formatStoreName } = useStores();
   const [form, setForm] = useState({
     type: "",
     amount: "",
@@ -61,9 +63,11 @@ const AdminManualEntry = () => {
 
   const storeOptions = [
     { value: "", label: "Ninguna", icon: "🏠" },
-    { value: "1", label: "Atlixco", icon: "📍" },
-    { value: "2", label: "Cholula", icon: "📍" },
-    { value: "3", label: "Chipilo", icon: "📍" },
+    ...stores.map(store => ({
+      value: store.id.toString(),
+      label: store.name,
+      icon: store.name.toLowerCase().includes('almacén') || store.name.toLowerCase().includes('warehouse') ? "📦" : "🏪"
+    }))
   ];
 
   return (

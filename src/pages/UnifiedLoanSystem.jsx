@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import Layout from "../components/Layout";
 import { API_BASE_URL } from "../utils/constants";
+import useStores from "../hooks/useStores";
 
 const UnifiedLoanSystem = () => {
   const navigate = useNavigate();
@@ -15,7 +16,7 @@ const UnifiedLoanSystem = () => {
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
   const [financialProducts, setFinancialProducts] = useState([]);
-  const [stores, setStores] = useState([]);
+  const { stores, loading: storesLoading } = useStores();
   
   // Loan form state
   const [loanData, setLoanData] = useState({
@@ -135,12 +136,7 @@ const UnifiedLoanSystem = () => {
       setProducts(productsRes.data?.filter(p => p.status === "in_stock" && p.imei) || []);
       setFinancialProducts(financialRes.data || []);
       
-      // Real stores data
-      setStores([
-        { id: 1, name: "Atlixco", location: "Atlixco, Puebla" },
-        { id: 2, name: "Chipilo", location: "Chipilo, Puebla" },
-        { id: 3, name: "Cholula", location: "Cholula, Puebla" }
-      ]);
+      // Stores are now loaded via useStores hook
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
@@ -630,14 +626,17 @@ const UnifiedLoanSystem = () => {
                         <select
                           value={loanData.store_id}
                           onChange={(e) => handleInputChange("store_id", e.target.value)}
+                          disabled={storesLoading}
                           className={`w-full p-3 bg-gray-700 border rounded-lg text-white focus:outline-none transition-colors ${
                             validationErrors.store_id ? 'border-red-500' : 'border-gray-600 focus:border-lime-400'
-                          }`}
+                          } ${storesLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
-                          <option value="">Seleccionar tienda</option>
-                          {stores.map(store => (
+                          <option value="">
+                            {storesLoading ? "Cargando tiendas..." : "Seleccionar tienda"}
+                          </option>
+                          {!storesLoading && stores.map(store => (
                             <option key={store.id} value={store.id}>
-                              {store.name} - {store.location}
+                              {store.name} {store.address ? `- ${store.address}` : ''}
                             </option>
                           ))}
                         </select>

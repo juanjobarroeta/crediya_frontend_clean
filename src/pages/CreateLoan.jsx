@@ -2,12 +2,14 @@ import { API_BASE_URL } from "../utils/constants";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Layout from "../components/Layout";
+import useStores from "../hooks/useStores";
 
 
 const CreateLoan = () => {
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
   const [financialProducts, setFinancialProducts] = useState([]);
+  const { stores, loading: storesLoading } = useStores();
 
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [selectedProduct, setSelectedProduct] = useState("");
@@ -137,11 +139,18 @@ const CreateLoan = () => {
           className="w-full p-2 bg-black border border-crediyaGreen text-white rounded focus:outline-none focus:ring-2 focus:ring-crediyaGreen"
           value={storeId}
           onChange={(e) => setStoreId(e.target.value)}
+          disabled={storesLoading}
         >
           <option value="">-- Selecciona una sucursal --</option>
-          <option value="1">Atlixco</option>
-          <option value="2">Cholula</option>
-          <option value="3">Chipilo</option>
+          {storesLoading ? (
+            <option disabled>Cargando sucursales...</option>
+          ) : (
+            stores.map(store => (
+              <option key={store.id} value={store.id}>
+                {store.name}
+              </option>
+            ))
+          )}
         </select>
       </div>
 
