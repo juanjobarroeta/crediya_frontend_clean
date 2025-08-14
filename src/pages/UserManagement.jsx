@@ -145,6 +145,7 @@ const UserManagement = () => {
   const [showAuditModal, setShowAuditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
+  const [userActivity, setUserActivity] = useState([]);
   const [activeTab, setActiveTab] = useState("users");
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("");
@@ -168,7 +169,10 @@ const UserManagement = () => {
   useEffect(() => {
     fetchUsers();
     fetchStores();
-  }, []);
+    if (activeTab === "activity") {
+      fetchUserActivity();
+    }
+  }, [activeTab]);
 
   const fetchUsers = async () => {
     try {
@@ -199,6 +203,16 @@ const UserManagement = () => {
     } catch (error) {
       console.error("Error fetching audit logs:", error);
       setAuditLogs([]);
+    }
+  };
+
+  const fetchUserActivity = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/admin/user-activity?days=30`, { headers });
+      setUserActivity(response.data);
+    } catch (error) {
+      console.error("Error fetching user activity:", error);
+      setUserActivity([]);
     }
   };
 
@@ -524,6 +538,51 @@ const UserManagement = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Activity Tab Content */}
+          {activeTab === "activity" && (
+            <div className="space-y-6">
+              <div className="bg-gray-900 rounded-lg p-6">
+                <h3 className="text-xl font-semibold text-white mb-4">📊 Actividad del Sistema (Últimos 30 días)</h3>
+                {userActivity.length > 0 ? (
+                  <div className="space-y-4">
+                    {userActivity.map((activity, index) => (
+                      <div key={index} className="bg-gray-800 rounded-lg p-4 flex justify-between items-center">
+                        <div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-blue-400 font-medium">{activity.action}</span>
+                            {activity.resource_type && (
+                              <span className="px-2 py-1 bg-purple-900 text-purple-300 text-xs rounded">
+                                {activity.resource_type}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-400 mt-1">
+                            <span className="font-medium text-white">{activity.user_name || 'Usuario desconocido'}</span>
+                            {activity.date && (
+                              <span className="ml-3">📅 {new Date(activity.date).toLocaleDateString('es-ES')}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-green-400">{activity.count}</div>
+                          <div className="text-sm text-gray-400">acciones</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="text-gray-400 mb-2">📊</div>
+                    <p className="text-gray-400">No hay actividad registrada en los últimos 30 días</p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      La actividad aparecerá aquí cuando los usuarios realicen acciones en el sistema
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
