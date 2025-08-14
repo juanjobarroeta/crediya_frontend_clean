@@ -547,28 +547,36 @@ const UserManagement = () => {
               <div className="bg-gray-900 rounded-lg p-6">
                 <h3 className="text-xl font-semibold text-white mb-4">📊 Actividad del Sistema (Últimos 30 días)</h3>
                 {userActivity.length > 0 ? (
-                  <div className="space-y-4">
-                    {userActivity.map((activity, index) => (
-                      <div key={index} className="bg-gray-800 rounded-lg p-4 flex justify-between items-center">
-                        <div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-blue-400 font-medium">{activity.action}</span>
-                            {activity.resource_type && (
-                              <span className="px-2 py-1 bg-purple-900 text-purple-300 text-xs rounded">
-                                {activity.resource_type}
-                              </span>
-                            )}
+                  <div className="space-y-3">
+                    {userActivity.map((activity) => (
+                      <div key={activity.id} className="bg-gray-800 rounded-lg p-4">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <span className="text-blue-400 font-medium">{activity.action}</span>
+                              {activity.resource_type && (
+                                <span className="px-2 py-1 bg-purple-900 text-purple-300 text-xs rounded">
+                                  {activity.resource_type}
+                                </span>
+                              )}
+                              {activity.resource_id && (
+                                <span className="px-2 py-1 bg-gray-700 text-gray-300 text-xs rounded">
+                                  ID: {activity.resource_id}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-400">
+                              <span className="font-medium text-white">{activity.user_name || 'Usuario desconocido'}</span>
+                              {activity.ip_address && (
+                                <span className="ml-3">🌐 {activity.ip_address}</span>
+                              )}
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-400 mt-1">
-                            <span className="font-medium text-white">{activity.user_name || 'Usuario desconocido'}</span>
-                            {activity.date && (
-                              <span className="ml-3">📅 {new Date(activity.date).toLocaleDateString('es-ES')}</span>
-                            )}
+                          <div className="text-right text-sm">
+                            <div className="text-gray-300">
+                              {formatDate(activity.created_at)}
+                            </div>
                           </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-green-400">{activity.count}</div>
-                          <div className="text-sm text-gray-400">acciones</div>
                         </div>
                       </div>
                     ))}
