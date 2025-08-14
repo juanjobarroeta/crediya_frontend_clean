@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Layout from "../components/Layout";
+import { API_BASE_URL } from "../utils/constants";
 
 const permissionPresets = {
   admin: {
@@ -41,7 +42,7 @@ const CreateUser = () => {
     const fetchUsers = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("${API_BASE_URL}/admin/users", {
+        const res = await axios.get(`${API_BASE_URL}/admin/users`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         console.log("Users fetched:", res.data);
@@ -59,7 +60,7 @@ const CreateUser = () => {
     const fetchStores = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("${API_BASE_URL}/admin/stores", {
+        const res = await axios.get(`${API_BASE_URL}/admin/stores`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         console.log("Stores fetched (raw):", res.data);
@@ -129,7 +130,7 @@ const CreateUser = () => {
     setError("");
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post("${API_BASE_URL}/admin/create-user", {
+      const res = await axios.post(`${API_BASE_URL}/admin/create-user`, {
         ...form,
         permissions: JSON.parse(form.permissions || "{}")
       }, {

@@ -47,6 +47,7 @@ import AccountingHub from "./pages/AccountingHub";
 import UnifiedLoanSystem from "./pages/UnifiedLoanSystem";
 import LoanResolution from "./pages/LoanResolution";
 import LoanStatusManager from "./pages/LoanStatusManager";
+import UserManagement from "./pages/UserManagement";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -136,6 +137,7 @@ const AppRouter = () => (
       />
       <Route path="/admin/manual-entry" element={<AdminRoute><AdminManualEntry /></AdminRoute>} />
       <Route path="/admin/tesoreria" element={<AdminRoute><Tesoreria /></AdminRoute>} />
+      <Route path="/admin/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
       <Route path="/warehouse/reception" element={<ProtectedRoute><RecepcionInventario /></ProtectedRoute>} />
       <Route
         path="/income-statement"

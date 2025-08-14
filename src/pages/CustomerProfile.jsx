@@ -135,7 +135,7 @@ const CustomerProfile = () => {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       });
       setReferences(referencesRes.data);
-    } catch (err) {
+      } catch (err) {
       console.error("Error adding reference:", err);
     }
   };
@@ -226,9 +226,9 @@ const CustomerProfile = () => {
                   <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold mt-1 ${customerStatus.color}`}>
                     {customerStatus.label}
                   </span>
-                </div>
-              </div>
-            </div>
+        </div>
+          </div>
+          </div>
             <div className="flex gap-3">
               <Link
                 to={`/loans/unified/${customer.id}`}
@@ -242,7 +242,7 @@ const CustomerProfile = () => {
               >
                 💳 Registrar Pago
               </Link>
-            </div>
+          </div>
           </div>
         </div>
 
@@ -264,7 +264,7 @@ const CustomerProfile = () => {
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-400">{loans.length}</div>
               <div className="text-gray-400 text-sm">Préstamos Totales</div>
-            </div>
+          </div>
           </div>
         </div>
 
@@ -459,24 +459,24 @@ const CustomerProfile = () => {
               
               {/* Add Note */}
               <div className="mb-6 p-4 bg-gray-700 rounded-lg">
-                <textarea
+          <textarea
                   className="w-full bg-gray-600 border border-gray-500 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:border-lime-500 focus:outline-none"
-                  rows={3}
+            rows={3}
                   placeholder="Agregar nueva nota sobre el cliente..."
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                />
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
                 <div className="flex justify-between items-center mt-3">
                   <div className="text-sm text-gray-400">
                     Registra comentarios, comportamiento, historial, etc.
                   </div>
-                  <button
+          <button
                     onClick={handleAddNote}
                     disabled={!note.trim()}
                     className="bg-lime-500 hover:bg-lime-600 disabled:bg-gray-600 disabled:text-gray-400 text-black px-4 py-2 rounded-lg font-medium transition-colors"
                   >
                     💾 Guardar Nota
-                  </button>
+          </button>
                 </div>
                 {noteMessage && (
                   <div className="mt-2 text-sm text-gray-300">{noteMessage}</div>
@@ -485,7 +485,7 @@ const CustomerProfile = () => {
 
               {/* Notes History */}
               <div className="space-y-4">
-                {notes.length === 0 ? (
+            {notes.length === 0 ? (
                   <div className="text-center py-8">
                     <div className="text-4xl mb-2">📝</div>
                     <p className="text-gray-400">No hay notas registradas</p>
@@ -501,7 +501,7 @@ const CustomerProfile = () => {
                   ))
                 )}
               </div>
-            </div>
+        </div>
           )}
 
           {activeTab === "guarantors" && (
@@ -514,39 +514,39 @@ const CustomerProfile = () => {
               <div className="mb-6 p-4 bg-gray-700 rounded-lg">
                 <h4 className="font-semibold mb-3">Agregar Nuevo Aval</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <input
+            <input
                     className="bg-gray-600 border border-gray-500 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:border-lime-500 focus:outline-none"
                     placeholder="Nombre completo"
-                    value={newAval.name}
-                    onChange={(e) => setNewAval({ ...newAval, name: e.target.value })}
-                  />
-                  <input
+              value={newAval.name}
+              onChange={(e) => setNewAval({ ...newAval, name: e.target.value })}
+            />
+            <input
                     className="bg-gray-600 border border-gray-500 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:border-lime-500 focus:outline-none"
-                    placeholder="Teléfono"
-                    value={newAval.phone}
-                    onChange={(e) => setNewAval({ ...newAval, phone: e.target.value })}
-                  />
-                  <input
+              placeholder="Teléfono"
+              value={newAval.phone}
+              onChange={(e) => setNewAval({ ...newAval, phone: e.target.value })}
+            />
+            <input
                     className="bg-gray-600 border border-gray-500 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:border-lime-500 focus:outline-none"
-                    placeholder="CURP"
-                    value={newAval.curp}
-                    onChange={(e) => setNewAval({ ...newAval, curp: e.target.value })}
-                  />
-                  <input
+              placeholder="CURP"
+              value={newAval.curp}
+              onChange={(e) => setNewAval({ ...newAval, curp: e.target.value })}
+            />
+            <input
                     className="bg-gray-600 border border-gray-500 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:border-lime-500 focus:outline-none"
-                    placeholder="Dirección"
-                    value={newAval.address}
-                    onChange={(e) => setNewAval({ ...newAval, address: e.target.value })}
-                  />
-                </div>
-                <button
+              placeholder="Dirección"
+              value={newAval.address}
+              onChange={(e) => setNewAval({ ...newAval, address: e.target.value })}
+            />
+          </div>
+          <button
                   onClick={handleAddAval}
                   disabled={!newAval.name.trim()}
                   className="bg-lime-500 hover:bg-lime-600 disabled:bg-gray-600 disabled:text-gray-400 text-black px-4 py-2 rounded-lg font-medium transition-colors"
                 >
                   ➕ Agregar Aval
-                </button>
-              </div>
+          </button>
+        </div>
 
               {/* Avals List */}
               <div className="space-y-4">
@@ -591,28 +591,28 @@ const CustomerProfile = () => {
               <div className="mb-6 p-4 bg-gray-700 rounded-lg">
                 <h4 className="font-semibold mb-3">Agregar Nueva Referencia</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <input
+            <input
                     className="bg-gray-600 border border-gray-500 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:border-lime-500 focus:outline-none"
                     placeholder="Nombre completo"
-                    value={newReference.name}
-                    onChange={(e) => setNewReference({ ...newReference, name: e.target.value })}
-                  />
-                  <input
+              value={newReference.name}
+              onChange={(e) => setNewReference({ ...newReference, name: e.target.value })}
+            />
+            <input
                     className="bg-gray-600 border border-gray-500 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:border-lime-500 focus:outline-none"
-                    placeholder="Teléfono"
-                    value={newReference.phone}
-                    onChange={(e) => setNewReference({ ...newReference, phone: e.target.value })}
-                  />
-                  <input
+              placeholder="Teléfono"
+              value={newReference.phone}
+              onChange={(e) => setNewReference({ ...newReference, phone: e.target.value })}
+            />
+            <input
                     className="bg-gray-600 border border-gray-500 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:border-lime-500 focus:outline-none"
                     placeholder="CURP (opcional)"
-                    value={newReference.curp}
-                    onChange={(e) => setNewReference({ ...newReference, curp: e.target.value })}
-                  />
+              value={newReference.curp}
+              onChange={(e) => setNewReference({ ...newReference, curp: e.target.value })}
+            />
                   <select
                     className="bg-gray-600 border border-gray-500 rounded-lg px-3 py-2 text-white focus:border-lime-500 focus:outline-none"
-                    value={newReference.relationship}
-                    onChange={(e) => setNewReference({ ...newReference, relationship: e.target.value })}
+              value={newReference.relationship}
+              onChange={(e) => setNewReference({ ...newReference, relationship: e.target.value })}
                   >
                     <option value="">Seleccionar relación</option>
                     <option value="Familiar">👨‍👩‍👧‍👦 Familiar</option>
@@ -621,19 +621,19 @@ const CustomerProfile = () => {
                     <option value="Vecino">🏠 Vecino</option>
                     <option value="Otro">🤝 Otro</option>
                   </select>
-                </div>
-                <button
+          </div>
+          <button
                   onClick={handleAddReference}
                   disabled={!newReference.name.trim()}
                   className="bg-lime-500 hover:bg-lime-600 disabled:bg-gray-600 disabled:text-gray-400 text-black px-4 py-2 rounded-lg font-medium transition-colors"
                 >
                   ➕ Agregar Referencia
-                </button>
+          </button>
               </div>
 
               {/* References List */}
               <div className="space-y-4">
-                {references.length === 0 ? (
+          {references.length === 0 ? (
                   <div className="text-center py-8">
                     <div className="text-4xl mb-2">📞</div>
                     <p className="text-gray-400">No hay referencias registradas</p>
