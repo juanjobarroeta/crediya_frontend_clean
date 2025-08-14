@@ -11,6 +11,7 @@ const sectionList = [
       { href: "/loans", label: "Dashboard de Préstamos", icon: "📊" },
       { href: "/loans/unified", label: "🚀 Crear Préstamo", icon: "🚀" },
       { href: "/register-payment", label: "Registrar Pago", icon: "💰" },
+      { href: "/admin/collections", label: "Cobranza", icon: "📞" },
       { href: "/loan-quotes", label: "Cotizador", icon: "📊" },
       { href: "/admin/overdue-loans", label: "Pagos Vencidos", icon: "⚠️" },
       { href: "/admin/generate-contract", label: "Generar Contrato", icon: "📄" },
@@ -70,8 +71,6 @@ const sectionList = [
     links: [
       { href: "/admin/users", label: "🚀 Gestión de Usuarios", icon: "👥" },
       { href: "/financial-products", label: "Productos Financieros", icon: "🏦" },
-      { href: "/admin/loans", label: "Aprobaciones de Préstamos", icon: "✅" },
-      { href: "/admin/collections", label: "Cobranza", icon: "📞" },
       { href: "/admin/reclassify-payment", label: "Reclasificar Pagos", icon: "🔄" },
       { href: "/admin/budgets", label: "Presupuestos", icon: "💰" },
     ],
