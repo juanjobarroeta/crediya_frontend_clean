@@ -78,6 +78,7 @@ const sectionList = [
       { href: "/admin/reclassify-payment", label: "Reclasificar Pagos", icon: "🔄" },
       { href: "/admin/collections", label: "Cobranza", icon: "📞" },
       { href: "/admin/users", label: "🚀 Gestión de Usuarios", icon: "👥" },
+      { href: "/admin/stores", label: "🚀 Gestión de Sucursales", icon: "🏪" },
       { href: "/admin/create-user", label: "Crear Usuario (Legacy)", icon: "👨‍💼" },
     ],
   },
