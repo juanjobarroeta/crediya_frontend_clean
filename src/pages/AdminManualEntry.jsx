@@ -27,10 +27,15 @@ const AdminManualEntry = () => {
     setSuccess(false);
     
     try {
-      const res = await axios.post(`${API_BASE_URL}/manual-entry`, {
+      const payload = {
         ...form,
         method: form.source === '1102' ? 'transferencia' : 'efectivo'
-      }, {
+      };
+      
+      console.log("🧾 Sending manual entry payload:", payload);
+      console.log("🧾 Form state:", form);
+      
+      const res = await axios.post(`${API_BASE_URL}/manual-entry`, payload, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
