@@ -42,6 +42,7 @@ const CreateCustomer = () => {
   const [bureauFile, setBureauFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [isManualSubmit, setIsManualSubmit] = useState(false);
 
   // Monitor step changes to detect auto-submission trigger
   useEffect(() => {
@@ -118,6 +119,7 @@ const CreateCustomer = () => {
       eventType: e.type, 
       target: e.target.tagName,
       submitter: e.submitter?.tagName,
+      isManualSubmit,
       timestamp: new Date().toISOString()
     });
     
@@ -131,7 +133,14 @@ const CreateCustomer = () => {
       return;
     }
     
-    console.log("✅ Form submission allowed - proceeding with customer creation");
+    // CRITICAL: Only allow MANUAL submissions (button clicks)
+    if (!isManualSubmit) {
+      console.error("🚫 BLOCKED: Auto-submission detected on step 4 - Only manual button clicks allowed");
+      alert("🚫 Error: Automatic form submission blocked. Please click the 'Crear Cliente' button to submit.");
+      return;
+    }
+    
+    console.log("✅ Manual form submission allowed - proceeding with customer creation");
     
     setIsSubmitting(true);
 
@@ -190,6 +199,7 @@ const CreateCustomer = () => {
       alert("❌ Error de conexión");
     } finally {
       setIsSubmitting(false);
+      setIsManualSubmit(false); // Reset manual submit flag
     }
   };
 
@@ -664,6 +674,10 @@ const CreateCustomer = () => {
                   <button
                     type="submit"
                     disabled={isSubmitting}
+                    onClick={() => {
+                      console.log("🖱️ Manual submit button clicked");
+                      setIsManualSubmit(true);
+                    }}
                     className="bg-lime-500 hover:bg-lime-600 disabled:bg-gray-700 text-black px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2"
                   >
                     {isSubmitting ? (
