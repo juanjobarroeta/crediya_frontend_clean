@@ -74,6 +74,13 @@ const CreateCustomer = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // CRITICAL: Only allow submission on the final step (step 4)
+    if (currentStep !== 4) {
+      console.log("🚫 Form submission blocked - not on final step");
+      return;
+    }
+    
     setIsSubmitting(true);
 
     try {
@@ -87,8 +94,19 @@ const CreateCustomer = () => {
       // Add files if they exist
       if (ifeFile) formData.append("ife", ifeFile);
       if (bureauFile) formData.append("bureau", bureauFile);
+      
+      // CRITICAL: Add finalSave flag to indicate this is the actual customer creation
+      formData.append("finalSave", "true");
 
       const token = localStorage.getItem("token");
+      
+      // Check if token exists
+      if (!token) {
+        alert("❌ Sesión expirada. Por favor, inicia sesión nuevamente.");
+        navigate("/auth");
+        return;
+      }
+      
       const res = await fetch(`${API_BASE_URL}/customers`, {
         method: "POST",
         headers: {
@@ -104,7 +122,16 @@ const CreateCustomer = () => {
         }, 2000);
       } else {
         const errorData = await res.json();
-        alert(`❌ Error al guardar cliente: ${errorData.message || 'Error desconocido'}`);
+        
+        // Handle authentication errors specifically
+        if (res.status === 401 || res.status === 403) {
+          alert("❌ Sesión expirada. Por favor, inicia sesión nuevamente.");
+          localStorage.removeItem("token");
+          navigate("/auth");
+          return;
+        }
+        
+        alert(`❌ Error al guardar cliente: ${errorData.message || errorData.error || 'Error desconocido'}`);
       }
     } catch (err) {
       console.error("Error:", err);
