@@ -177,9 +177,12 @@ const CreateCustomer = () => {
       });
 
       if (res.ok) {
+        console.log("✅ Customer creation successful, setting success state");
         setSuccess(true);
+        console.log("⏰ Setting timeout to navigate to customer directory in 2 seconds");
         setTimeout(() => {
-          navigate("/customer-directory");
+          console.log("🧭 Navigating to customer directory");
+          navigate("/crm");
         }, 2000);
       } else {
         const errorData = await res.json();
@@ -233,7 +236,7 @@ const CreateCustomer = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => navigate("/customer-directory")}
+                onClick={() => navigate("/crm")}
                 className="text-gray-400 hover:text-white transition-colors"
               >
                 ← Volver
