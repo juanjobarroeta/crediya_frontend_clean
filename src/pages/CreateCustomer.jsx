@@ -4,6 +4,8 @@ import { API_BASE_URL } from "../utils/constants";
 import { useNavigate } from "react-router-dom";
 
 const CreateCustomer = () => {
+  console.log("🚀 CreateCustomer component loaded - DEBUG VERSION");
+  
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [form, setForm] = useState({
@@ -46,6 +48,22 @@ const CreateCustomer = () => {
     console.log("🔄 Step changed to:", currentStep);
     if (currentStep === 4) {
       console.log("🚨 WARNING: Reached step 4 - monitoring for auto-submission");
+      
+      // Add global form submission listener to catch ANY form submission
+      const handleAnyFormSubmit = (e) => {
+        console.log("🚨 GLOBAL: Form submission detected!", {
+          target: e.target,
+          submitter: e.submitter,
+          currentStep: currentStep
+        });
+      };
+      
+      document.addEventListener('submit', handleAnyFormSubmit, true);
+      
+      // Cleanup listener
+      return () => {
+        document.removeEventListener('submit', handleAnyFormSubmit, true);
+      };
     }
   }, [currentStep]);
 
@@ -251,7 +269,12 @@ const CreateCustomer = () => {
         {/* Form Content */}
         <div className="px-6 py-6">
           <div className="max-w-4xl mx-auto">
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} onKeyDown={(e) => {
+              if (e.key === 'Enter' && currentStep !== 4) {
+                console.log("🚫 Enter key blocked on step", currentStep);
+                e.preventDefault();
+              }
+            }}>
               
               {/* Step 1: Personal Information */}
               {currentStep === 1 && (
