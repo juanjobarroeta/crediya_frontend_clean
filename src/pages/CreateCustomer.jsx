@@ -46,11 +46,14 @@ const CreateCustomer = () => {
   };
 
   const handleFileChange = (e, setFile) => {
-    console.log("📄 File selected:", e.target.files[0]?.name);
+    console.log("📄 File selected:", e.target.files[0]?.name, "Current step:", currentStep);
     setFile(e.target.files[0]);
     // Prevent any form submission
     e.preventDefault();
     e.stopPropagation();
+    
+    // Additional check - ensure no form submission happens
+    console.log("📄 File change complete, no form submission should occur");
   };
 
   const validateStep = (step) => {
@@ -81,16 +84,21 @@ const CreateCustomer = () => {
       currentStep, 
       eventType: e.type, 
       target: e.target.tagName,
-      submitter: e.submitter?.tagName 
+      submitter: e.submitter?.tagName,
+      timestamp: new Date().toISOString()
     });
     
     e.preventDefault();
+    e.stopPropagation();
     
     // CRITICAL: Only allow submission on the final step (step 4)
     if (currentStep !== 4) {
-      console.log("🚫 Form submission blocked - not on final step", currentStep);
+      console.error("🚫 BLOCKED: Form submission attempted on step", currentStep, "- Only step 4 allowed");
+      alert(`🚫 Error: Form submission blocked. You're on step ${currentStep}, but submission is only allowed on step 4.`);
       return;
     }
+    
+    console.log("✅ Form submission allowed - proceeding with customer creation");
     
     setIsSubmitting(true);
 
