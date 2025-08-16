@@ -46,7 +46,11 @@ const CreateCustomer = () => {
   };
 
   const handleFileChange = (e, setFile) => {
+    console.log("📄 File selected:", e.target.files[0]?.name);
     setFile(e.target.files[0]);
+    // Prevent any form submission
+    e.preventDefault();
+    e.stopPropagation();
   };
 
   const validateStep = (step) => {
@@ -73,11 +77,18 @@ const CreateCustomer = () => {
   };
 
   const handleSubmit = async (e) => {
+    console.log("🔍 handleSubmit called:", { 
+      currentStep, 
+      eventType: e.type, 
+      target: e.target.tagName,
+      submitter: e.submitter?.tagName 
+    });
+    
     e.preventDefault();
     
     // CRITICAL: Only allow submission on the final step (step 4)
     if (currentStep !== 4) {
-      console.log("🚫 Form submission blocked - not on final step");
+      console.log("🚫 Form submission blocked - not on final step", currentStep);
       return;
     }
     
