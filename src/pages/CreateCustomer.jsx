@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Layout from "../components/Layout";
 import { API_BASE_URL } from "../utils/constants";
 import { useNavigate } from "react-router-dom";
@@ -41,6 +41,14 @@ const CreateCustomer = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  // Monitor step changes to detect auto-submission trigger
+  useEffect(() => {
+    console.log("🔄 Step changed to:", currentStep);
+    if (currentStep === 4) {
+      console.log("🚨 WARNING: Reached step 4 - monitoring for auto-submission");
+    }
+  }, [currentStep]);
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -71,7 +79,14 @@ const CreateCustomer = () => {
 
   const nextStep = () => {
     if (validateStep(currentStep)) {
-      setCurrentStep(prev => Math.min(prev + 1, 4));
+      const newStep = Math.min(currentStep + 1, 4);
+      console.log("📈 Step change:", currentStep, "→", newStep);
+      
+      if (newStep === 4) {
+        console.log("⚠️ REACHED STEP 4 - Form should NOT auto-submit!");
+      }
+      
+      setCurrentStep(newStep);
     }
   };
 
