@@ -26,6 +26,19 @@ const AdminManualEntry = () => {
     setLoading(true);
     setSuccess(false);
     
+    // Validate required fields and show specific errors
+    const missingFields = [];
+    if (!form.type) missingFields.push("Tipo de Movimiento");
+    if (!form.amount) missingFields.push("Monto");
+    if (!form.description) missingFields.push("Descripción");
+    if (!form.source) missingFields.push("Origen del Movimiento");
+    
+    if (missingFields.length > 0) {
+      alert(`❌ Campos requeridos faltantes:\n• ${missingFields.join('\n• ')}`);
+      setLoading(false);
+      return;
+    }
+    
     try {
       const payload = {
         ...form,
@@ -122,7 +135,9 @@ const AdminManualEntry = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Entry Type Selection */}
               <div>
-                <label className="block text-sm font-semibold text-white mb-3">Tipo de Movimiento</label>
+                <label className="block text-sm font-semibold text-white mb-3">
+                  Tipo de Movimiento <span className="text-red-400">*</span>
+                </label>
                 <div className="grid grid-cols-2 gap-4">
                   {entryTypes.map((type) => (
                     <div
@@ -148,7 +163,9 @@ const AdminManualEntry = () => {
 
               {/* Amount Input */}
               <div>
-                <label className="block text-sm font-semibold text-white mb-2">Monto</label>
+                <label className="block text-sm font-semibold text-white mb-2">
+                  Monto <span className="text-red-400">*</span>
+                </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg">$</span>
                   <input
@@ -165,7 +182,9 @@ const AdminManualEntry = () => {
 
               {/* Description Input */}
               <div>
-                <label className="block text-sm font-semibold text-white mb-2">Descripción</label>
+                <label className="block text-sm font-semibold text-white mb-2">
+                  Descripción <span className="text-red-400">*</span>
+                </label>
                 <textarea
                   name="description"
                   value={form.description}
@@ -178,7 +197,9 @@ const AdminManualEntry = () => {
 
               {/* Source Selection */}
               <div>
-                <label className="block text-sm font-semibold text-white mb-3">Origen del Movimiento</label>
+                <label className="block text-sm font-semibold text-white mb-3">
+                  Origen del Movimiento <span className="text-red-400">*</span>
+                </label>
                 <div className="grid grid-cols-2 gap-4">
                   {sourceOptions.map((source) => (
                     <div
