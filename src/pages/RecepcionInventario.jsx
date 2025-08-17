@@ -19,7 +19,8 @@ const RecepcionInventario = () => {
 
   const fetchRequests = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/warehouse/pending-inventory`, {
+      // Use existing endpoint with status filter for paid items ready for reception
+      const res = await axios.get(`${API_BASE_URL}/inventory-requests?status=paid`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log("📦 Requests from backend:", res.data);
@@ -31,11 +32,14 @@ const RecepcionInventario = () => {
 
   const fetchDeliveries = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/warehouse/pending-customers`, {
+      // Use existing loans endpoint to get approved product loans ready for delivery
+      const res = await axios.get(`${API_BASE_URL}/loans?status=approved`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log("📦 Deliveries from backend:", res.data);
-      setDeliveries(res.data || []);
+      // Filter for product loans only
+      const productLoans = (res.data || []).filter(loan => loan.loan_type === 'producto');
+      setDeliveries(productLoans);
     } catch (err) {
       console.error("Error fetching deliveries:", err);
     }

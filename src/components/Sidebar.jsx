@@ -35,7 +35,6 @@ const sectionList = [
     links: [
       { href: "/admin/inventory", label: "Gestión de Inventario", icon: "📋" },
       { href: "/admin/inventory-request", label: "Solicitar Inventario", icon: "📦" },
-      { href: "/warehouse/reception", label: "Recepción", icon: "📥" },
     ],
   },
   {

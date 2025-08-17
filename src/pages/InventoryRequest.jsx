@@ -54,7 +54,7 @@ const InventoryRequest = () => {
 
   const fetchRequests = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/admin/inventory-requests`, {
+      const res = await axios.get(`${API_BASE_URL}/inventory-requests`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const requestsData = res.data.requests || res.data;
