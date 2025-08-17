@@ -234,10 +234,13 @@ const LoansDashboard = () => {
   // Get status color
   const getStatusColor = (status) => {
     switch (status) {
+      case 'pending': return 'bg-yellow-600';
+      case 'approved': return 'bg-blue-600';
+      case 'contract_generated': return 'bg-purple-600';
+      case 'delivered': return 'bg-green-600';
       case 'active': return 'bg-green-600';
       case 'overdue': return 'bg-red-600';
       case 'completed': return 'bg-gray-600';
-      case 'pending': return 'bg-yellow-600';
       default: return 'bg-gray-600';
     }
   };
@@ -245,10 +248,13 @@ const LoansDashboard = () => {
   // Get status label
   const getStatusLabel = (status) => {
     switch (status) {
+      case 'pending': return 'Pendiente';
+      case 'approved': return 'Aprobado';
+      case 'contract_generated': return 'Contrato Generado';
+      case 'delivered': return 'Entregado';
       case 'active': return 'Activo';
       case 'overdue': return 'Vencido';
       case 'completed': return 'Completado';
-      case 'pending': return 'Pendiente';
       default: return status;
     }
   };
