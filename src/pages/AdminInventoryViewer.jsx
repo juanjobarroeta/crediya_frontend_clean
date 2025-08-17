@@ -723,13 +723,19 @@ const AdminInventoryViewer = () => {
                             <td className="px-4 py-3">{product.storage || "-"}</td>
                             <td className="px-4 py-3">
                               <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                product.status === 'in_stock' ? 'bg-green-600 text-white' :
-                                product.status === 'assigned' ? 'bg-yellow-500 text-black' :
+                                product.status === 'disponible' ? 'bg-green-600 text-white' :
+                                product.status === 'asignado' ? 'bg-yellow-500 text-black' :
+                                product.status === 'vendido' ? 'bg-red-500 text-white' :
+                                product.status === 'recuperado' ? 'bg-blue-500 text-white' :
+                                product.status === 'pendiente' ? 'bg-gray-500 text-white' :
                                 'bg-red-500 text-white'
                               }`}>
-                                {product.status === 'in_stock' ? '✅ En Stock' :
-                                 product.status === 'assigned' ? '📋 Asignado' :
-                                 '💰 Vendido'}
+                                {product.status === 'disponible' ? '✅ Disponible' :
+                                 product.status === 'asignado' ? '📋 Asignado' :
+                                 product.status === 'vendido' ? '💰 Vendido' :
+                                 product.status === 'recuperado' ? '🔄 Recuperado' :
+                                 product.status === 'pendiente' ? '⏳ Pendiente' :
+                                 '❓ Desconocido'}
                               </span>
                             </td>
                             <td className="px-4 py-3">

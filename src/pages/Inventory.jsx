@@ -166,6 +166,16 @@ const Inventory = () => {
       const res = await axios.get(`${API_BASE_URL}/inventory-items`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      // Debug: Log actual status values received
+      console.log("🔍 Inventory items received:", res.data?.slice(0, 3).map(item => ({
+        id: item.id,
+        brand: item.brand,
+        model: item.model,
+        status: item.status,
+        statusType: typeof item.status
+      })));
+      
       setProducts(res.data || []);
     } catch (err) {
       console.error("Error fetching products:", err);
