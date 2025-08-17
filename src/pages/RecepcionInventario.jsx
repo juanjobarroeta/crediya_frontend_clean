@@ -50,7 +50,7 @@ const RecepcionInventario = () => {
     if (!confirm) return;
 
     try {
-        await axios.put(`${API_BASE_URL}/inventory-requests/${id}/receive`, {}, {
+        await axios.post(`${API_BASE_URL}/inventory-requests/${id}/receive`, {}, {
             headers: { Authorization: `Bearer ${token}` }
           });
           alert("Inventario marcado como recibido");
