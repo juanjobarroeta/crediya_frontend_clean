@@ -133,7 +133,7 @@ const UnifiedLoanSystem = () => {
       ]);
 
       setCustomers(customersRes.data || []);
-      setProducts(productsRes.data?.filter(p => p.status === "in_stock" && p.imei) || []);
+      setProducts(productsRes.data?.filter(p => p.status === "disponible" && p.imei) || []);
       setFinancialProducts(financialRes.data || []);
       
       // Stores are now loaded via useStores hook
