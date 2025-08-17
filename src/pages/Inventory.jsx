@@ -430,9 +430,11 @@ const Inventory = () => {
               className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
             >
               <option value="all">📊 Todos los estados</option>
-              <option value="in_stock">✅ En stock</option>
-              <option value="assigned">📋 Asignado</option>
-              <option value="sold">💰 Vendido</option>
+              <option value="disponible">✅ Disponible</option>
+              <option value="asignado">📋 Asignado</option>
+              <option value="vendido">💰 Vendido</option>
+              <option value="recuperado">🔄 Recuperado</option>
+              <option value="pendiente">⏳ Pendiente</option>
             </select>
             <select
               value={selectedStore}
@@ -611,13 +613,19 @@ const Inventory = () => {
                             <td className="px-4 py-3">{product.storage || "-"}</td>
                             <td className="px-4 py-3">
                               <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                product.status === 'in_stock' ? 'bg-green-600 text-white' :
-                                product.status === 'assigned' ? 'bg-yellow-500 text-black' :
+                                product.status === 'disponible' ? 'bg-green-600 text-white' :
+                                product.status === 'asignado' ? 'bg-yellow-500 text-black' :
+                                product.status === 'vendido' ? 'bg-red-500 text-white' :
+                                product.status === 'recuperado' ? 'bg-blue-500 text-white' :
+                                product.status === 'pendiente' ? 'bg-gray-500 text-white' :
                                 'bg-red-500 text-white'
                               }`}>
-                                {product.status === 'in_stock' ? '✅ En Stock' :
-                                 product.status === 'assigned' ? '📋 Asignado' :
-                                 '💰 Vendido'}
+                                {product.status === 'disponible' ? '✅ Disponible' :
+                                 product.status === 'asignado' ? '📋 Asignado' :
+                                 product.status === 'vendido' ? '💰 Vendido' :
+                                 product.status === 'recuperado' ? '🔄 Recuperado' :
+                                 product.status === 'pendiente' ? '⏳ Pendiente' :
+                                 '❓ Desconocido'}
                               </span>
                             </td>
                             <td className="px-4 py-3">{product.store}</td>
@@ -962,13 +970,19 @@ const Inventory = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-400 mb-1">Estado</label>
                     <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                      selectedItem.status === 'in_stock' ? 'bg-green-600 text-white' :
-                      selectedItem.status === 'assigned' ? 'bg-yellow-500 text-black' :
+                      selectedItem.status === 'disponible' ? 'bg-green-600 text-white' :
+                      selectedItem.status === 'asignado' ? 'bg-yellow-500 text-black' :
+                      selectedItem.status === 'vendido' ? 'bg-red-500 text-white' :
+                      selectedItem.status === 'recuperado' ? 'bg-blue-500 text-white' :
+                      selectedItem.status === 'pendiente' ? 'bg-gray-500 text-white' :
                       'bg-red-500 text-white'
                     }`}>
-                      {selectedItem.status === 'in_stock' ? '✅ En Stock' :
-                       selectedItem.status === 'assigned' ? '📋 Asignado' :
-                       '💰 Vendido'}
+                      {selectedItem.status === 'disponible' ? '✅ Disponible' :
+                       selectedItem.status === 'asignado' ? '📋 Asignado' :
+                       selectedItem.status === 'vendido' ? '💰 Vendido' :
+                       selectedItem.status === 'recuperado' ? '🔄 Recuperado' :
+                       selectedItem.status === 'pendiente' ? '⏳ Pendiente' :
+                       '❓ Desconocido'}
                     </span>
                   </div>
                   <div>
