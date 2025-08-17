@@ -56,7 +56,7 @@ const AdminApprovals = () => {
   useEffect(() => {
     const fetchRequests = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/admin/inventory-requests`, {
+        const res = await axios.get(`${API_BASE_URL}/inventory-requests`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
@@ -140,13 +140,16 @@ const AdminApprovals = () => {
     }
 
     const endpoints = {
-      approve: "approve",
-      pay: "pay",
-      receive: "receive",
+      approve: { method: "put", url: `/inventory-requests/${id}/approve` },
+      pay: { method: "post", url: `/inventory-requests/${id}/pay` },
+      receive: { method: "post", url: `/inventory-requests/${id}/receive` },
     };
 
     try {
-      await axios.put(`${API_BASE_URL}/admin/inventory-requests/${id}/${endpoints[action]}`, {}, {
+      const endpoint = endpoints[action];
+      const axiosMethod = endpoint.method === "post" ? axios.post : axios.put;
+      
+      await axiosMethod(`${API_BASE_URL}${endpoint.url}`, {}, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
