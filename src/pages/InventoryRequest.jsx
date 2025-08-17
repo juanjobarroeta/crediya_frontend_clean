@@ -57,10 +57,11 @@ const InventoryRequest = () => {
       const res = await axios.get(`${API_BASE_URL}/admin/inventory-requests`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setRequests(res.data);
+      const requestsData = res.data.requests || res.data;
+      setRequests(Array.isArray(requestsData) ? requestsData : []);
       
       // Separate pending approvals
-      const pending = res.data.filter(req => req.status === 'pending' || !req.status);
+      const pending = (Array.isArray(requestsData) ? requestsData : []).filter(req => req.status === 'pending' || !req.status);
       setPendingApprovals(pending);
     } catch (err) {
       console.error("Error fetching inventory requests:", err);
