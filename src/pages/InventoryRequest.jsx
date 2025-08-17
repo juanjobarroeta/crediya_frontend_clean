@@ -43,12 +43,7 @@ const InventoryRequest = () => {
   // Inventory categories with icons and descriptions
   const inventoryCategories = [
     { id: "phones", name: "📱 Teléfonos", description: "Smartphones y dispositivos móviles", icon: "📱" },
-    { id: "licenses", name: "🔑 Licencias", description: "Software y licencias digitales", icon: "🔑" },
     { id: "accessories", name: "🎧 Accesorios", description: "Cables, cargadores, fundas", icon: "🎧" },
-    { id: "computers", name: "💻 Computadoras", description: "Laptops, desktops, tablets", icon: "💻" },
-    { id: "network", name: "🌐 Redes", description: "Routers, switches, cables de red", icon: "🌐" },
-    { id: "office", name: "🖨️ Oficina", description: "Impresoras, escáneres, consumibles", icon: "🖨️" },
-    { id: "security", name: "🔒 Seguridad", description: "Cámaras, alarmas, sistemas", icon: "🔒" },
     { id: "otros", name: "📦 Otros", description: "Otros productos y servicios", icon: "📦" },
   ];
 
