@@ -494,15 +494,32 @@ const LoansDashboard = () => {
 
                 {/* Actions */}
                 <div className="flex gap-2">
-                  <Link
-                    to={`/register-payment?loan=${loan.id}`}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-center py-2 px-3 rounded text-sm transition-colors"
-                  >
-                    💰 Pagar
-                  </Link>
+                  {/* Show Continue Process for incomplete loans */}
+                  {['pending', 'approved', 'contract_generated'].includes(loan.status) && (
+                    <Link
+                      to={`/loans/unified/${loan.id}`}
+                      className="flex-1 bg-lime-600 hover:bg-lime-700 text-white text-center py-2 px-3 rounded text-sm transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      📝 Continuar
+                    </Link>
+                  )}
+                  
+                  {/* Show payment option for active/delivered loans */}
+                  {['active', 'delivered'].includes(loan.status) && (
+                    <Link
+                      to={`/register-payment?loan=${loan.id}`}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-center py-2 px-3 rounded text-sm transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      💰 Pagar
+                    </Link>
+                  )}
+                  
                   <Link
                     to={`/loans/${loan.id}/details`}
                     className="flex-1 bg-gray-600 hover:bg-gray-700 text-white text-center py-2 px-3 rounded text-sm transition-colors"
+                    onClick={(e) => e.stopPropagation()}
                   >
                     📋 Detalles
                   </Link>
@@ -596,12 +613,26 @@ const LoansDashboard = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex gap-2">
-                          <Link
-                            to={`/register-payment?loan=${loan.id}`}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs transition-colors"
-                          >
-                            Pagar
-                          </Link>
+                          {/* Show Continue Process for incomplete loans */}
+                          {['pending', 'approved', 'contract_generated'].includes(loan.status) && (
+                            <Link
+                              to={`/loans/unified/${loan.id}`}
+                              className="bg-lime-600 hover:bg-lime-700 text-white px-3 py-1 rounded text-xs transition-colors"
+                            >
+                              📝 Continuar
+                            </Link>
+                          )}
+                          
+                          {/* Show payment option for active/delivered loans */}
+                          {['active', 'delivered'].includes(loan.status) && (
+                            <Link
+                              to={`/register-payment?loan=${loan.id}`}
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs transition-colors"
+                            >
+                              Pagar
+                            </Link>
+                          )}
+                          
                           <Link
                             to={`/loans/${loan.id}/details`}
                             className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-xs transition-colors"
