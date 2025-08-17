@@ -187,7 +187,7 @@ const InventoryRequest = () => {
 
   const handleReceiveInventory = async (requestId) => {
     try {
-      await axios.put(`${API_BASE_URL}/inventory-requests/${requestId}/receive`, {}, {
+      await axios.post(`${API_BASE_URL}/inventory-requests/${requestId}/receive`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       alert("📦 Inventario recibido correctamente");
