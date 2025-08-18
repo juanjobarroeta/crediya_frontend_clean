@@ -54,6 +54,13 @@ const RegisterPayment = () => {
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
   
+  // Enhanced payment features
+  const [paymentPreview, setPaymentPreview] = useState(null);
+  const [showPaymentPreview, setShowPaymentPreview] = useState(false);
+  const [paymentSuggestions, setPaymentSuggestions] = useState([]);
+  const [overpaymentAction, setOverpaymentAction] = useState('advance');
+  const [previewLoading, setPreviewLoading] = useState(false);
+  
   const receiptRef = useRef(null);
   const token = localStorage.getItem("token");
 
@@ -97,11 +104,12 @@ const RegisterPayment = () => {
     if (!loanId) return;
     setLoading(true);
     try {
-      const [loanDetailRes, paymentsRes, breakdownsRes, movementsRes] = await Promise.all([
+      const [loanDetailRes, paymentsRes, breakdownsRes, movementsRes, suggestionsRes] = await Promise.all([
         axios.get(`${API_BASE_URL}/loans/${loanId}/details`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API_BASE_URL}/loans/${loanId}/payments`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API_BASE_URL}/loans/${loanId}/payment-breakdown`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API_BASE_URL}/loans/${loanId}/financial-movements`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API_BASE_URL}/loans/${loanId}/payment-suggestions`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       
       const installmentsData = loanDetailRes.data?.installments || [];
@@ -124,6 +132,9 @@ const RegisterPayment = () => {
           ? movementsRes.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
           : []
       );
+      
+      const suggestionsData = suggestionsRes.data?.suggestions || [];
+      setPaymentSuggestions(Array.isArray(suggestionsData) ? suggestionsData : []);
     } catch (err) {
       console.error("Error fetching loan details:", err);
     } finally {
@@ -156,6 +167,47 @@ const RegisterPayment = () => {
     setStoreId(loan.store_id || "");
   };
 
+  // Enhanced payment preview function
+  const generatePaymentPreview = async (paymentAmount) => {
+    if (!selectedLoan || !paymentAmount || paymentAmount <= 0) {
+      setPaymentPreview(null);
+      return;
+    }
+
+    setPreviewLoading(true);
+    try {
+      const res = await axios.post(`${API_BASE_URL}/payments/preview`, {
+        loan_id: selectedLoan.id,
+        amount: parseFloat(paymentAmount)
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setPaymentPreview(res.data);
+    } catch (err) {
+      console.error("Error generating payment preview:", err);
+      setPaymentPreview(null);
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  // Handle amount change with real-time preview
+  const handleAmountChange = (newAmount) => {
+    setAmount(newAmount);
+    
+    // Generate preview after a short delay
+    setTimeout(() => {
+      generatePaymentPreview(newAmount);
+    }, 500);
+  };
+
+  // Handle quick payment button clicks
+  const handleQuickPayment = (suggestion) => {
+    setAmount(suggestion.amount.toString());
+    generatePaymentPreview(suggestion.amount);
+  };
+
   const handlePayment = async (e) => {
     e.preventDefault();
     if (!selectedLoan || !amount || !method) {
@@ -171,6 +223,7 @@ const RegisterPayment = () => {
         payment_method: method,
         store_id: storeId,
         apply_extra_to: applyExtraTo,
+        overpayment_action: overpaymentAction,
       };
 
       const res = await axios.post(`${API_BASE_URL}/payments`, paymentData, {
@@ -1037,6 +1090,150 @@ const RegisterPayment = () => {
                   )}
                 </div>
 
+                {/* Quick Payment Suggestions */}
+                {paymentSuggestions.length > 0 && (
+                  <div className="bg-black border border-crediyaGreen rounded-lg p-6 mb-6">
+                    <h3 className="text-xl font-semibold text-lime-400 mb-4">
+                      ⚡ Pagos Sugeridos
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {paymentSuggestions.map((suggestion) => (
+                        <button
+                          key={suggestion.id}
+                          onClick={() => handleQuickPayment(suggestion)}
+                          className={`p-4 rounded-lg border-2 transition-all hover:scale-105 ${
+                            suggestion.priority === 'high' 
+                              ? 'border-red-500 bg-red-500/10 hover:bg-red-500/20' 
+                              : suggestion.priority === 'normal'
+                              ? 'border-lime-500 bg-lime-500/10 hover:bg-lime-500/20'
+                              : 'border-gray-500 bg-gray-500/10 hover:bg-gray-500/20'
+                          }`}
+                        >
+                          <div className="text-left">
+                            <div className={`font-semibold text-sm mb-1 ${
+                              suggestion.priority === 'high' ? 'text-red-400' : 'text-lime-400'
+                            }`}>
+                              {suggestion.label}
+                            </div>
+                            <div className={`text-2xl font-bold mb-2 ${
+                              suggestion.priority === 'high' ? 'text-red-300' : 'text-white'
+                            }`}>
+                              ${suggestion.amount.toFixed(2)}
+                            </div>
+                            <div className="text-gray-400 text-xs">
+                              {suggestion.description}
+                            </div>
+                            {suggestion.priority === 'high' && (
+                              <div className="mt-2 text-red-400 text-xs font-medium">
+                                🚨 Prioridad Alta
+                              </div>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Payment Preview */}
+                {paymentPreview && amount && (
+                  <div className="bg-black border border-crediyaGreen rounded-lg p-6 mb-6">
+                    <h3 className="text-xl font-semibold text-lime-400 mb-4">
+                      🔍 Vista Previa del Pago
+                    </h3>
+                    
+                    {/* Payment Summary */}
+                    <div className="bg-gray-800 rounded-lg p-4 mb-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <div>
+                          <div className="text-2xl font-bold text-lime-400">
+                            ${paymentPreview.summary?.payment_amount?.toFixed(2)}
+                          </div>
+                          <div className="text-gray-400 text-sm">Monto a Pagar</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-blue-400">
+                            {paymentPreview.summary?.installments_affected || 0}
+                          </div>
+                          <div className="text-gray-400 text-sm">Cuotas Afectadas</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-green-400">
+                            {paymentPreview.summary?.installments_paid_in_full || 0}
+                          </div>
+                          <div className="text-gray-400 text-sm">Cuotas Completadas</div>
+                        </div>
+                        {paymentPreview.summary?.has_overpayment && (
+                          <div>
+                            <div className="text-2xl font-bold text-yellow-400">
+                              ${paymentPreview.summary?.overpayment?.toFixed(2)}
+                            </div>
+                            <div className="text-gray-400 text-sm">Exceso</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Overpayment Options */}
+                    {paymentPreview.summary?.has_overpayment && (
+                      <div className="bg-yellow-500/10 border border-yellow-500 rounded-lg p-4 mb-4">
+                        <h4 className="text-yellow-400 font-semibold mb-3">
+                          ⚠️ Exceso de Pago Detectado: ${paymentPreview.summary.overpayment.toFixed(2)}
+                        </h4>
+                        <div className="space-y-2">
+                          {paymentPreview.summary.overpayment_options?.map((option) => (
+                            <label key={option.id} className="flex items-center gap-3 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="overpayment"
+                                value={option.id}
+                                checked={overpaymentAction === option.id}
+                                onChange={(e) => setOverpaymentAction(e.target.value)}
+                                className="text-lime-400"
+                              />
+                              <div>
+                                <div className="text-white font-medium">{option.label}</div>
+                                <div className="text-gray-400 text-sm">{option.description}</div>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Affected Installments Preview */}
+                    {paymentPreview.preview && paymentPreview.preview.length > 0 && (
+                      <div className="bg-gray-800 rounded-lg p-4">
+                        <h4 className="text-lime-400 font-semibold mb-3">📋 Cuotas Afectadas</h4>
+                        <div className="space-y-2">
+                          {paymentPreview.preview.map((installment) => (
+                            <div key={installment.installment_id} className="flex justify-between items-center p-3 bg-gray-700 rounded">
+                              <div>
+                                <span className="text-white font-medium">Cuota #{installment.week_number}</span>
+                                <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                                  installment.will_be_paid 
+                                    ? 'bg-green-500 text-white' 
+                                    : 'bg-blue-500 text-white'
+                                }`}>
+                                  {installment.will_be_paid ? 'Se Pagará Completa' : 'Pago Parcial'}
+                                </span>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-lime-400 font-bold">
+                                  ${installment.payment_applied.toFixed(2)}
+                                </div>
+                                <div className="text-gray-400 text-sm">
+                                  Saldo: ${installment.new_balance.toFixed(2)}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Payment Form */}
                 <div className="bg-black border border-crediyaGreen rounded-lg p-6">
                   <div className="flex justify-between items-start mb-4">
@@ -1062,11 +1259,17 @@ const RegisterPayment = () => {
                             type="number"
                             step="0.01"
                             value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
+                            onChange={(e) => handleAmountChange(e.target.value)}
                             className="w-full bg-gray-800 border border-crediyaGreen rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-lime-400"
                             placeholder="0.00"
                             required
                           />
+                          {previewLoading && (
+                            <div className="mt-2 text-gray-400 text-sm flex items-center gap-2">
+                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-lime-400"></div>
+                              Calculando vista previa...
+                            </div>
+                          )}
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -1169,22 +1372,30 @@ const RegisterPayment = () => {
                          {/* Color Legend */}
                          <div className="bg-gray-800 rounded-lg p-4">
                            <h4 className="text-lime-400 font-semibold mb-3">🎨 Leyenda de Estados</h4>
-                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-sm">
                              <div className="flex items-center gap-2">
                                <div className="w-4 h-4 bg-green-800 rounded-sm"></div>
-                               <span className="text-white">Pagado</span>
+                               <span className="text-white">✅ Pagado</span>
                              </div>
                              <div className="flex items-center gap-2">
-                               <div className="w-4 h-4 bg-gray-800 rounded-sm"></div>
-                               <span className="text-white">Pendiente</span>
+                               <div className="w-4 h-4 bg-blue-800 rounded-sm"></div>
+                               <span className="text-white">🔵 Pago Parcial</span>
+                             </div>
+                             <div className="flex items-center gap-2">
+                               <div className="w-4 h-4 bg-orange-600 rounded-sm"></div>
+                               <span className="text-white">🟠 Próximo Vencimiento</span>
                              </div>
                              <div className="flex items-center gap-2">
                                <div className="w-4 h-4 bg-yellow-600 rounded-sm"></div>
-                               <span className="text-white">1-7 días vencido</span>
+                               <span className="text-white">🟡 Vencido (1-7 días)</span>
                              </div>
                              <div className="flex items-center gap-2">
                                <div className="w-4 h-4 bg-red-800 rounded-sm"></div>
-                               <span className="text-white">&gt;7 días vencido</span>
+                               <span className="text-white">🔴 Muy Vencido (+7 días)</span>
+                             </div>
+                             <div className="flex items-center gap-2">
+                               <div className="w-4 h-4 bg-gray-800 rounded-sm"></div>
+                               <span className="text-white">⚫ Pendiente</span>
                              </div>
                            </div>
                          </div>
@@ -1196,13 +1407,12 @@ const RegisterPayment = () => {
                                <tr className="border-b border-gray-600">
                                  <th className="px-3 py-2 text-left text-lime-400">Semana</th>
                                  <th className="px-3 py-2 text-left text-lime-400">Fecha</th>
-                                 <th className="px-3 py-2 text-right text-lime-400">Capital</th>
-                                 <th className="px-3 py-2 text-right text-lime-400">Interés</th>
-                                 <th className="px-3 py-2 text-right text-lime-400">Penalidad</th>
-                                 <th className="px-3 py-2 text-right text-lime-400">Total</th>
+                                 <th className="px-3 py-2 text-right text-lime-400">Total Debido</th>
                                  <th className="px-3 py-2 text-right text-lime-400">Pagado</th>
                                  <th className="px-3 py-2 text-right text-lime-400">Saldo</th>
+                                 <th className="px-3 py-2 text-center text-lime-400">Progreso</th>
                                  <th className="px-3 py-2 text-center text-lime-400">Estado</th>
+                                 <th className="px-3 py-2 text-center text-lime-400">Días</th>
                                </tr>
                              </thead>
                              <tbody>
@@ -1215,16 +1425,41 @@ const RegisterPayment = () => {
                                    const msInDay = 1000 * 60 * 60 * 24;
                                    const daysOverdue = Math.floor((today - dueDate) / msInDay);
                                    
+                                   // Enhanced color coding using backend data if available
                                    let bgClass = "";
-                                   if (inst.status === "pending") {
-                                     if (daysOverdue > 7) bgClass = "bg-red-800";
-                                     else if (daysOverdue > 0) bgClass = "bg-yellow-600";
-                                     else bgClass = "bg-gray-800";
-                                   } else if (inst.status === "paid") {
-                                     bgClass = "bg-green-800";
+                                   let statusText = "";
+                                   let statusIcon = "";
+                                   
+                                   if (inst.color_code) {
+                                     // Use enhanced backend color coding
+                                     switch(inst.color_code) {
+                                       case 'green': bgClass = "bg-green-800"; statusIcon = "✅"; break;
+                                       case 'blue': bgClass = "bg-blue-800"; statusIcon = "🔵"; break;
+                                       case 'red': bgClass = "bg-red-800"; statusIcon = "🔴"; break;
+                                       case 'yellow': bgClass = "bg-yellow-600"; statusIcon = "🟡"; break;
+                                       case 'orange': bgClass = "bg-orange-600"; statusIcon = "🟠"; break;
+                                       default: bgClass = "bg-gray-800"; statusIcon = "⚫"; break;
+                                     }
+                                     statusText = inst.status_label || inst.status;
                                    } else {
-                                     bgClass = "bg-gray-800";
+                                     // Fallback to original logic
+                                     if (inst.status === "pending") {
+                                       if (daysOverdue > 7) { bgClass = "bg-red-800"; statusIcon = "🔴"; }
+                                       else if (daysOverdue > 0) { bgClass = "bg-yellow-600"; statusIcon = "🟡"; }
+                                       else { bgClass = "bg-gray-800"; statusIcon = "⚫"; }
+                                     } else if (inst.status === "paid") {
+                                       bgClass = "bg-green-800"; statusIcon = "✅";
+                                     } else if (inst.status === "partial") {
+                                       bgClass = "bg-blue-800"; statusIcon = "🔵";
+                                     } else {
+                                       bgClass = "bg-gray-800"; statusIcon = "⚫";
+                                     }
+                                     statusText = inst.status;
                                    }
+                                   
+                                   // Calculate payment progress for progress bar
+                                   const paymentProgress = inst.payment_progress || 
+                                     (totalPaid > 0 && totalDue > 0 ? (totalPaid / totalDue) * 100 : 0);
 
                                    const totalDue = (
                                      parseFloat(inst.capital_portion || 0) +
@@ -1244,52 +1479,70 @@ const RegisterPayment = () => {
                                    <tr key={inst.week_number} className={`${bgClass} border-b border-gray-700 hover:bg-gray-700 transition-colors`}>
                                      <td className="px-3 py-2 font-bold text-white">{inst.week_number}</td>
                                      <td className="px-3 py-2 text-white">{dueDate.toLocaleDateString()}</td>
-                                     <td className="px-3 py-2 text-right text-white">
-                                       ${parseFloat(inst.capital_portion || 0).toFixed(2)}
-                                     </td>
-                                     <td className="px-3 py-2 text-right text-white">
-                                       {(() => {
-                                         const interestPortion = parseFloat(inst.interest_portion || 0);
-                                         const interestPaid = parseFloat(inst.interest_paid || 0);
-                                         
-                                         if (interestPaid > 0 && interestPaid < interestPortion) {
-                                           return `$${interestPaid.toFixed(2)} (de $${interestPortion.toFixed(2)})`;
-                                         } else {
-                                           return `$${interestPortion.toFixed(2)}`;
-                                         }
-                                       })()}
-                                     </td>
-                                     <td className="px-3 py-2 text-right text-white">
-                                       {(() => {
-                                         const penaltyApplied = parseFloat(inst.penalty_applied || 0);
-                                         const penaltyPaid = parseFloat(inst.penalty_paid || 0);
-                                         
-                                         if (penaltyPaid > 0 && penaltyPaid < penaltyApplied) {
-                                           return `$${penaltyPaid.toFixed(2)} (de $${penaltyApplied.toFixed(2)})`;
-                                         } else {
-                                           return `$${penaltyApplied.toFixed(2)}`;
-                                         }
-                                       })()}
-                                     </td>
                                      <td className="px-3 py-2 text-right font-bold text-white">
-                                       ${totalDue.toFixed(2)}
+                                       ${(inst.total_paid ? (parseFloat(inst.amount_due || 0) + parseFloat(inst.penalty_applied || 0)) : totalDue).toFixed(2)}
                                      </td>
                                      <td className="px-3 py-2 text-right text-white">
-                                       ${totalPaid.toFixed(2)}
+                                       ${(inst.total_paid || totalPaid).toFixed(2)}
                                      </td>
                                      <td className="px-3 py-2 text-right text-white">
-                                       ${remaining.toFixed(2)}
+                                       ${(inst.remaining_balance !== undefined ? inst.remaining_balance : remaining).toFixed(2)}
                                      </td>
                                      <td className="px-3 py-2 text-center">
-                                       <span className={`px-2 py-1 rounded text-xs ${
-                                         inst.status === 'paid' ? 'bg-green-600' :
-                                         inst.status === 'pending' ? 'bg-yellow-600' :
-                                         'bg-gray-600'
-                                       }`}>
-                                         {inst.status === 'paid' ? 'Pagado' :
-                                          inst.status === 'pending' ? 'Pendiente' :
-                                          inst.status}
-                                       </span>
+                                       <div className="flex flex-col items-center gap-1">
+                                         <div className="w-full bg-gray-600 rounded-full h-2">
+                                           <div 
+                                             className={`h-2 rounded-full transition-all ${
+                                               paymentProgress >= 100 ? 'bg-green-500' :
+                                               paymentProgress >= 50 ? 'bg-blue-500' :
+                                               paymentProgress > 0 ? 'bg-yellow-500' :
+                                               'bg-gray-500'
+                                             }`}
+                                             style={{ width: `${Math.min(paymentProgress, 100)}%` }}
+                                           ></div>
+                                         </div>
+                                         <span className="text-xs text-gray-300">
+                                           {paymentProgress.toFixed(0)}%
+                                         </span>
+                                       </div>
+                                     </td>
+                                     <td className="px-3 py-2 text-center">
+                                       <div className="flex flex-col items-center gap-1">
+                                         <span className="text-lg">{statusIcon}</span>
+                                         <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                           inst.color_code === 'green' ? 'bg-green-600 text-white' :
+                                           inst.color_code === 'blue' ? 'bg-blue-600 text-white' :
+                                           inst.color_code === 'red' ? 'bg-red-600 text-white' :
+                                           inst.color_code === 'yellow' ? 'bg-yellow-600 text-black' :
+                                           inst.color_code === 'orange' ? 'bg-orange-600 text-white' :
+                                           'bg-gray-600 text-white'
+                                         }`}>
+                                           {statusText}
+                                         </span>
+                                       </div>
+                                     </td>
+                                     <td className="px-3 py-2 text-center text-white">
+                                       {inst.days_overdue !== undefined ? (
+                                         inst.days_overdue > 0 ? (
+                                           <span className={`font-bold ${
+                                             inst.days_overdue > 7 ? 'text-red-400' : 'text-yellow-400'
+                                           }`}>
+                                             +{inst.days_overdue}
+                                           </span>
+                                         ) : (
+                                           <span className="text-green-400">✓</span>
+                                         )
+                                       ) : (
+                                         daysOverdue > 0 ? (
+                                           <span className={`font-bold ${
+                                             daysOverdue > 7 ? 'text-red-400' : 'text-yellow-400'
+                                           }`}>
+                                             +{daysOverdue}
+                                           </span>
+                                         ) : (
+                                           <span className="text-green-400">✓</span>
+                                         )
+                                       )}
                                      </td>
                                    </tr>
                                  );
