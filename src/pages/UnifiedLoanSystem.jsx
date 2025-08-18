@@ -150,7 +150,8 @@ const UnifiedLoanSystem = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      const loan = response.data.loan;
+      const loan = response.data; // ✅ FIXED - loan data is directly in response.data
+      console.log("📋 Loaded existing loan:", loan);
       setLoanData({...loanData, ...loan});
       
       // Determine current step based on loan status
@@ -158,6 +159,8 @@ const UnifiedLoanSystem = () => {
       else if (loan.status === "approved") setCurrentStep(4);
       else if (loan.status === "contract_generated") setCurrentStep(5);
       else if (loan.status === "delivered") setCurrentStep(5);
+      
+      console.log(`🎯 Set current step to: ${loan.status === "pending" ? 3 : loan.status === "approved" ? 4 : 5}`);
       
     } catch (error) {
       console.error("Error loading loan:", error);

@@ -45,7 +45,7 @@ const GenerateContract = () => {
   const generateContract = async () => {
     if (!selectedLoanId) return;
     try {
-      const res = await axios.get(`${API_BASE_URL}/contracts/${selectedLoanId}/generate`, {
+      const res = await axios.get(`${API_BASE_URL}/contracts/${selectedLoanId}/generate-pdf`, {
         headers: { Authorization: `Bearer ${token}` },
         responseType: 'blob'
       });
