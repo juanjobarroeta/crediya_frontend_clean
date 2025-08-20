@@ -62,6 +62,7 @@ const RegisterPayment = () => {
   const [previewLoading, setPreviewLoading] = useState(false);
   
   const receiptRef = useRef(null);
+  const previewTimeoutRef = useRef(null);
   const token = localStorage.getItem("token");
 
   // Enhanced collapsible section states
@@ -196,8 +197,13 @@ const RegisterPayment = () => {
   const handleAmountChange = (newAmount) => {
     setAmount(newAmount);
     
+    // Clear previous timeout
+    if (previewTimeoutRef.current) {
+      clearTimeout(previewTimeoutRef.current);
+    }
+    
     // Generate preview after a short delay
-    setTimeout(() => {
+    previewTimeoutRef.current = setTimeout(() => {
       generatePaymentPreview(newAmount);
     }, 500);
   };
