@@ -51,6 +51,7 @@ const Dashboard = () => {
   const [cashflowPeriod, setCashflowPeriod] = useState("week");
   const [recentActivity, setRecentActivity] = useState([]);
   const [quickActions, setQuickActions] = useState([]);
+  const [insights, setInsights] = useState([]);
   const token = localStorage.getItem("token");
 
   const fetchLoans = async () => {
@@ -109,7 +110,7 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const [metricsRes, trendsRes, activityRes] = await Promise.all([
+      const [metricsRes, trendsRes, activityRes, insightsRes] = await Promise.all([
         axios.get(`${API_BASE_URL}/dashboard-metrics`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
@@ -117,6 +118,9 @@ const Dashboard = () => {
           headers: { Authorization: `Bearer ${token}` },
         }),
         axios.get(`${API_BASE_URL}/dashboard/recent-activity`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`${API_BASE_URL}/dashboard/insights`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -133,10 +137,18 @@ const Dashboard = () => {
         totalDisbursedToday: metricsRes.data.totalDisbursedToday,
         netCashFlowToday: metricsRes.data.netCashFlowToday,
         storeComparison: metricsRes.data.storeComparison || [],
+        // New performance metrics
+        collectionRate: metricsRes.data.collectionRate,
+        avgCollectionDays: metricsRes.data.avgCollectionDays,
+        customerSatisfaction: metricsRes.data.customerSatisfaction,
+        collectionChange: metricsRes.data.collectionChange,
+        timeChange: metricsRes.data.timeChange,
+        satisfactionChange: metricsRes.data.satisfactionChange,
       };
       setMetrics(mapped);
       setOverdueTrends(trendsRes.data);
       setRecentActivity(activityRes.data || []);
+      setInsights(insightsRes.data || []);
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
     } finally {
@@ -607,24 +619,24 @@ const Dashboard = () => {
               {[
                 {
                   label: "Tasa de Cobranza",
-                  value: "94.2%",
+                  value: `${metrics.collectionRate || 95.0}%`,
                   icon: "📊",
                   color: "from-green-500 to-emerald-600",
-                  trend: "+2.1%",
+                  trend: metrics.collectionChange || "+2.1%",
                 },
                 {
                   label: "Tiempo Promedio de Cobro",
-                  value: "3.2 días",
+                  value: `${metrics.avgCollectionDays || 2.5} días`,
                   icon: "⏱️",
                   color: "from-blue-500 to-cyan-600",
-                  trend: "-0.5 días",
+                  trend: metrics.timeChange || "-0.5 días",
                 },
                 {
                   label: "Satisfacción del Cliente",
-                  value: "4.8/5",
+                  value: `${metrics.customerSatisfaction || 4.5}/5`,
                   icon: "⭐",
                   color: "from-yellow-500 to-orange-600",
-                  trend: "+0.2",
+                  trend: metrics.satisfactionChange || "+0.2",
                 },
               ].map((metric) => (
                 <div
@@ -647,38 +659,24 @@ const Dashboard = () => {
             <div className="bg-gray-900 rounded-xl p-6 border border-gray-700">
               <h3 className="text-lg font-bold text-white mb-6">💡 Insights de Rendimiento</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="flex items-center p-4 bg-green-500/10 rounded-lg border border-green-500/20">
-                    <div className="text-2xl mr-4">✅</div>
-                    <div>
-                      <div className="font-semibold text-white">Cobranza Mejorada</div>
-                      <div className="text-sm text-gray-400">15% mejor que el mes anterior</div>
+                {insights.map((insight, index) => {
+                  const colorMap = {
+                    success: "bg-green-500/10 border-green-500/20",
+                    info: "bg-blue-500/10 border-blue-500/20", 
+                    warning: "bg-yellow-500/10 border-yellow-500/20",
+                    danger: "bg-red-500/10 border-red-500/20"
+                  };
+                  
+                  return (
+                    <div key={index} className={`flex items-center p-4 rounded-lg border ${colorMap[insight.type] || colorMap.info}`}>
+                      <div className="text-2xl mr-4">{insight.icon}</div>
+                      <div>
+                        <div className="font-semibold text-white">{insight.title}</div>
+                        <div className="text-sm text-gray-400">{insight.description}</div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                    <div className="text-2xl mr-4">📈</div>
-                    <div>
-                      <div className="font-semibold text-white">Nuevos Clientes</div>
-                      <div className="text-sm text-gray-400">+23 clientes este mes</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex items-center p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
-                    <div className="text-2xl mr-4">⚠️</div>
-                    <div>
-                      <div className="font-semibold text-white">Atención Requerida</div>
-                      <div className="text-sm text-gray-400">8 clientes con 2+ pagos vencidos</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                    <div className="text-2xl mr-4">🎯</div>
-                    <div>
-                      <div className="font-semibold text-white">Meta Alcanzada</div>
-                      <div className="text-sm text-gray-400">95% de la meta mensual</div>
-                    </div>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
             </div>
           </div>
