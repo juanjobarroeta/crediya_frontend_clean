@@ -1463,10 +1463,6 @@ const RegisterPayment = () => {
                                      statusText = inst.status;
                                    }
                                    
-                                   // Calculate payment progress for progress bar
-                                   const paymentProgress = inst.payment_progress || 
-                                     (totalPaid > 0 && totalDue > 0 ? (totalPaid / totalDue) * 100 : 0);
-
                                    const totalDue = (
                                      parseFloat(inst.capital_portion || 0) +
                                      parseFloat(inst.interest_portion || 0) +
@@ -1480,6 +1476,10 @@ const RegisterPayment = () => {
                                    );
 
                                    const remaining = totalDue - totalPaid;
+                                   
+                                   // Calculate payment progress for progress bar (after totalPaid and totalDue are defined)
+                                   const paymentProgress = inst.payment_progress || 
+                                     (totalPaid > 0 && totalDue > 0 ? (totalPaid / totalDue) * 100 : 0);
 
                                  return (
                                    <tr key={inst.week_number} className={`${bgClass} border-b border-gray-700 hover:bg-gray-700 transition-colors`}>

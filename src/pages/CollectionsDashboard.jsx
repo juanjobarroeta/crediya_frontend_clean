@@ -92,7 +92,7 @@ const CollectionsDashboard = () => {
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'MXN'
     }).format(amount || 0);
   };
 
