@@ -82,30 +82,28 @@ const LoanQuotes = () => {
 
     const annualRate = parseFloat(product.interest_rate) / 100;
     const financedAmount = parseFloat(phonePrice);
-    const weeklyRate = annualRate / 52;
     
-    // Calculate weekly payment using proper amortization formula
-    const weeklyPayment = financedAmount * (weeklyRate * Math.pow(1 + weeklyRate, product.term_weeks)) / 
-                         (Math.pow(1 + weeklyRate, product.term_weeks) - 1);
-    
-    const totalRepay = weeklyPayment * product.term_weeks;
-    const totalInterest = totalRepay - financedAmount;
+    // Simple Interest Calculation (matching backend implementation)
+    const totalInterest = financedAmount * annualRate * (product.term_weeks / 52);
+    const totalRepay = financedAmount + totalInterest;
+    const weeklyPayment = totalRepay / product.term_weeks;
 
-    // Generate amortization schedule
+    // Generate simple interest amortization schedule
     const amortizationSchedule = [];
+    const weeklyInterest = totalInterest / product.term_weeks;
+    const weeklyPrincipal = financedAmount / product.term_weeks;
     let balance = financedAmount;
+    
     for (let i = 1; i <= product.term_weeks; i++) {
-      const interestPayment = balance * weeklyRate;
-      const principalPayment = weeklyPayment - interestPayment;
-      balance -= principalPayment;
+      balance -= weeklyPrincipal;
       
       if (balance < 0) balance = 0;
       
       amortizationSchedule.push({
         week: i,
         payment: weeklyPayment.toFixed(2),
-        principal: principalPayment.toFixed(2),
-        interest: interestPayment.toFixed(2),
+        principal: weeklyPrincipal.toFixed(2),
+        interest: weeklyInterest.toFixed(2),
         balance: balance.toFixed(2),
       });
     }
