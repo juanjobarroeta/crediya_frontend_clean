@@ -13,8 +13,6 @@ const sectionList = [
       { href: "/register-payment", label: "Registrar Pago", icon: "💰" },
       { href: "/admin/collections", label: "Cobranza", icon: "📞" },
       { href: "/loan-quotes", label: "Cotizador", icon: "📊" },
-      { href: "/admin/overdue-loans", label: "Pagos Vencidos", icon: "⚠️" },
-      { href: "/admin/generate-contract", label: "Generar Contrato", icon: "📄" },
     ],
   },
   {
