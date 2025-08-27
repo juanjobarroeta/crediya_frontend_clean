@@ -82,11 +82,13 @@ const LoanQuotes = () => {
       return null;
     }
 
-    const product = products.find(p => p.id === selectedProductId);
+    const product = products.find(p => p.id == selectedProductId); // Use == for type coercion
     console.log('Found product:', product);
+    console.log('Available products:', products.map(p => ({ id: p.id, title: p.title })));
     
     if (!product) {
       console.log('Product not found for ID:', selectedProductId);
+      console.log('Available product IDs:', products.map(p => p.id));
       return null;
     }
 
@@ -144,8 +146,10 @@ const LoanQuotes = () => {
         return;
       }
       
-      const product = products.find(p => p.id === selectedProductId);
+      const product = products.find(p => p.id == selectedProductId); // Use == for type coercion
       if (!product) {
+        console.log('Manual calculation - Product not found for ID:', selectedProductId);
+        console.log('Available products:', products.map(p => ({ id: p.id, title: p.title })));
         alert('Producto financiero no encontrado');
         return;
       }
@@ -463,14 +467,17 @@ const LoanQuotes = () => {
                           </label>
                           <select
                             value={selectedProductId}
-                            onChange={e => setSelectedProductId(e.target.value)}
+                            onChange={e => {
+                              console.log('Product selected:', e.target.value);
+                              setSelectedProductId(e.target.value);
+                            }}
                             className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-transparent"
                             required
                           >
                             <option value="">Seleccionar producto...</option>
                             {products.map(product => (
                               <option key={product.id} value={product.id}>
-                                {product.title} - {product.term_weeks} semanas @ {product.interest_rate}%
+                                {product.title || product.name} - {product.term_weeks} semanas @ {product.interest_rate}%
                               </option>
                             ))}
                           </select>
