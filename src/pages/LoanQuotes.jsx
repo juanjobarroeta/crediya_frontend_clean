@@ -75,10 +75,20 @@ const LoanQuotes = () => {
 
   // Real-time quote calculation
   const calculatedQuote = useMemo(() => {
-    if (!selectedProductId || !phonePrice) return null;
+    console.log('Quote calculation:', { selectedProductId, phonePrice, productsCount: products.length });
+    
+    if (!selectedProductId || !phonePrice) {
+      console.log('Missing required fields for quote calculation');
+      return null;
+    }
 
     const product = products.find(p => p.id === selectedProductId);
-    if (!product) return null;
+    console.log('Found product:', product);
+    
+    if (!product) {
+      console.log('Product not found for ID:', selectedProductId);
+      return null;
+    }
 
     const annualRate = parseFloat(product.interest_rate) / 100;
     const financedAmount = parseFloat(phonePrice);
@@ -124,7 +134,47 @@ const LoanQuotes = () => {
 
   const generateQuote = (e) => {
     e.preventDefault();
-    if (!calculatedQuote) return;
+    
+    // Force recalculate if calculatedQuote is null
+    if (!calculatedQuote) {
+      console.log('Forcing quote calculation...');
+      
+      if (!selectedProductId || !phonePrice) {
+        alert('Por favor completa todos los campos requeridos');
+        return;
+      }
+      
+      const product = products.find(p => p.id === selectedProductId);
+      if (!product) {
+        alert('Producto financiero no encontrado');
+        return;
+      }
+      
+      // Manual calculation
+      const annualRate = parseFloat(product.interest_rate) / 100;
+      const financedAmount = parseFloat(phonePrice);
+      const totalInterest = financedAmount * annualRate * (product.term_weeks / 52);
+      const totalRepay = financedAmount + totalInterest;
+      const weeklyPayment = totalRepay / product.term_weeks;
+      
+      const manualQuote = {
+        customerName,
+        phoneType,
+        phonePrice: financedAmount.toFixed(2),
+        term: product.term_weeks,
+        interestRate: annualRate * 100,
+        totalRepay: totalRepay.toFixed(2),
+        weeklyPayment: weeklyPayment.toFixed(2),
+        totalInterest: totalInterest.toFixed(2),
+        amortizationSchedule: [],
+        product: product
+      };
+      
+      setQuote(manualQuote);
+      setActiveTab('results');
+      setRecentQuotes(prev => [manualQuote, ...prev.slice(0, 4)]);
+      return;
+    }
 
     setQuote(calculatedQuote);
     setActiveTab('results');
@@ -429,7 +479,7 @@ const LoanQuotes = () => {
                       
                       <button
                         type="submit"
-                        disabled={!calculatedQuote}
+                        disabled={!selectedProductId || !phonePrice || !customerName || !phoneType}
                         className="w-full bg-lime-500 text-black font-bold py-4 px-6 rounded-lg hover:bg-lime-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         🚀 Generar Cotización
